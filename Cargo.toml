@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 libipt-sys = "0.1.2"
+bitflags = "1.2.1"
