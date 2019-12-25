@@ -41,6 +41,7 @@ bitflags! {
     }
 }
 
+#[derive(Clone, Copy)]
 /// a collection of decoder-specific configuration flags
 pub enum DecoderFlags {
     /// flags for the block decoder
