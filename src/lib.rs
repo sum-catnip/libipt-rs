@@ -1,2 +1,2 @@
-mod config;
-mod encoder;
+pub mod config;
+pub mod encoder;
