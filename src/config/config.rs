@@ -13,18 +13,20 @@ use libipt_sys::{
     pt_packet_unknown
 };
 
-/* TODO: expose rustic callback with ok performance..
-pub trait DecodeUnknown {
-    pub fn decode(&mut self, pck: pt_packet_unknown, )
-}*/
 
 // TODO: should Config really own pt_config? we'll need to copy on every callback..
+// storing pt_config as reference has too many problems
+// TODO: so uhm, i have no idea if the callback is stored
+// in which case ill need to leak it?
+// god testing this will be fucking awful
 
-unsafe extern "C" fn kek(ukn: *mut pt_packet_unknown,
-                         cfg: *const pt_config,
-                         pos: *const u8,
-                         ctx: *mut c_void) -> c_int {
-    
+unsafe extern "C" fn decode_callback(ukn: *mut pt_packet_unknown,
+                                     cfg: *const pt_config,
+                                     pos: *const u8,
+                                     ctx: *mut c_void) -> c_int {
+    let c: &mut &mut dyn FnMut(&mut pt_packet_unknown, Config<()>, u8) -> i32
+        = mem::transmute(ctx);
+    c(&mut *ukn, (&*cfg).into(), *pos)
 }
 
 pub struct Config<'a, T> (pt_config, PhantomData<&'a T>);
@@ -35,12 +37,15 @@ impl<'a, T> Config<'a, T> {
     /// * `cpu`    - the cpu used for capturing. It's highly recommended to supply this info
     /// * `flags`  - a collection of decoder-specific flags
     /// * `filter` - the address filter configuration
-    pub fn new_notiming<U>(buf:    &'a mut [u8],
-                           cpu:    Option<CPU>,
-                           flags:  Option<U>,
-                           filter: Option<AddrFilter>) -> Self
-                           where U : Into<pt_conf_flags> {
-        Config::new(buf, cpu, None, flags, filter)
+    pub fn new_notiming<U, F>(buf:    &'a mut [u8],
+                              cpu:    Option<CPU>,
+                              flags:  Option<U>,
+                              filter: Option<AddrFilter>,
+                              decode: Option<F>) -> Self
+                              where
+                              U : Into<pt_conf_flags>,
+                              F : FnMut(&mut pt_packet_unknown, Config<()>, u8) -> i32 {
+        Config::new(buf, cpu, None, flags, filter, decode)
     }
 
     /// initializes a new Config instance for a trace with MTC timing packets enabled
@@ -50,12 +55,15 @@ impl<'a, T> Config<'a, T> {
     /// * `freq`   - frequency values used for timing packets
     /// * `flags`  - a collection of decoder-specific flags
     /// * `filter` - the address filter configuration
-    pub fn new<U>(buf:    &'a mut [u8],
-                  cpu:    Option<CPU>,
-                  freq:   Option<Frequency>,
-                  flags:  Option<U>,
-                  filter: Option<AddrFilter>) -> Config<'_, T>
-                  where U : Into<pt_conf_flags> {
+    pub fn new<U, F>(buf:    &'a mut [u8],
+                     cpu:    Option<CPU>,
+                     freq:   Option<Frequency>,
+                     flags:  Option<U>,
+                     filter: Option<AddrFilter>,
+                     decode: Option<F>) -> Self
+                     where
+                     U : Into<pt_conf_flags>,
+                     F : FnMut(&mut pt_packet_unknown, Config<()>, u8) -> i32 {
         // TODO error handling if buffer has no elements
         // would i really want to return Result<Config>?
         // seems a bit weird to have a failing ctor
@@ -80,6 +88,10 @@ impl<'a, T> Config<'a, T> {
 
         if let Some(f) = flags { cfg.flags = f.into() }
         if let Some(f) = filter { cfg.addr_filter = f.0 }
+        if let Some(mut d) = decode {
+            cfg.decode.callback = Some(decode_callback);
+            cfg.decode.context  = &mut &mut d as *mut _ as *mut c_void;
+        }
 
         Config(cfg, PhantomData)
     }
