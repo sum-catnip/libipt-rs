@@ -14,11 +14,22 @@ use libipt_sys::{
 };
 
 
-// TODO: should Config really own pt_config? we'll need to copy on every callback..
-// storing pt_config as reference has too many problems
+// TODO: should Config really own pt_config? how does moving it every callback even work
+// i think the callback is cheating rust since the pt_config doesnt have a lifetime
+// not sure if that matters since its readonly anyways
 // TODO: so uhm, i have no idea if the callback is stored
 // in which case ill need to leak it?
 // god testing this will be fucking awful
+
+// MOAH TODO: see how the decode callback behaves
+// potentially make a type for reading packet bytes from the current position
+// i think the user defined thingy should be provided within the callback
+// kina sounds like it:
+// The *pt_packet_unknown* object can be used to provide user-defined
+// information back to the user when using the packet decoder to iterate over
+// Intel PT packets.  Other decoders ignore this information but will skip
+// the packet if a non-zero size is returned by the callback function.
+
 
 unsafe extern "C" fn decode_callback(ukn: *mut pt_packet_unknown,
                                      cfg: *const pt_config,
