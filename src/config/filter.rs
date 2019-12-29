@@ -1,24 +1,12 @@
 use std::mem;
+use std::convert::TryFrom;
 use libipt_sys::pt_conf_addr_filter;
+use num_enum::TryFromPrimitive;
 
 
-#[derive(Clone, Copy)]
-pub enum AddrConfig {
-    DISABLED = 0,
-    FILTER   = 1,
-    STOP     = 2
-}
-
-impl From<u32> for AddrConfig {
-    fn from(cfg: u32) -> Self {
-        match cfg {
-            0 => AddrConfig::DISABLED,
-            1 => AddrConfig::FILTER,
-            2 => AddrConfig::STOP,
-            _ => unreachable!()
-        }
-    }
-}
+#[derive(Clone, Copy, TryFromPrimitive)]
+#[repr(u32)]
+pub enum AddrConfig {DISABLED, FILTER, STOP }
 
 /// an address range inside the address filter
 #[derive(Clone, Copy)]
@@ -112,7 +100,7 @@ impl AddrFilter {
     pub fn addr0(&self) -> AddrRange {
         unsafe {
             AddrRange::new(self.0.addr0_a, self.0.addr0_b,
-                self.0.config.ctl.addr0_cfg().into())
+                AddrConfig::try_from(self.0.config.ctl.addr0_cfg()).unwrap())
         }
     }
 
@@ -120,7 +108,7 @@ impl AddrFilter {
     pub fn addr1(&self) -> AddrRange {
         unsafe {
             AddrRange::new(self.0.addr1_a, self.0.addr1_b,
-                self.0.config.ctl.addr1_cfg().into())
+                AddrConfig::try_from(self.0.config.ctl.addr1_cfg()).unwrap())
         }
     }
 
@@ -128,7 +116,7 @@ impl AddrFilter {
     pub fn addr2(&self) -> AddrRange {
         unsafe {
             AddrRange::new(self.0.addr2_a, self.0.addr2_b,
-                self.0.config.ctl.addr2_cfg().into())
+                AddrConfig::try_from(self.0.config.ctl.addr2_cfg()).unwrap())
         }
     }
 
@@ -136,7 +124,7 @@ impl AddrFilter {
     pub fn addr3(&self) -> AddrRange {
         unsafe {
             AddrRange::new(self.0.addr3_a, self.0.addr3_b,
-                self.0.config.ctl.addr3_cfg().into())
+                AddrConfig::try_from(self.0.config.ctl.addr3_cfg()).unwrap())
         }
     }
 }
