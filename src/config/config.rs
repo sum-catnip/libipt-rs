@@ -35,13 +35,13 @@ unsafe extern "C" fn decode_callback(ukn: *mut pt_packet_unknown,
                                      cfg: *const pt_config,
                                      pos: *const u8,
                                      ctx: *mut c_void) -> c_int {
-    let c: &mut &mut dyn FnMut(&mut pt_packet_unknown, Config<()>, u8) -> i32
+    let c: &mut &mut dyn FnMut(&mut pt_packet_unknown, Config, u8) -> i32
         = mem::transmute(ctx);
     c(&mut *ukn, (&*cfg).into(), *pos)
 }
 
-pub struct Config<'a, T> (pt_config, PhantomData<&'a T>);
-impl<'a, T> Config<'a, T> {
+pub struct Config<'a> (pt_config, PhantomData<&'a ()>);
+impl<'a> Config<'a> {
     /// initializes a new Config instance for a trace without timing packets
     ///
     /// * `buffer` - the data captured by intelpt
@@ -55,7 +55,7 @@ impl<'a, T> Config<'a, T> {
                               decode: Option<F>) -> Self
                               where
                               U : Into<pt_conf_flags>,
-                              F : FnMut(&mut pt_packet_unknown, Config<()>, u8) -> i32 {
+                              F : FnMut(&mut pt_packet_unknown, Config, u8) -> i32 {
         Config::new(buf, cpu, None, flags, filter, decode)
     }
 
@@ -74,7 +74,7 @@ impl<'a, T> Config<'a, T> {
                      decode: Option<F>) -> Self
                      where
                      U : Into<pt_conf_flags>,
-                     F : FnMut(&mut pt_packet_unknown, Config<()>, u8) -> i32 {
+                     F : FnMut(&mut pt_packet_unknown, Config, u8) -> i32 {
         // TODO error handling if buffer has no elements
         // would i really want to return Result<Config>?
         // seems a bit weird to have a failing ctor
@@ -108,6 +108,6 @@ impl<'a, T> Config<'a, T> {
     }
 }
 
-impl<'a, T> From<&pt_config> for Config<'_, T> {
+impl<'a> From<&pt_config> for Config<'_> {
     fn from(cfg: &pt_config) -> Self { Config(*cfg, PhantomData) }
 }
