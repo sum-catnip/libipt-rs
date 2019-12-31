@@ -8,7 +8,7 @@ use libipt_sys::pt_errstr;
 
 #[derive(Clone, Copy, Debug, TryFromPrimitive)]
 #[repr(i32)]
-pub enum PTErrorCode {
+pub enum PtErrorCode {
     /// No error. Everything is OK
     Ok,
     /// Internal decoder error
@@ -72,14 +72,14 @@ pub enum PTErrorCode {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct PTError {
-     code: PTErrorCode,
+pub struct PtError {
+     code: PtErrorCode,
      msg:  &'static str
 }
 
-impl PTError {
-    pub fn new(code: PTErrorCode, msg: &'static str) -> Self {
-        PTError { code, msg }
+impl PtError {
+    pub fn new(code: PtErrorCode, msg: &'static str) -> Self {
+        PtError { code, msg }
     }
 
     /// Creates a PTError instance based on the error code
@@ -90,20 +90,20 @@ impl PTError {
         // panicing here is fine since this should only be called
         // for return values of libipt functions
         // so invalid returns = bug in libipt or the bindings
-        PTError::new(
-            PTErrorCode::try_from(-code).unwrap(),
+        PtError::new(
+            PtErrorCode::try_from(-code).unwrap(),
             unsafe { CStr::from_ptr(pt_errstr(-code)).to_str().unwrap() }
         )
     }
 }
 
-impl Display for PTError {
+impl Display for PtError {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "error from libipt: {}", self.msg)
     }
 }
 
-impl Error for PTError {
+impl Error for PtError {
     // sadly we have no idea what the source is
     fn source(&self) -> Option<&(dyn Error + 'static)> { None }
 }
@@ -111,11 +111,11 @@ impl Error for PTError {
 /// Dereferences a pointer returned by one of the libipt functions.
 /// Checks the pointer for NULL.
 /// Negative values will be translated into the appropriate error value.
-pub(crate) fn deref_ptresult_mut<T>(res: *mut T) -> Result<&'static mut T, PTError> {
+pub(crate) fn deref_ptresult_mut<T>(res: *mut T) -> Result<&'static mut T, PtError> {
     match res as isize {
         // null reference, no error info
-        0 => Err(PTError::new(PTErrorCode::NoInfo, "No further information")),
-        x if x < 0 => Err(PTError::from_code(res as i32)),
+        0 => Err(PtError::new(PtErrorCode::NoInfo, "No further information")),
+        x if x < 0 => Err(PtError::from_code(res as i32)),
         _ => Ok(unsafe { res.as_mut().unwrap() })
     }
 }
@@ -123,19 +123,19 @@ pub(crate) fn deref_ptresult_mut<T>(res: *mut T) -> Result<&'static mut T, PTErr
 /// Dereferences a pointer returned by one of the libipt functions.
 /// Checks the pointer for NULL.
 /// Negative values will be translated into the appropriate error value.
-pub(crate) fn deref_ptresult<T>(res: *const T) -> Result<&'static T, PTError> {
+pub(crate) fn deref_ptresult<T>(res: *const T) -> Result<&'static T, PtError> {
     match res as isize {
         // null reference, no error info
-        0 => Err(PTError::new(PTErrorCode::NoInfo, "No further information")),
-        x if x < 0 => Err(PTError::from_code(x as i32)),
+        0 => Err(PtError::new(PtErrorCode::NoInfo, "No further information")),
+        x if x < 0 => Err(PtError::from_code(x as i32)),
         _ => Ok(unsafe { res.as_ref().unwrap() })
     }
 }
 
 // Translates a pt error code into a result enum
-pub(crate) fn ensure_ptok(code: i32) -> Result<(), PTError> {
+pub(crate) fn ensure_ptok(code: i32) -> Result<i32, PtError> {
     match code {
-        0 => Ok(()),
-        _ => Err(PTError::from_code(code))
+        0 => Ok(code),
+        _ => Err(PtError::from_code(code))
     }
 }
