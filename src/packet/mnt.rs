@@ -1,4 +1,4 @@
-use libipt_sys::pt_packet_mnt;
+use libipt_sys::{pt_packet_mnt, pt_packet_type_ppt_mnt};
 
 /// A MNT packet.
 /// Packet: mnt
@@ -9,9 +9,6 @@ impl Mnt {
     pub fn new(payload: u64) -> Self { Mnt(pt_packet_mnt{payload}) }
 
     #[inline]
-    pub(crate) fn wrap(pck: pt_packet_mnt) -> Self { Mnt(pck) }
-
-    #[inline]
     /// The raw payload
     pub fn payload(self) -> u64 { self.0.payload }
 
@@ -19,3 +16,6 @@ impl Mnt {
     /// The raw payload
     pub fn set_payload(&mut self, payload: u64) { self.0.payload = payload }
 }
+
+wrap2raw!(Mnt, pt_packet_type_ppt_mnt, mnt);
+raw2wrap!(Mnt, Mnt, pt_packet_mnt);

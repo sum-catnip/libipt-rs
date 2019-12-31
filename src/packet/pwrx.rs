@@ -1,4 +1,4 @@
-use libipt_sys::pt_packet_pwrx;
+use libipt_sys::{pt_packet_pwrx, pt_packet_type_ppt_pwrx};
 
 /// A PWRX packet.
 /// Packet: pwrx
@@ -21,9 +21,6 @@ impl Pwrx {
             )
         })
     }
-
-    #[inline]
-    pub(crate) fn wrap(pck: pt_packet_pwrx) -> Self { Pwrx(pck) }
 
     /// The core C-state at the time of the wake
     #[inline]
@@ -77,3 +74,6 @@ impl Pwrx {
         self.0.set_autonomous(autonomous as u32)
     }
 }
+
+wrap2raw!(Pwrx, pt_packet_type_ppt_pwrx, pwrx);
+raw2wrap!(Pwrx, Pwrx, pt_packet_pwrx);

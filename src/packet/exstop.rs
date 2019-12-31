@@ -1,6 +1,7 @@
 use libipt_sys::{
     pt_packet_exstop,
-    __BindgenBitfieldUnit
+    pt_packet_type_ppt_exstop,
+    __BindgenBitfieldUnit,
 };
 
 /// A EXSTOP packet.
@@ -16,9 +17,6 @@ impl Exstop {
         })
     }
 
-    #[inline]
-    pub(crate) fn wrap(pck: pt_packet_exstop) -> Self { Exstop(pck) }
-
     /// A flag specifying the binding of the packet:
     ///
     /// set:   binds to the next FUP.
@@ -33,3 +31,6 @@ impl Exstop {
     #[inline]
     pub fn set_ip(&mut self, ip: bool) { self.0.set_ip(ip as u32) }
 }
+
+wrap2raw!(Exstop, pt_packet_type_ppt_exstop, exstop);
+raw2wrap!(Exstop, Exstop, pt_packet_exstop);

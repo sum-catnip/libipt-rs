@@ -1,5 +1,6 @@
 use libipt_sys::{
     pt_packet_pwre,
+    pt_packet_type_ppt_pwre,
     __BindgenBitfieldUnit
 };
 
@@ -16,9 +17,6 @@ impl Pwre {
             __bindgen_padding_0: Default::default()
         })
     }
-
-    #[inline]
-    pub(crate) fn wrap(pck: pt_packet_pwre) -> Self { Pwre(pck) }
 
     /// The resolved thread C-state
     #[inline]
@@ -44,3 +42,6 @@ impl Pwre {
     #[inline]
     pub fn set_hw(&mut self, hw: bool) { self.0.set_hw(hw as u32) }
 }
+
+wrap2raw!(Pwre, pt_packet_type_ppt_pwre, pwre);
+raw2wrap!(Pwre, Pwre, pt_packet_pwre);

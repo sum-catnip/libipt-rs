@@ -1,5 +1,6 @@
 use libipt_sys::{
     pt_packet_ptw,
+    pt_packet_type_ppt_ptw,
     __BindgenBitfieldUnit
 };
 
@@ -16,9 +17,6 @@ impl Ptw {
             __bindgen_padding_0: Default::default()
         })
     }
-
-    #[inline]
-    pub(crate) fn wrap(pck: pt_packet_ptw) -> Self { Ptw(pck) }
 
     /// The raw payload
     #[inline]
@@ -46,3 +44,6 @@ impl Ptw {
     #[inline]
     pub fn set_ip(&mut self, ip: bool) { self.0.set_ip(ip as u32) }
 }
+
+wrap2raw!(Ptw, pt_packet_type_ppt_ptw, ptw);
+raw2wrap!(Ptw, Ptw, pt_packet_ptw);

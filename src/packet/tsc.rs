@@ -1,4 +1,4 @@
-use libipt_sys::pt_packet_tsc;
+use libipt_sys::{pt_packet_tsc, pt_packet_type_ppt_tsc};
 
 /// A TSC packet.
 /// Packet: tsc
@@ -9,9 +9,6 @@ impl Tsc {
     pub fn new(tsc: u64) -> Self { Tsc(pt_packet_tsc{tsc}) }
 
     #[inline]
-    pub(crate) fn wrap(pck: pt_packet_tsc) -> Self { Tsc(pck) }
-
-    #[inline]
     /// The TSC value
     pub fn tsc(self) -> u64 { self.0.tsc }
 
@@ -19,3 +16,6 @@ impl Tsc {
     /// The TSC value
     pub fn set_tsc(&mut self, tsc: u64) { self.0.tsc = tsc }
 }
+
+wrap2raw!(Tsc, pt_packet_type_ppt_tsc, tsc);
+raw2wrap!(Tsc, Tsc, pt_packet_tsc);

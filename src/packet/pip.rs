@@ -1,4 +1,8 @@
-use libipt_sys::{pt_packet_pip, __BindgenBitfieldUnit};
+use libipt_sys::{
+    pt_packet_pip,
+    pt_packet_type_ppt_pip,
+    __BindgenBitfieldUnit
+};
 
 /// A PIP packet.
 /// Packet: pip
@@ -15,9 +19,6 @@ impl Pip {
     }
 
     #[inline]
-    pub(crate) fn wrap(pck: pt_packet_pip) -> Self { Pip (pck) }
-
-    #[inline]
     /// The CR3 value
     pub fn cr3(self) -> u64 { self.0.cr3 }
     #[inline]
@@ -31,3 +32,6 @@ impl Pip {
     /// The non-root bit
     pub fn set_nr(&mut self, nr: bool) { self.0.set_nr(nr as u32) }
 }
+
+wrap2raw!(Pip, pt_packet_type_ppt_pip, pip);
+raw2wrap!(Pip, Pip, pt_packet_pip);

@@ -1,4 +1,4 @@
-use libipt_sys::pt_packet_tma;
+use libipt_sys::{pt_packet_tma, pt_packet_type_ppt_tma};
 
 /// A TMA packet.
 /// Packet: tma
@@ -7,9 +7,6 @@ pub struct Tma (pt_packet_tma);
 impl Tma {
     #[inline]
     pub fn new(ctc: u16, fc: u16) -> Self { Tma(pt_packet_tma{ctc, fc}) }
-
-    #[inline]
-    pub(crate) fn wrap(pck: pt_packet_tma) -> Self { Tma(pck) }
 
     #[inline]
     /// The crystal clock tick counter value
@@ -27,3 +24,6 @@ impl Tma {
     /// The fast counter value
     pub fn set_fc(&mut self, fc: u16) { self.0.fc = fc }
 }
+
+wrap2raw!(Tma, pt_packet_type_ppt_tma, tma);
+raw2wrap!(Tma, Tma, pt_packet_tma);

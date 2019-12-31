@@ -1,8 +1,9 @@
 use bitflags::bitflags;
 use libipt_sys::{
+    pt_mode_leaf_pt_mol_exec as PT_MODE_LEAF_PT_MOL_EXEC,
+    pt_mode_leaf_pt_mol_tsx  as PT_MODE_LEAF_PT_MOL_TSX,
     pt_packet_mode,
-    pt_mode_leaf_pt_mol_exec,
-    pt_mode_leaf_pt_mol_tsx,
+    pt_packet_type_ppt_mode,
     pt_packet_mode_exec,
     pt_packet_mode_tsx,
     __BindgenBitfieldUnit,
@@ -68,32 +69,31 @@ impl Mode {
         // to convert the bits enum into the union
         Mode(match payload {
             Payload::Exec(e) => pt_packet_mode {
-                leaf: pt_mode_leaf_pt_mol_exec, bits: e.into()
+                leaf: PT_MODE_LEAF_PT_MOL_EXEC, bits: e.into()
             },
             Payload::Tsx(t) => pt_packet_mode {
-                leaf: pt_mode_leaf_pt_mol_tsx, bits: t.into()
+                leaf: PT_MODE_LEAF_PT_MOL_TSX, bits: t.into()
             }
         })
     }
-
-    #[inline]
-    pub(crate) fn wrap(pck: pt_packet_mode) -> Self { Mode (pck) }
 
     /// Gets the payload of this packet as an enum.
     /// Intel calls this field `bits`
    #[inline]
     pub fn payload(self) -> Payload {
         match self.0.leaf {
-            pt_mode_leaf_pt_mol_exec => Payload::Exec(
+            PT_MODE_LEAF_PT_MOL_EXEC => Payload::Exec(
                 Exec::from_bits(unsafe {
                     self.0.bits.exec._bitfield_1.get(0, 2)
                 } as u32).unwrap()
             ),
-            pt_mode_leaf_pt_mol_tsx => Payload::Tsx(
+
+            PT_MODE_LEAF_PT_MOL_TSX => Payload::Tsx(
                 Tsx::from_bits(unsafe {
                     self.0.bits.tsx._bitfield_1.get(0, 2)
                 } as u32).unwrap()
             ),
+
             _ => unreachable!()
         }
     }
@@ -106,3 +106,6 @@ impl Mode {
         }
     }
 } 
+
+wrap2raw!(Mode, pt_packet_type_ppt_mode, mode);
+raw2wrap!(Mode, Mode, pt_packet_mode);

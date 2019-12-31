@@ -1,4 +1,4 @@
-use libipt_sys::pt_packet_cyc;
+use libipt_sys::{pt_packet_cyc, pt_packet_type_ppt_cyc};
 
 /// A CYC packet.
 /// Packet: cyc
@@ -9,9 +9,6 @@ impl Cyc {
     pub fn new(value: u64) -> Self { Cyc(pt_packet_cyc{value}) }
 
     #[inline]
-    pub(crate) fn wrap(pck: pt_packet_cyc) -> Self { Cyc(pck) }
-
-    #[inline]
     /// The cycle counter value
     pub fn value(self) -> u64 { self.0.value }
 
@@ -19,3 +16,6 @@ impl Cyc {
     /// The cycle counter value
     pub fn set_value(&mut self, value: u64) { self.0.value = value }
 }
+
+wrap2raw!(Cyc, pt_packet_type_ppt_cyc, cyc);
+raw2wrap!(Cyc, Cyc, pt_packet_cyc);
