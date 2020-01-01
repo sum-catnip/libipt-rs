@@ -40,7 +40,8 @@ unsafe extern "C" fn decode_callback(ukn: *mut pt_packet_unknown,
     c(&mut *ukn, (&*cfg).into(), *pos)
 }
 
-pub struct Config<'a> (pt_config, PhantomData<&'a ()>);
+#[derive(Clone, Copy)]
+pub struct Config<'a> (pub(crate) pt_config, PhantomData<&'a ()>);
 impl<'a> Config<'a> {
     /// initializes a new Config instance for a trace without timing packets
     ///
