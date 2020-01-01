@@ -1,10 +1,5 @@
 use super::config::Config;
-
-use super::error::{
-    PtError,
-    ensure_ptok,
-    deref_ptresult
-};
+use super::error::{PtError, ensure_ptok, deref_ptresult};
 
 use libipt_sys::{
     pt_packet,
@@ -31,8 +26,8 @@ impl Encoder {
     ///
     /// The encoder will work on the buffer defined in @config, it shall contain raw trace data and remain valid for the lifetime of the encoder.
     /// The encoder starts at the beginning of the trace buffer.
-    pub fn new(cfg: pt_config) -> Result<Encoder, PtError> {
-        deref_ptresult(unsafe{pt_alloc_encoder(&cfg)})
+    pub fn new(cfg: &Config) -> Result<Encoder, PtError> {
+        deref_ptresult(unsafe{pt_alloc_encoder(&cfg.0)})
             .map(|x| Encoder(*x))
     }
 
