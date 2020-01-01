@@ -5,67 +5,96 @@ use std::fmt::{Display, Formatter};
 use std::error::Error;
 
 use libipt_sys::pt_errstr;
+use libipt_sys::{
+    pt_error_code_pte_ok,
+    pt_error_code_pte_internal,
+    pt_error_code_pte_invalid,
+    pt_error_code_pte_nosync,
+    pt_error_code_pte_bad_opc,
+    pt_error_code_pte_bad_packet,
+    pt_error_code_pte_bad_context,
+    pt_error_code_pte_eos,
+    pt_error_code_pte_bad_query,
+    pt_error_code_pte_nomem,
+    pt_error_code_pte_bad_config,
+    pt_error_code_pte_noip,
+    pt_error_code_pte_ip_suppressed,
+    pt_error_code_pte_nomap,
+    pt_error_code_pte_bad_insn,
+    pt_error_code_pte_no_time,
+    pt_error_code_pte_no_cbr,
+    pt_error_code_pte_bad_image,
+    pt_error_code_pte_bad_lock,
+    pt_error_code_pte_not_supported,
+    pt_error_code_pte_retstack_empty,
+    pt_error_code_pte_bad_retcomp,
+    pt_error_code_pte_bad_status_update,
+    pt_error_code_pte_no_enable,
+    pt_error_code_pte_event_ignored,
+    pt_error_code_pte_overflow,
+    pt_error_code_pte_bad_file,
+    pt_error_code_pte_bad_cpu
+};
 
 #[derive(Clone, Copy, Debug, TryFromPrimitive)]
 #[repr(i32)]
 pub enum PtErrorCode {
     /// No error. Everything is OK
-    Ok,
+    Ok = pt_error_code_pte_ok,
     /// Internal decoder error
-    Internal,
+    Internal = pt_error_code_pte_internal,
     /// Invalid argument
-    Invalid,
+    Invalid = pt_error_code_pte_invalid,
     /// Decoder out of sync
-    Nosync,
+    Nosync = pt_error_code_pte_nosync,
     /// Unknown opcode
-    BadOpc,
+    BadOpc = pt_error_code_pte_bad_opc,
     /// Unknown payload
-    BadPacket,
+    BadPacket = pt_error_code_pte_bad_packet,
     /// Unexpected packet context
-    BadContext,
+    BadContext = pt_error_code_pte_bad_context,
     /// Decoder reached end of trace stream
-    Eos,
+    Eos = pt_error_code_pte_eos,
     /// No packet matching the query to be found
-    BadQuery,
+    BadQuery = pt_error_code_pte_bad_query,
     /// Decoder out of memory
-    Nomem,
+    Nomem = pt_error_code_pte_nomem,
     /// Bad configuration
-    BadConfig,
+    BadConfig = pt_error_code_pte_bad_config,
     /// There is no IP
-    Noip,
+    Noip = pt_error_code_pte_noip,
     /// The IP has been suppressed
-    IpSuppressed,
+    IpSuppressed = pt_error_code_pte_ip_suppressed,
     /// There is no memory mapped at the requested address
-    Nomap,
+    Nomap = pt_error_code_pte_nomap,
     /// An instruction could not be decoded
-    BadInsn,
+    BadInsn = pt_error_code_pte_bad_insn,
     /// No wall-clock time is available
-    NoTime,
+    NoTime = pt_error_code_pte_no_time,
     /// No core:bus ratio available
-    NoCbr,
+    NoCbr = pt_error_code_pte_no_cbr,
     /// Bad traced image
-    BadImage,
+    BadImage = pt_error_code_pte_bad_image,
     /// A locking error
-    BadLock,
+    BadLock = pt_error_code_pte_bad_lock,
     /// The requested feature is not supported
-    NotSupported,
+    NotSupported = pt_error_code_pte_not_supported,
     /// The return address stack is empty
-    RetstackEmpty,
+    RetstackEmpty = pt_error_code_pte_retstack_empty,
     /// A compressed return is not indicated correctly by a taken branch
-    BadRetcomp,
+    BadRetcomp = pt_error_code_pte_bad_retcomp,
     /// The current decoder state does not match the state in the trace
-    BadStatusUpdate,
+    BadStatusUpdate = pt_error_code_pte_bad_status_update,
     /// The trace did not contain an expected enabled event
-    NoEnable,
+    NoEnable = pt_error_code_pte_no_enable,
     /// An event was ignored
-    EventIgnored,
+    EventIgnored = pt_error_code_pte_event_ignored,
     /// Something overflowed
-    Overflow,
+    Overflow = pt_error_code_pte_overflow,
     /// A file handling error
-    BadFile,
+    BadFile = pt_error_code_pte_bad_file,
     /// Unknown cpu
-    BadCpu,
-
+    BadCpu = pt_error_code_pte_bad_cpu,
 
     /// No Error Information available
     NoInfo = -1
@@ -133,9 +162,9 @@ pub(crate) fn deref_ptresult<T>(res: *const T) -> Result<&'static T, PtError> {
 }
 
 // Translates a pt error code into a result enum
-pub(crate) fn ensure_ptok(code: i32) -> Result<i32, PtError> {
+pub(crate) fn ensure_ptok(code: i32) -> Result<u32, PtError> {
     match code {
-        0 => Ok(code),
+        0 => Ok(code as u32),
         _ => Err(PtError::from_code(code))
     }
 }
