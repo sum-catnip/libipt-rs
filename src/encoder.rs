@@ -57,7 +57,7 @@ impl Encoder {
     /// Returns BadPacket if @packet's payload is invalid.
     /// Returns Eos if the encoder reached the end of the Intel PT buffer.
     /// Returns Invalid if @packet is NULL.
-    pub fn next(&mut self, pck: impl Into<pt_packet>) -> Result<i32, PtError> {
+    pub fn next(&mut self, pck: impl Into<pt_packet>) -> Result<u32, PtError> {
         ensure_ptok(unsafe{pt_enc_next(&mut self.0, &pck.into())})
     }
 
