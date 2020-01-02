@@ -11,7 +11,7 @@ use num_enum::TryFromPrimitive;
 
 #[derive(Clone, Copy, TryFromPrimitive)]
 #[repr(i32)]
-pub enum Mode {
+pub enum ExecModeType {
     Bit16 = pt_exec_mode_ptem_16bit,
     Bit32 = pt_exec_mode_ptem_32bit,
     Bit64 = pt_exec_mode_ptem_64bit,
@@ -25,5 +25,5 @@ impl ExecMode {
     /// The address at which the event is effective
     pub fn ip(self) -> u64 { self.0.ip }
     /// The execution mode
-    pub fn mode(self) -> Mode { Mode::try_from(self.0.mode).unwrap() }
+    pub fn mode(self) -> ExecModeType { ExecModeType::try_from(self.0.mode).unwrap() }
 }
