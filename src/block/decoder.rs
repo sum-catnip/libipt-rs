@@ -2,7 +2,7 @@ use std::mem;
 use super::Block;
 use crate::asid::Asid;
 use crate::config::Config;
-use crate::error::{PtError, ensure_ptok, deref_ptresult};
+use crate::error::{PtError, ensure_ptok, extract_pterr, deref_ptresult};
 use crate::event::Event;
 use crate::flags::Status;
 use crate::image::Image;
@@ -60,7 +60,7 @@ impl BlockDecoder {
     /// Returns NoCbr if there has not been a CBR packet.
     pub fn core_bus_ratio(&mut self) -> Result<u32, PtError> {
         let mut cbr: u32 = 0;
-        unsafe { ensure_ptok(pt_blk_core_bus_ratio(&mut self.0, &mut cbr)) }
+        unsafe { extract_pterr(pt_blk_core_bus_ratio(&mut self.0, &mut cbr)) }
     }
 
     /// Get the next pending event.
@@ -69,10 +69,9 @@ impl BlockDecoder {
     /// Returns BadQuery if there is no event.
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
         let mut evt: pt_event = unsafe { mem::zeroed() };
-        let status = ensure_ptok(unsafe { pt_blk_event(
+        extract_pterr(unsafe { pt_blk_event(
             &mut self.0, &mut evt, mem::size_of::<pt_event>()
-        )})?;
-        Ok((Event(evt), Status::from_bits(status).unwrap()))
+        )}).map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
     pub fn config(&self) -> Result<Config, PtError> {
@@ -139,12 +138,10 @@ impl BlockDecoder {
     /// Only one image can be active at any time.
     pub fn set_image(&mut self, img: &mut Image) -> Result<(), PtError> {
         ensure_ptok(unsafe { pt_blk_set_image(&mut self.0, &mut img.0) })
-            .map(|_| ())
     }
 
     pub fn sync_backward(&mut self) -> Result<(), PtError> {
         ensure_ptok(unsafe { pt_blk_sync_backward(&mut self.0) })
-            .map(|_| ())
     }
 
     /// Synchronize an Intel PT block decoder.
@@ -157,7 +154,6 @@ impl BlockDecoder {
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_forward(&mut self) -> Result<(), PtError> {
         ensure_ptok(unsafe { pt_blk_sync_forward(&mut self.0) })
-            .map(|_| ())
     }
 
     /// Manually synchronize an Intel PT block decoder.
@@ -170,7 +166,6 @@ impl BlockDecoder {
     /// Returns Nosync if there is no syncpoint at @offset.
     pub fn set_sync(&mut self, offset: u64) -> Result<(), PtError> {
         ensure_ptok(unsafe { pt_blk_sync_set(&mut self.0, offset)})
-            .map(|_| ())
     }
 
     /// Return the current time.

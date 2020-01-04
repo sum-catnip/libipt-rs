@@ -1,10 +1,9 @@
 use super::config::Config;
-use super::error::{PtError, ensure_ptok, deref_ptresult};
+use super::error::{PtError, ensure_ptok, extract_pterr, deref_ptresult};
 
 use libipt_sys::{
     pt_packet,
     pt_encoder,
-    pt_config,
     pt_alloc_encoder,
     pt_free_encoder,
     pt_enc_get_config,
@@ -58,7 +57,7 @@ impl Encoder {
     /// Returns Eos if the encoder reached the end of the Intel PT buffer.
     /// Returns Invalid if @packet is NULL.
     pub fn next(&mut self, pck: impl Into<pt_packet>) -> Result<u32, PtError> {
-        ensure_ptok(unsafe{pt_enc_next(&mut self.0, &pck.into())})
+        extract_pterr(unsafe{pt_enc_next(&mut self.0, &pck.into())})
     }
 
     /// Hard set synchronization point of an Intel PT packet encoder.
@@ -69,7 +68,6 @@ impl Encoder {
     /// Returns Invalid if the encoder is NULL.
     pub fn set_offset(&mut self, offset: u64) -> Result<(), PtError> {
         ensure_ptok(unsafe{pt_enc_sync_set(&mut self.0, offset)})
-            .map(|_|()) // maybe there is a better way to discard the result
     }
 }
 

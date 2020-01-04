@@ -107,6 +107,7 @@ pub struct PtError {
 }
 
 impl PtError {
+    #[inline]
     pub fn new(code: PtErrorCode, msg: &'static str) -> Self {
         PtError { code, msg }
     }
@@ -115,6 +116,7 @@ impl PtError {
     /// The code should be provided in the way its returned from the pt function
     /// pt functions always return negative error codes
     /// *error codes not included in the pt_error enum will panic!*
+    #[inline]
     pub fn from_code(code: i32) -> Self {
         // panicing here is fine since this should only be called
         // for return values of libipt functions
@@ -140,18 +142,7 @@ impl Error for PtError {
 /// Dereferences a pointer returned by one of the libipt functions.
 /// Checks the pointer for NULL.
 /// Negative values will be translated into the appropriate error value.
-pub(crate) fn deref_ptresult_mut<T>(res: *mut T) -> Result<&'static mut T, PtError> {
-    match res as isize {
-        // null reference, no error info
-        0 => Err(PtError::new(PtErrorCode::NoInfo, "No further information")),
-        x if x < 0 => Err(PtError::from_code(res as i32)),
-        _ => Ok(unsafe { res.as_mut().unwrap() })
-    }
-}
-
-/// Dereferences a pointer returned by one of the libipt functions.
-/// Checks the pointer for NULL.
-/// Negative values will be translated into the appropriate error value.
+#[inline]
 pub(crate) fn deref_ptresult<T>(res: *const T) -> Result<&'static T, PtError> {
     match res as isize {
         // null reference, no error info
@@ -161,8 +152,20 @@ pub(crate) fn deref_ptresult<T>(res: *const T) -> Result<&'static T, PtError> {
     }
 }
 
-// Translates a pt error code into a result enum
-pub(crate) fn ensure_ptok(code: i32) -> Result<u32, PtError> {
+// Translates a pt error code into a result enum.
+// Discards the error code
+#[inline]
+pub(crate) fn ensure_ptok(code: i32) -> Result<(), PtError> {
+    match code {
+        0 => Ok(()),
+        _ => Err(PtError::from_code(code))
+    }
+}
+
+// Turns a negative code into a PtErr.
+// Returns the code as an unsigned int
+#[inline]
+pub(crate) fn extract_pterr(code: i32) -> Result<u32, PtError> {
     match code {
         0 => Ok(code as u32),
         _ => Err(PtError::from_code(code))
