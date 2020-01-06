@@ -1,4 +1,3 @@
-use std::mem;
 use super::Block;
 use crate::asid::Asid;
 use crate::config::Config;
@@ -6,6 +5,9 @@ use crate::error::{PtError, ensure_ptok, extract_pterr, deref_ptresult};
 use crate::event::Event;
 use crate::flags::Status;
 use crate::image::Image;
+
+use std::mem;
+use std::ptr;
 
 use libipt_sys::{
     pt_event,
@@ -36,8 +38,8 @@ impl BlockDecoder {
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    pub fn new(cfg: &Config) -> Result<BlockDecoder, PtError> {
-        deref_ptresult(unsafe{pt_blk_alloc_decoder(&cfg.0)})
+    pub fn new(cfg: &Config) -> Result<Self, PtError> {
+        deref_ptresult(unsafe{ pt_blk_alloc_decoder(&cfg.0) })
             .map(|x| BlockDecoder(*x))
     }
 
@@ -69,9 +71,11 @@ impl BlockDecoder {
     /// Returns BadQuery if there is no event.
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
         let mut evt: pt_event = unsafe { mem::zeroed() };
-        extract_pterr(unsafe { pt_blk_event(
-            &mut self.0, &mut evt, mem::size_of::<pt_event>()
-        )}).map(|s| (Event(evt), Status::from_bits(s).unwrap()))
+        extract_pterr(unsafe {
+            pt_blk_event(&mut self.0,
+                         &mut evt,
+                         mem::size_of::<pt_event>())
+        }).map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
     pub fn config(&self) -> Result<Config, PtError> {
@@ -136,8 +140,14 @@ impl BlockDecoder {
     /// Sets the image that the decoder uses for reading memory to image.
     /// If image is None, sets the image to the decoder's default image.
     /// Only one image can be active at any time.
-    pub fn set_image(&mut self, img: &mut Image) -> Result<(), PtError> {
-        ensure_ptok(unsafe { pt_blk_set_image(&mut self.0, &mut img.0) })
+    pub fn set_image(&mut self, img: Option<&mut Image>) -> Result<(), PtError> {
+        ensure_ptok(unsafe {
+            pt_blk_set_image(&mut self.0,
+                             match img {
+                                 None => ptr::null_mut(),
+                                 Some(i) => &mut i.0
+                             })
+        })
     }
 
     pub fn sync_backward(&mut self) -> Result<(), PtError> {
