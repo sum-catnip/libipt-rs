@@ -1,10 +1,16 @@
 pub mod config;
+pub use config::Config;
 pub mod encoder;
 pub mod error;
+pub use error::PtError;
 pub mod packet;
 pub mod event;
+pub use event::Event;
 pub mod image;
+pub use image::Image;
 pub mod asid;
+pub use asid::Asid;
 pub mod flags;
+pub use flags::Status;
 pub mod block;
 pub mod insn;
