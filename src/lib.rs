@@ -4,6 +4,8 @@ pub mod encoder;
 pub mod error;
 pub use error::PtError;
 pub mod packet;
+pub use packet::Packet;
+pub use packet::PacketDecoder;
 pub mod event;
 pub use event::Event;
 pub mod image;
