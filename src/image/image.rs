@@ -1,3 +1,4 @@
+use super::SectionCache;
 use crate::asid::Asid;
 use crate::error::{
     deref_ptresult,
@@ -12,7 +13,6 @@ use std::mem;
 use std::slice;
 use libipt_sys::{
     pt_image,
-    pt_image_section_cache,
     pt_image_add_cached,
     pt_image_add_file,
     pt_image_alloc,
@@ -40,7 +40,7 @@ impl Image {
     /// Allocate a traced memory image.
     /// An optional @name may be given to the image.
     /// The name string is copied.
-    pub fn new(name: Option<&str>) -> Result<Image, PtError> {
+    pub fn new(name: Option<&str>) -> Result<Self, PtError> {
         deref_ptresult( unsafe { match name {
             None => pt_image_alloc(ptr::null()),
             Some(n) =>
@@ -169,11 +169,8 @@ impl Image {
                                   None => ptr::null()
                               }, vaddr)
         })}
-    
 }
 
 impl Drop for Image {
     fn drop(&mut self) { unsafe { pt_image_free(&mut self.0) } }
 }
-
-pub struct SectionCache(pub(crate) pt_image_section_cache);
