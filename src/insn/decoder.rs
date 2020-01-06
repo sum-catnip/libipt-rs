@@ -80,7 +80,7 @@ impl InsnDecoder {
 
     pub fn config(&self) -> Result<Config, PtError> {
         deref_ptresult(unsafe { pt_insn_get_config(&self.0) })
-            .map(|c| Config::from(c))
+            .map(Config::from)
     }
 
     /// Get the traced image.
