@@ -12,6 +12,10 @@ use libipt_sys::{
     pt_insn_class_ptic_return
 };
 
+/// The instruction class.
+///
+/// We provide only a very coarse classification suitable for reconstructing
+/// the execution flow.
 #[derive(Clone, Copy, TryFromPrimitive)]
 #[repr(i32)]
 pub enum Class {

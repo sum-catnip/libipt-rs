@@ -18,6 +18,7 @@ use libipt_sys::{
     pt_iscache_set_limit
 };
 
+/// A cache of traced image sections.
 pub struct SectionCache(pub(crate) pt_image_section_cache);
 impl SectionCache {
     /// Allocate a traced memory image section cache.

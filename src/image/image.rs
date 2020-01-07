@@ -35,6 +35,7 @@ unsafe extern "C" fn read_callback(buffer: *mut u8,
     c(slice::from_raw_parts_mut(buffer, size), ip, Asid(*asid))
 }
 
+/// The traced memory image.
 pub struct Image(pub(crate) pt_image);
 impl Image {
     /// Allocate a traced memory image.
@@ -58,7 +59,7 @@ impl Image {
         deref_ptresult( unsafe { pt_image_name(&self.0) })
             .ok()
             .map(|s| unsafe { CStr::from_ptr(s) }.to_str().expect(
-                concat!("failed to convert c into rust string.",
+                concat!("failed to convert c into rust string. ",
                         "this is a bug in either the bindings or libipt")
             ))
     }

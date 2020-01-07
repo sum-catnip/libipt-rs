@@ -57,7 +57,6 @@ impl InsnDecoder {
     ///
     /// On success, provides the current core:bus ratio
     /// The ratio is defined as core cycles per bus clock cycle.
-    /// Returns zero on success, a negative error code otherwise.
     /// Returns NoCbr if there has not been a CBR packet.
     pub fn core_bus_ratio(&mut self) -> Result<u32, PtError> {
         let mut cbr: u32 = 0;
