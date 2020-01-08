@@ -40,72 +40,67 @@ unsafe extern "C" fn decode_callback(ukn: *mut pt_packet_unknown,
     c(&mut *ukn, (&*cfg).into(), *pos)
 }
 
+/// A builder type for the libipt configuration
 #[derive(Clone, Copy)]
 pub struct Config<'a> (pub(crate) pt_config, PhantomData<&'a ()>);
 impl<'a> Config<'a> {
-    /// initializes a new Config instance for a trace without timing packets
+    /// Initializes a Config instance with only a buffer.
     ///
-    /// * `buffer` - the data captured by intelpt
-    /// * `cpu`    - the cpu used for capturing. It's highly recommended to supply this info
-    /// * `flags`  - a collection of decoder-specific flags
-    /// * `filter` - the address filter configuration
-    pub fn new_notiming<U, F>(buf:    &'a mut [u8],
-                              cpu:    Option<CPU>,
-                              flags:  Option<U>,
-                              filter: Option<AddrFilter>,
-                              decode: Option<F>) -> Self
-                              where
-                              U : Into<pt_conf_flags>,
-                              F : FnMut(&mut pt_packet_unknown, Config, u8) -> i32 {
-        Config::new(buf, cpu, None, flags, filter, decode)
-    }
-
-    /// initializes a new Config instance for a trace with MTC timing packets enabled
-    ///
-    /// * `buf`    - the data captured by intelpt
-    /// * `cpu`    - the cpu used for capturing. It's highly recommended to supply this info
-    /// * `freq`   - frequency values used for timing packets
-    /// * `flags`  - a collection of decoder-specific flags
-    /// * `filter` - the address filter configuration
-    pub fn new<U, F>(buf:    &'a mut [u8],
-                     cpu:    Option<CPU>,
-                     freq:   Option<Frequency>,
-                     flags:  Option<U>,
-                     filter: Option<AddrFilter>,
-                     decode: Option<F>) -> Self
-                     where
-                     U : Into<pt_conf_flags>,
-                     F : FnMut(&mut pt_packet_unknown, Config, u8) -> i32 {
-        // TODO error handling if buffer has no elements
-        // would i really want to return Result<Config>?
-        // seems a bit weird to have a failing ctor
-        // maybe im just an oop slut
-
-        // thats how its done in the libipt docs so itll be fine
+    /// Chain this functions with the setter methods to provide the arguments you need
+    pub fn new(buf: &'a mut [u8]) -> Self {
         let mut cfg: pt_config = unsafe { mem::zeroed() };
         cfg.begin = buf.as_mut_ptr();
         cfg.end   = unsafe { buf.as_mut_ptr().offset(buf.len() as isize) };
-
-        if let Some(c) = cpu {
-             cfg.cpu = c.0;
-             cfg.errata = c.determine_errata();
-        }
-
-        if let Some(f) = freq {
-            cfg.mtc_freq = f.mtc;
-            cfg.nom_freq = f.nom;
-            cfg.cpuid_0x15_eax = f.tsc;
-            cfg.cpuid_0x15_ebx = f.ctc;
-        }
-
-        if let Some(f) = flags { cfg.flags = f.into() }
-        if let Some(f) = filter { cfg.addr_filter = f.0 }
-        if let Some(mut d) = decode {
-            cfg.decode.callback = Some(decode_callback);
-            cfg.decode.context  = &mut &mut d as *mut _ as *mut c_void;
-        }
-
         Config(cfg, PhantomData)
+    }
+
+    /// The cpu used for capturing the data.
+    /// It's highly recommended to provide this information.
+    /// Processor specific workarounds will be identified this way.
+    #[inline]
+    pub fn cpu(&mut self, cpu: CPU) -> &mut Self {
+        self.0.cpu = cpu.0;
+        self.0.errata = cpu.determine_errata();
+
+        self
+    }
+
+    /// Frequency values used for timing packets (mtc)
+    #[inline]
+    pub fn freq(&mut self, freq: Frequency) -> &mut Self {
+        self.0.mtc_freq = freq.mtc;
+        self.0.nom_freq = freq.nom;
+        self.0.cpuid_0x15_eax = freq.tsc;
+        self.0.cpuid_0x15_ebx = freq.ctc;
+
+        self
+    }
+
+    /// Decoder specific flags
+    #[inline]
+    pub fn flags(&mut self, flags: impl Into<pt_conf_flags>) -> &mut Self {
+        self.0.flags = flags.into();
+
+        self
+    }
+
+    /// Address filter configuration
+    #[inline]
+    pub fn filter(&mut self, filter: AddrFilter) -> &mut Self {
+        self.0.addr_filter = filter.0;
+
+        self
+    }
+
+    /// A callback for decoding unknown packets
+    #[inline]
+    pub fn callback(&mut self,
+                    mut cb: impl FnMut(&mut pt_packet_unknown, Config, u8) -> i32)
+                    -> &mut Self {
+        self.0.decode.callback = Some(decode_callback);
+        self.0.decode.context  = &mut &mut cb as *mut _ as *mut c_void;
+
+        self
     }
 }
 
