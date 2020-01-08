@@ -10,19 +10,18 @@ use bitflags::bitflags;
 
 bitflags! {
     /// i suppose this is relevant when/if amd finally gets intelpt support?
-    pub struct CPUVendor: i32 {
+    pub struct CpuVendor: i32 {
         const INTEL = pt_cpu_vendor_pcv_intel;
         const UNKNOWN = pt_cpu_vendor_pcv_unknown;
     }
 }
 
-/// a cpu identifier
+/// A Cpu identifier
 #[derive(Clone, Copy)]
-pub struct CPU (pub(super) pt_cpu);
-
-impl CPU {
-    pub fn new(vendor: CPUVendor, family: u16, model: u8, stepping: u8) -> Self {
-        CPU(pt_cpu{ vendor: vendor.bits(), family, model, stepping })
+pub struct Cpu (pub(super) pt_cpu);
+impl Cpu {
+    pub fn new(vendor: CpuVendor, family: u16, model: u8, stepping: u8) -> Self {
+        Cpu(pt_cpu{ vendor: vendor.bits(), family, model, stepping })
     }
 
     /// determines processor specific workarounds

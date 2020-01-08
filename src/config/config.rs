@@ -1,4 +1,4 @@
-use super::cpu::CPU;
+use super::cpu::Cpu;
 use super::freqency::Frequency;
 use super::filter::AddrFilter;
 
@@ -49,6 +49,7 @@ impl<'a> Config<'a> {
     /// Chain this functions with the setter methods to provide the arguments you need
     pub fn new(buf: &'a mut [u8]) -> Self {
         let mut cfg: pt_config = unsafe { mem::zeroed() };
+        cfg.size  = mem::size_of::<pt_config>();
         cfg.begin = buf.as_mut_ptr();
         cfg.end   = unsafe { buf.as_mut_ptr().offset(buf.len() as isize) };
         Config(cfg, PhantomData)
@@ -58,7 +59,7 @@ impl<'a> Config<'a> {
     /// It's highly recommended to provide this information.
     /// Processor specific workarounds will be identified this way.
     #[inline]
-    pub fn cpu(&mut self, cpu: CPU) -> &mut Self {
+    pub fn cpu(&mut self, cpu: Cpu) -> &mut Self {
         self.0.cpu = cpu.0;
         self.0.errata = cpu.determine_errata();
 
