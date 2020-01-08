@@ -4,6 +4,17 @@ use libipt_sys::{
     pt_library_version
 };
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_get_version() {
+        let v = Version::version();
+        assert_eq!(v.build(), 1);
+    }
+}
+
 /// The library version.
 #[derive(Clone, Copy, Debug)]
 pub struct Version(pt_version);

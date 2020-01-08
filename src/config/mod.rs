@@ -9,3 +9,4 @@ mod config;
 mod test;
 
 pub use config::*;
+pub use cpu::*;
