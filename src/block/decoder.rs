@@ -48,7 +48,7 @@ impl BlockDecoder {
     /// On success, provides the current address space identifier in @asid.
     /// Returns Asid on success, a PtError otherwise.
     pub fn asid(&self) -> Result<Asid, PtError> {
-        let mut a = Asid::new(0, 0);
+        let mut a: Asid = Default::default();
         unsafe {
             ensure_ptok(pt_blk_asid(&self.0, &mut a.0, mem::size_of::<pt_asid>()))
                 .map(|_| a)
