@@ -5,8 +5,8 @@ mod filter;
 
 mod config;
 
-#[cfg(test)]
-mod test;
-
 pub use config::*;
 pub use cpu::*;
+pub use freqency::*;
+pub use flags::*;
+pub use filter::*;
