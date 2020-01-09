@@ -20,7 +20,7 @@ mod test {
         assert_eq!(cpu1.0.model,  cpu2.0.model);
         assert_eq!(cpu1.0.stepping, cpu2.0.stepping);
     }
-/*
+
     #[test]
     fn test_cpu_errata() {
         let cpu = Cpu::intel(0x6, 0x56, 11);
@@ -36,7 +36,7 @@ mod test {
         assert_eq!(e.bdm70(), 1);
         assert_eq!(e.skd007(), 1);
         assert_eq!(e.skd022(), 1);
-    }*/
+    }
 }
 
 bitflags! {
