@@ -11,7 +11,7 @@ mod test {
     #[test]
     fn test_get_version() {
         let v = Version::version();
-        assert_eq!(v.build(), 1);
+        assert_ne!(v.major(), 0);
     }
 }
 
