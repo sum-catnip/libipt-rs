@@ -56,39 +56,31 @@ impl AddrFilter {
     pub fn new() -> Self { unsafe { mem::zeroed() }}
 
     #[inline]
-    pub fn set_addr0(&mut self, range: AddrRange) -> &mut Self {
+    pub fn set_addr0(&mut self, range: AddrRange) {
         self.0.addr0_a = range.a;
         self.0.addr0_b = range.b;
         unsafe { self.0.config.ctl.set_addr0_cfg(range.cfg as u32) };
-
-        self
     }
 
     #[inline]
-    pub fn set_addr1(&mut self, range: AddrRange) -> &mut Self {
+    pub fn set_addr1(&mut self, range: AddrRange) {
         self.0.addr1_a = range.a;
         self.0.addr1_b = range.b;
         unsafe { self.0.config.ctl.set_addr1_cfg(range.cfg as u32) };
-
-        self
     }
 
     #[inline]
-    pub fn set_addr2(&mut self, range: AddrRange) -> &mut Self {
+    pub fn set_addr2(&mut self, range: AddrRange) {
         self.0.addr2_a = range.a;
         self.0.addr2_b = range.b;
         unsafe { self.0.config.ctl.set_addr2_cfg(range.cfg as u32) };
-
-        self
     }
 
     #[inline]
-    pub fn set_addr3(&mut self, range: AddrRange) -> &mut Self {
+    pub fn set_addr3(&mut self, range: AddrRange) {
         self.0.addr3_a = range.a;
         self.0.addr3_b = range.b;
         unsafe { self.0.config.ctl.set_addr3_cfg(range.cfg as u32) };
-
-        self
     }
 
     #[inline]

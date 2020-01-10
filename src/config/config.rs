@@ -35,16 +35,17 @@ mod test {
     #[test]
     fn test_config_all() {
         let mut data = [0; 1];
-        let c = Config::new(&mut data)
-            .set_cpu(Cpu::intel(1, 2, 3))
-            .set_freq(Frequency::new(1, 2, 3, 4))
-            .set_flags(BlockFlags::END_ON_CALL | BlockFlags::END_ON_JUMP)
-            .set_filter(*AddrFilter::new()
-                .set_addr0(AddrRange::new(1, 2, AddrConfig::STOP))
-                .set_addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
-                .set_addr2(AddrRange::new(5, 6, AddrConfig::DISABLED))
-                .set_addr3(AddrRange::new(7, 8, AddrConfig::STOP)))
-            .set_callback(|_,_,_| 0);
+        let mut c = Config::new(&mut data);
+        c.set_cpu(Cpu::intel(1, 2, 3));
+        c.set_freq(Frequency::new(1, 2, 3, 4));
+        c.set_flags(BlockFlags::END_ON_CALL | BlockFlags::END_ON_JUMP);
+        let mut f = AddrFilter::new();
+        f.set_addr0(AddrRange::new(1, 2, AddrConfig::STOP));
+        f.set_addr1(AddrRange::new(3, 4, AddrConfig::FILTER));
+        f.set_addr2(AddrRange::new(5, 6, AddrConfig::DISABLED));
+        f.set_addr3(AddrRange::new(7, 8, AddrConfig::STOP));
+        c.set_filter(f);
+        c.set_callback(|_,_,_| 0);
 
         assert_eq!(c.0.cpu.family, 1);
         assert_eq!(c.0.cpu.model, 2);
@@ -132,49 +133,39 @@ impl<'a> Config<'a> {
     /// It's highly recommended to provide this information.
     /// Processor specific workarounds will be identified this way.
     #[inline]
-    pub fn set_cpu(mut self, cpu: Cpu) -> Self {
+    pub fn set_cpu(&mut self, cpu: Cpu) {
         self.0.cpu = cpu.0;
         self.0.errata = cpu.determine_errata();
-
-        self
     }
 
     /// Frequency values used for timing packets (mtc)
     #[inline]
-    pub fn set_freq(mut self, freq: Frequency) -> Self {
+    pub fn set_freq(&mut self, freq: Frequency) {
         self.0.mtc_freq = freq.mtc;
         self.0.nom_freq = freq.nom;
         self.0.cpuid_0x15_eax = freq.tsc;
         self.0.cpuid_0x15_ebx = freq.ctc;
-
-        self
     }
 
     /// Decoder specific flags
     #[inline]
-    pub fn set_flags(mut self, flags: impl Into<pt_conf_flags>) -> Self {
+    pub fn set_flags(&mut self, flags: impl Into<pt_conf_flags>) {
         self.0.flags = flags.into();
-
-        self
     }
 
     /// Address filter configuration
     #[inline]
-    pub fn set_filter(mut self, filter: AddrFilter) -> Self {
+    pub fn set_filter(&mut self, filter: AddrFilter) {
         self.0.addr_filter = filter.0;
-
-        self
     }
 
     /// A callback for decoding unknown packets
     #[inline]
-    pub fn set_callback(mut self,
-        mut cb: impl FnMut(&mut pt_packet_unknown, Config, u8) -> i32) -> Self {
+    pub fn set_callback<F>(&mut self, mut cb: F)
+        where F : FnMut(&mut pt_packet_unknown, Config, u8) -> i32 {
 
         self.0.decode.callback = Some(decode_callback);
         self.0.decode.context  = &mut &mut cb as *mut _ as *mut c_void;
-
-        self
     }
 }
 
