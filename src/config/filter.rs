@@ -53,47 +53,42 @@ impl AddrRange {
 #[derive(Clone, Copy)]
 pub struct AddrFilter (pub(super) pt_conf_addr_filter);
 impl AddrFilter {
-    pub fn empty() -> Self { unsafe { mem::zeroed() }}
-    pub fn new(addr0: Option<AddrRange>,
-               addr1: Option<AddrRange>,
-               addr2: Option<AddrRange>,
-               addr3: Option<AddrRange>) -> Self {
-
-        let mut filter = AddrFilter::empty();
-        if let Some(a) = addr0 { filter.set_addr0(a); }
-        if let Some(a) = addr1 { filter.set_addr1(a); }
-        if let Some(a) = addr2 { filter.set_addr2(a); }
-        if let Some(a) = addr3 { filter.set_addr3(a); }
-
-        filter
-    }
+    pub fn new() -> Self { unsafe { mem::zeroed() }}
 
     #[inline]
-    pub fn set_addr0(&mut self, range: AddrRange) {
+    pub fn set_addr0(&mut self, range: AddrRange) -> &mut Self {
         self.0.addr0_a = range.a;
         self.0.addr0_b = range.b;
         unsafe { self.0.config.ctl.set_addr0_cfg(range.cfg as u32) };
+
+        self
     }
 
     #[inline]
-    pub fn set_addr1(&mut self, range: AddrRange) {
+    pub fn set_addr1(&mut self, range: AddrRange) -> &mut Self {
         self.0.addr1_a = range.a;
         self.0.addr1_b = range.b;
         unsafe { self.0.config.ctl.set_addr1_cfg(range.cfg as u32) };
+
+        self
     }
 
     #[inline]
-    pub fn set_addr2(&mut self, range: AddrRange) {
+    pub fn set_addr2(&mut self, range: AddrRange) -> &mut Self {
         self.0.addr2_a = range.a;
         self.0.addr2_b = range.b;
         unsafe { self.0.config.ctl.set_addr2_cfg(range.cfg as u32) };
+
+        self
     }
 
     #[inline]
-    pub fn set_addr3(&mut self, range: AddrRange) {
+    pub fn set_addr3(&mut self, range: AddrRange) -> &mut Self {
         self.0.addr3_a = range.a;
         self.0.addr3_b = range.b;
         unsafe { self.0.config.ctl.set_addr3_cfg(range.cfg as u32) };
+
+        self
     }
 
     #[inline]

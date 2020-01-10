@@ -16,6 +16,7 @@ mod test {
     fn test_cpu_intel_shortcut() {
         let cpu1 = Cpu::intel(66, 12, 255);
         let cpu2 = Cpu::new(CpuVendor::INTEL, 66, 12, 255);
+        assert_eq!(cpu1.0.vendor, cpu2.0.vendor);
         assert_eq!(cpu1.0.family, cpu2.0.family);
         assert_eq!(cpu1.0.model,  cpu2.0.model);
         assert_eq!(cpu1.0.stepping, cpu2.0.stepping);
