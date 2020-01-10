@@ -52,8 +52,8 @@ mod test {
 
         assert_eq!(c.0.mtc_freq, 1);
         assert_eq!(c.0.nom_freq, 2);
-        assert_eq!(c.0.cpuid_0x15_eax, 3);
-        assert_eq!(c.0.cpuid_0x15_ebx, 4);
+        assert_eq!(c.0.cpuid_0x15_ebx, 3);
+        assert_eq!(c.0.cpuid_0x15_eax, 4);
 
         unsafe {
             assert_eq!(c.0.flags.variant.block.end_on_call(), 1);
@@ -81,6 +81,8 @@ mod test {
         assert_eq!(c.0.addr_filter.addr3_b, 8);
         assert_eq!(unsafe { c.0.addr_filter.config.ctl.addr3_cfg() },
                    AddrConfig::STOP as u32);
+
+        assert!(c.0.decode.callback.is_some());
     }
 }
 
@@ -130,7 +132,7 @@ impl<'a> Config<'a> {
     /// It's highly recommended to provide this information.
     /// Processor specific workarounds will be identified this way.
     #[inline]
-    pub fn set_cpu(&mut self, cpu: Cpu) -> &mut Self {
+    pub fn set_cpu(mut self, cpu: Cpu) -> Self {
         self.0.cpu = cpu.0;
         self.0.errata = cpu.determine_errata();
 
@@ -139,7 +141,7 @@ impl<'a> Config<'a> {
 
     /// Frequency values used for timing packets (mtc)
     #[inline]
-    pub fn set_freq(&mut self, freq: Frequency) -> &mut Self {
+    pub fn set_freq(mut self, freq: Frequency) -> Self {
         self.0.mtc_freq = freq.mtc;
         self.0.nom_freq = freq.nom;
         self.0.cpuid_0x15_eax = freq.tsc;
@@ -150,7 +152,7 @@ impl<'a> Config<'a> {
 
     /// Decoder specific flags
     #[inline]
-    pub fn set_flags(&mut self, flags: impl Into<pt_conf_flags>) -> &mut Self {
+    pub fn set_flags(mut self, flags: impl Into<pt_conf_flags>) -> Self {
         self.0.flags = flags.into();
 
         self
@@ -158,7 +160,7 @@ impl<'a> Config<'a> {
 
     /// Address filter configuration
     #[inline]
-    pub fn set_filter(&mut self, filter: AddrFilter) -> &mut Self {
+    pub fn set_filter(mut self, filter: AddrFilter) -> Self {
         self.0.addr_filter = filter.0;
 
         self
@@ -166,9 +168,9 @@ impl<'a> Config<'a> {
 
     /// A callback for decoding unknown packets
     #[inline]
-    pub fn set_callback(&mut self,
-                    mut cb: impl FnMut(&mut pt_packet_unknown, Config, u8) -> i32)
-                    -> &mut Self {
+    pub fn set_callback(mut self,
+        mut cb: impl FnMut(&mut pt_packet_unknown, Config, u8) -> i32) -> Self {
+
         self.0.decode.callback = Some(decode_callback);
         self.0.decode.context  = &mut &mut cb as *mut _ as *mut c_void;
 
