@@ -28,8 +28,9 @@ mod test {
     #[test]
     fn test_config_buf() {
         let mut data = [0; 16];
+        let len = data.len();
         let c = Config::new(&mut data);
-        assert_eq!(c.0.end as usize - c.0.begin as usize, data.len());
+        assert_eq!(c.0.end as usize - c.0.begin as usize, len);
     }
 
     #[test]
@@ -84,6 +85,14 @@ mod test {
                    AddrConfig::STOP as u32);
 
         assert!(c.0.decode.callback.is_some());
+        unsafe {
+            let mut ukn: pt_packet_unknown = std::mem::zeroed();
+            assert_eq!(
+                c.0.decode.callback.unwrap()(&mut ukn,
+                                             &c.0, &11,
+                                             c.0.decode.context),
+                0)
+        }
     }
 }
 
@@ -105,17 +114,18 @@ mod test {
 // the packet if a non-zero size is returned by the callback function.
 
 
-unsafe extern "C" fn decode_callback(ukn: *mut pt_packet_unknown,
-                                     cfg: *const pt_config,
-                                     pos: *const u8,
-                                     ctx: *mut c_void) -> c_int {
-    let c: &mut &mut dyn FnMut(&mut pt_packet_unknown, Config, u8) -> i32
-        = mem::transmute(ctx);
+unsafe extern "C" fn decode_callback<F>(ukn: *mut pt_packet_unknown,
+                                        cfg: *const pt_config,
+                                        pos: *const u8,
+                                        ctx: *mut c_void) -> c_int
+    where F: FnMut(&mut pt_packet_unknown, Config, u8) -> i32 {
+
+    let c = ctx as *mut F;
+    let c = &mut *c;
     c(&mut *ukn, (&*cfg).into(), *pos)
 }
 
-/// A builder type for the libipt configuration
-#[derive(Clone, Copy)]
+/// A libipt configuration
 pub struct Config<'a> (pub(crate) pt_config, PhantomData<&'a ()>);
 impl<'a> Config<'a> {
     /// Initializes a Config instance with only a buffer.
@@ -162,10 +172,11 @@ impl<'a> Config<'a> {
     /// A callback for decoding unknown packets
     #[inline]
     pub fn set_callback<F>(&mut self, mut cb: F)
-        where F : FnMut(&mut pt_packet_unknown, Config, u8) -> i32 {
+        where F: FnMut(&mut pt_packet_unknown, Config, u8) -> i32,
+              F: 'a {
 
-        self.0.decode.callback = Some(decode_callback);
-        self.0.decode.context  = &mut &mut cb as *mut _ as *mut c_void;
+        self.0.decode.callback = Some(decode_callback::<F>);
+        self.0.decode.context  = &mut cb as *mut _ as *mut c_void;
     }
 }
 
