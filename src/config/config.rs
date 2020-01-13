@@ -137,7 +137,8 @@ unsafe extern "C" fn decode_callback<F, R>(ukn: *mut pt_packet_unknown,
                                            cfg: *const pt_config,
                                            pos: *const u8,
                                            ctx: *mut c_void) -> c_int
-    where F: FnMut(&Config, &[u8]) -> (Option<R>, u32) {
+    where F: FnMut(&Config, &[u8]) -> (Option<R>, u32),
+          R: std::any::Any {
 
     let sz = (*cfg).end as usize - pos as usize;
     let pos = std::slice::from_raw_parts(pos, sz);
@@ -204,7 +205,8 @@ impl<'a> Config<'a> {
     #[inline]
     pub fn set_callback<F, R>(&mut self, mut cb: F)
         where F: FnMut(&Config, &[u8]) -> (Option<R>, u32),
-              F: 'a {
+              F: 'a,
+              R: std::any::Any {
 
         self.0.decode.callback = Some(decode_callback::<F, R>);
         self.0.decode.context  = &mut cb as *mut _ as *mut c_void;
