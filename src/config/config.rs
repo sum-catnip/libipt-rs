@@ -46,7 +46,7 @@ mod test {
         f.set_addr2(AddrRange::new(5, 6, AddrConfig::DISABLED));
         f.set_addr3(AddrRange::new(7, 8, AddrConfig::STOP));
         c.set_filter(f);
-        c.set_callback(|_,_,_| 0);
+        c.set_callback(|_,c,p| (c.0.cpu.family + p as u16) as i32);
 
         assert_eq!(c.0.cpu.family, 1);
         assert_eq!(c.0.cpu.model, 2);
@@ -84,27 +84,40 @@ mod test {
         assert_eq!(unsafe { c.0.addr_filter.config.ctl.addr3_cfg() },
                    AddrConfig::STOP as u32);
 
-        assert!(c.0.decode.callback.is_some());
         unsafe {
             let mut ukn: pt_packet_unknown = std::mem::zeroed();
             assert_eq!(
                 c.0.decode.callback.unwrap()(&mut ukn,
                                              &c.0, &11,
                                              c.0.decode.context),
-                0)
+                12)
         }
+    }
+
+    fn check_callback(cfg: &mut Config, expect: i32) -> bool {
+        unsafe {
+            let mut ukn: pt_packet_unknown = std::mem::zeroed();
+            return
+                cfg.0.decode.callback.unwrap()(&mut ukn,
+                                             &cfg.0, &11,
+                                             cfg.0.decode.context)
+                == expect
+        }
+    }
+
+    #[test]
+    fn test_config_callback_safety() {
+        let mut cfg = Config::new(&mut [0;0]);
+        cfg.set_callback(|_, _, p| (p + 6) as i32 );
+
+        for _ in 0..10 { assert!(check_callback(&mut cfg, 17)) }
+        cfg.set_callback(|_, _, p| (p + 3) as i32);
+        for _ in 0..10 { assert!(check_callback(&mut cfg, 14)) }
     }
 }
 
 
-// TODO: should Config really own pt_config? how does moving it every callback even work
-// i think the callback is cheating rust since the pt_config doesnt have a lifetime
-// not sure if that matters since its readonly anyways
-// TODO: so uhm, i have no idea if the callback is stored
-// in which case ill need to leak it?
-// god testing this will be fucking awful
-
-// MOAH TODO: see how the decode callback behaves
+// TODO
 // potentially make a type for reading packet bytes from the current position
 // i think the user defined thingy should be provided within the callback
 // kina sounds like it:
@@ -113,16 +126,20 @@ mod test {
 // Intel PT packets.  Other decoders ignore this information but will skip
 // the packet if a non-zero size is returned by the callback function.
 
+// i should think about what happens to the pt_config ptr in the callback
+// does it get copied? moved? pretty sure it copied
+// but do i want a copy on each callback?
+
 
 unsafe extern "C" fn decode_callback<F>(ukn: *mut pt_packet_unknown,
                                         cfg: *const pt_config,
                                         pos: *const u8,
                                         ctx: *mut c_void) -> c_int
-    where F: FnMut(&mut pt_packet_unknown, Config, u8) -> i32 {
+    where F: FnMut(&mut pt_packet_unknown, &Config, u8) -> i32 {
 
     let c = ctx as *mut F;
     let c = &mut *c;
-    c(&mut *ukn, (&*cfg).into(), *pos)
+    c(&mut *ukn, &(&*cfg).into(), *pos)
 }
 
 /// A libipt configuration
@@ -172,7 +189,7 @@ impl<'a> Config<'a> {
     /// A callback for decoding unknown packets
     #[inline]
     pub fn set_callback<F>(&mut self, mut cb: F)
-        where F: FnMut(&mut pt_packet_unknown, Config, u8) -> i32,
+        where F: FnMut(&mut pt_packet_unknown, &Config, u8) -> i32,
               F: 'a {
 
         self.0.decode.callback = Some(decode_callback::<F>);
