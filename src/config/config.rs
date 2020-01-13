@@ -130,16 +130,30 @@ mod test {
 // does it get copied? moved? pretty sure it copied
 // but do i want a copy on each callback?
 
+// also i need to think about the priv_ type of the unknown packet
+// i have no fucking idea how to propagate the type
 
-unsafe extern "C" fn decode_callback<F>(ukn: *mut pt_packet_unknown,
-                                        cfg: *const pt_config,
-                                        pos: *const u8,
-                                        ctx: *mut c_void) -> c_int
-    where F: FnMut(&mut pt_packet_unknown, &Config, u8) -> i32 {
+unsafe extern "C" fn decode_callback<F, R>(ukn: *mut pt_packet_unknown,
+                                           cfg: *const pt_config,
+                                           pos: *const u8,
+                                           ctx: *mut c_void) -> c_int
+    where F: FnMut(&Config, &[u8]) -> (Option<R>, u32) {
+
+    let sz = (*cfg).end as usize - pos as usize;
+    let pos = std::slice::from_raw_parts(pos, sz);
 
     let c = ctx as *mut F;
     let c = &mut *c;
-    c(&mut *ukn, &(&*cfg).into(), *pos)
+
+    let (res, bytes) = c(&(&*cfg).into(), pos);
+    // TODO
+    // REMEMBER TO CATCH THE BOX FROM THE DECODER
+    (*ukn).priv_ = match res {
+        Some(r) => Box::into_raw(Box::new(r)) as *mut _,
+        None => std::ptr::null_mut()
+    };
+
+    bytes as i32
 }
 
 /// A libipt configuration
@@ -188,11 +202,11 @@ impl<'a> Config<'a> {
 
     /// A callback for decoding unknown packets
     #[inline]
-    pub fn set_callback<F>(&mut self, mut cb: F)
-        where F: FnMut(&mut pt_packet_unknown, &Config, u8) -> i32,
+    pub fn set_callback<F, R>(&mut self, mut cb: F)
+        where F: FnMut(&Config, &[u8]) -> (Option<R>, u32),
               F: 'a {
 
-        self.0.decode.callback = Some(decode_callback::<F>);
+        self.0.decode.callback = Some(decode_callback::<F, R>);
         self.0.decode.context  = &mut cb as *mut _ as *mut c_void;
     }
 }
