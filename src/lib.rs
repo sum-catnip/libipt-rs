@@ -17,5 +17,5 @@ pub use flags::Status;
 pub mod block;
 pub mod insn;
 pub mod qry;
-mod version;
+pub mod version;
 pub use version::Version;
