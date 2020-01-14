@@ -4,6 +4,7 @@ use crate::Status;
 use crate::Event;
 
 use std::convert::TryFrom;
+use std::marker::PhantomData;
 use std::mem;
 
 use num_enum::TryFromPrimitive;
@@ -32,16 +33,16 @@ pub enum CondBranch {
     NotTaken = 0
 }
 
-pub struct QueryDecoder(pt_query_decoder);
-impl QueryDecoder {
+pub struct QueryDecoder<T>(pt_query_decoder, PhantomData<T>);
+impl<T> QueryDecoder<T> {
     /// Allocate an Intel PT query decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    pub fn new(cfg: &Config) -> Result<Self, PtError> {
+    pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
         deref_ptresult(unsafe { pt_qry_alloc_decoder(&cfg.0) })
-            .map(|d| QueryDecoder(*d))
+            .map(|d| QueryDecoder::<T>(*d, PhantomData))
     }
 
     /// Query whether the next unconditional branch has been taken.
@@ -89,7 +90,7 @@ impl QueryDecoder {
         }).map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
-    pub fn config(&self) -> Result<Config, PtError> {
+    pub fn config(&self) -> Result<Config<T>, PtError> {
         deref_ptresult(unsafe { pt_qry_get_config(&self.0) })
             .map(Config::from)
     }
@@ -202,6 +203,6 @@ impl QueryDecoder {
     }
 }
 
-impl Drop for QueryDecoder {
+impl<T> Drop for QueryDecoder<T> {
     fn drop(&mut self) { unsafe { pt_qry_free_decoder(&mut self.0) }}
 }

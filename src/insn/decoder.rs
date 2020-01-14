@@ -8,6 +8,7 @@ use super::Insn;
 
 use std::mem;
 use std::ptr;
+use std::marker::PhantomData;
 
 use libipt_sys::{
     pt_insn_decoder,
@@ -31,16 +32,16 @@ use libipt_sys::{
     pt_insn_time
 };
 
-pub struct InsnDecoder(pt_insn_decoder);
-impl InsnDecoder {
+pub struct InsnDecoder<T>(pt_insn_decoder, PhantomData<T>);
+impl<T> InsnDecoder<T> {
     /// Allocate an Intel PT instruction flow decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    pub fn new(cfg: &Config) -> Result<Self, PtError> {
+    pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
         deref_ptresult(unsafe { pt_insn_alloc_decoder(&cfg.0) })
-            .map(|d| InsnDecoder(*d))
+            .map(|d| InsnDecoder::<T>(*d, PhantomData))
     }
 
     /// Return the current address space identifier.
@@ -77,7 +78,7 @@ impl InsnDecoder {
         }).map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
-    pub fn config(&self) -> Result<Config, PtError> {
+    pub fn config(&self) -> Result<Config<T>, PtError> {
         deref_ptresult(unsafe { pt_insn_get_config(&self.0) })
             .map(Config::from)
     }
@@ -204,6 +205,6 @@ impl InsnDecoder {
     }
 }
 
-impl Drop for InsnDecoder {
+impl<T> Drop for InsnDecoder<T> {
     fn drop(&mut self) { unsafe { pt_insn_free_decoder(&mut self.0) } }
 }

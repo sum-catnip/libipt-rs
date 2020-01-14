@@ -24,7 +24,7 @@ mod test {
 
     #[test]
     fn test_config_empty() {
-        let c = Config::new(&mut [0; 0]);
+        let c = Config::<()>::new(&mut [0; 0]);
         assert_eq!(c.0.begin, c.0.end);
         assert_eq!(c.0.size, mem::size_of::<pt_config>());
     }
@@ -33,7 +33,7 @@ mod test {
     fn test_config_buf() {
         let mut data = [0; 16];
         let len = data.len();
-        let c = Config::new(&mut data);
+        let c = Config::<()>::new(&mut data);
         assert_eq!(c.0.end as usize - c.0.begin as usize, len);
     }
 
@@ -51,11 +51,7 @@ mod test {
         f.set_addr3(AddrRange::new(7, 8, AddrConfig::STOP));
         c.set_filter(f);
         c.set_callback(|c, p| {
-            match p[0] {
-                17 => (Some(Box::new((c.0.cpu.model + 1) as u8)), 1),
-                18 => (Some(Box::new("yeet".to_string())), 1),
-                _ => unreachable!()
-            }
+            (Unknown::new(Some(123)), 1)
         });
 
         assert_eq!(c.0.cpu.family, 1);
@@ -101,12 +97,11 @@ mod test {
                                              &c.0, c.0.begin,
                                              c.0.decode.context),
                 1);
-            let pkt: Unknown = ukn.into();
-            println!("{:?}", pkt.data().unwrap().type_id());
-            assert!(pkt.data().unwrap().is::<Box<String>>());
+            let pkt: Unknown<i32> = Unknown::from(ukn);
+            assert_eq!(pkt.data().unwrap(), 123);
         }
     }
-
+/*
     fn check_callback(cfg: &mut Config, expect: i32) -> bool {
         unsafe {
             let mut ukn: pt_packet_unknown = std::mem::zeroed();
@@ -117,7 +112,7 @@ mod test {
                 == expect
         }
     }
-
+*/
     fn test_boxany() -> Box<Box<dyn Any>> {
         Box::new(Box::new("yeet".to_string()))
     }
@@ -173,11 +168,11 @@ mod test {
 // also i need to think about the priv_ type of the unknown packet
 // i have no fucking idea how to propagate the type
 
-unsafe extern "C" fn decode_callback<'a, F>(ukn: *mut pt_packet_unknown,
-                                            cfg: *const pt_config,
-                                            pos: *const u8,
-                                            ctx: *mut c_void) -> c_int
-    where F: FnMut(&Config, &[u8]) -> (Unknown<'a>, u32) {
+unsafe extern "C" fn decode_callback<'a, F, C>(ukn: *mut pt_packet_unknown,
+                                               cfg: *const pt_config,
+                                               pos: *const u8,
+                                               ctx: *mut c_void) -> c_int
+    where F: FnMut(&Config<C>, &[u8]) -> (Unknown<C>, u32) {
 
     let sz = (*cfg).end as usize - pos as usize;
     let pos = std::slice::from_raw_parts(pos, sz);
@@ -188,7 +183,7 @@ unsafe extern "C" fn decode_callback<'a, F>(ukn: *mut pt_packet_unknown,
     let (res, bytes) = c(&(&*cfg).into(), pos);
     // TODO
     // REMEMBER TO CATCH THE BOX FROM THE DECODER
-    (*ukn).priv_ = match res {
+    (*ukn).priv_ = match res.0 {
         Some(r) => Box::into_raw(r) as *mut _,
         None => std::ptr::null_mut()
     };
@@ -197,8 +192,8 @@ unsafe extern "C" fn decode_callback<'a, F>(ukn: *mut pt_packet_unknown,
 }
 
 /// A libipt configuration
-pub struct Config<'a> (pub(crate) pt_config, PhantomData<&'a ()>);
-impl<'a> Config<'a> {
+pub struct Config<'a, C> (pub(crate) pt_config, PhantomData<&'a C>);
+impl<'a, C> Config<'a, C> {
     /// Initializes a Config instance with only a buffer.
     ///
     /// Chain this functions with the setter methods to provide the arguments you need
@@ -207,7 +202,7 @@ impl<'a> Config<'a> {
         cfg.size  = mem::size_of::<pt_config>();
         cfg.begin = buf.as_mut_ptr();
         cfg.end   = unsafe { buf.as_mut_ptr().offset(buf.len() as isize) };
-        Config(cfg, PhantomData)
+        Config::<C>(cfg, PhantomData)
     }
 
     /// The cpu used for capturing the data.
@@ -243,15 +238,15 @@ impl<'a> Config<'a> {
     /// A callback for decoding unknown packets
     #[inline]
     pub fn set_callback<'b, F>(&mut self, mut cb: F)
-        where F: FnMut(&Config, &[u8]) -> (Option<Box<dyn Any>>, u32),
+        where F: FnMut(&Config<C>, &[u8]) -> (Unknown<C>, u32),
               F: 'a {
 
-        self.0.decode.callback = Some(decode_callback::<F>);
+        self.0.decode.callback = Some(decode_callback::<F, C>);
         self.0.decode.context  = &mut cb as *mut _ as *mut c_void;
     }
 }
 
-impl<'a> From<&pt_config> for Config<'_> {
+impl<'a, C> From<&pt_config> for Config<'_, C> {
     fn from(cfg: &pt_config) -> Self {
         Config(*cfg, PhantomData)
     }

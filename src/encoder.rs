@@ -1,6 +1,8 @@
 use super::config::Config;
 use super::error::{PtError, ensure_ptok, extract_pterr, deref_ptresult};
 
+use std::marker::PhantomData;
+
 use libipt_sys::{
     pt_packet,
     pt_encoder,
@@ -19,18 +21,18 @@ mod tests {
     }
 }
 
-pub struct Encoder(pt_encoder);
-impl Encoder {
+pub struct Encoder<T>(pt_encoder, PhantomData<T>);
+impl<T> Encoder<T> {
     /// Allocate an Intel PT packet encoder.
     ///
     /// The encoder will work on the buffer defined in @config, it shall contain raw trace data and remain valid for the lifetime of the encoder.
     /// The encoder starts at the beginning of the trace buffer.
-    pub fn new(cfg: &Config) -> Result<Encoder, PtError> {
+    pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
         deref_ptresult(unsafe{pt_alloc_encoder(&cfg.0)})
-            .map(|x| Encoder(*x))
+            .map(|x| Encoder::<T>(*x, PhantomData))
     }
 
-    pub fn config(&self) -> Result<Config, PtError> {
+    pub fn config(&self) -> Result<Config<T>, PtError> {
         deref_ptresult(unsafe{pt_enc_get_config(&self.0)})
             .map(Config::from)
     }
@@ -71,6 +73,6 @@ impl Encoder {
     }
 }
 
-impl Drop for Encoder {
+impl<T> Drop for Encoder<T> {
     fn drop(&mut self) { unsafe { pt_free_encoder(&mut self.0) } }
 }

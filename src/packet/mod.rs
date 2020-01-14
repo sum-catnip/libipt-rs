@@ -60,14 +60,14 @@ pub mod unknown;
 pub mod decoder;
 pub use decoder::PacketDecoder;
 
-pub enum Packet<'a> {
+pub enum Packet<T> {
     Invalid(invalid::Invalid),
     Psbend(psbend::Psbend),
     Stop(stop::Stop),
     Pad(pad::Pad),
     Psb(psb::Psb),
     Ovf(ovf::Ovf),
-    Unknown(unknown::Unknown<'a>),
+    Unknown(unknown::Unknown<T>),
 
     Fup(ip::Fup),
     Tip(ip::Tip),
@@ -91,7 +91,7 @@ pub enum Packet<'a> {
     Ptw(ptw::Ptw)
 }
 
-impl From<pt_packet> for Packet {
+impl<T> From<pt_packet> for Packet<T> {
     fn from(pkt: pt_packet) -> Self {
         unsafe {
             match pkt.type_ {
@@ -121,7 +121,7 @@ impl From<pt_packet> for Packet {
                 PT_PACKET_TYPE_PPT_TNT_64 => Packet::Tnt64(pkt.payload.tnt.into()),
                 PT_PACKET_TYPE_PPT_TSC => Packet::Tsc(pkt.payload.tsc.into()),
                 PT_PACKET_TYPE_PPT_VMCS => Packet::Vmcs(pkt.payload.vmcs.into()),
-                PT_PACKET_TYPE_PPT_UNKNOWN => Packet::Unknown(pkt.payload.unknown.into()),
+                PT_PACKET_TYPE_PPT_UNKNOWN => Packet::Unknown(unknown::Unknown::<T>::from(pkt.payload.unknown)),
                 _ => unreachable!("invalid packet type")
             }
         }

@@ -8,6 +8,7 @@ use crate::image::Image;
 
 use std::mem;
 use std::ptr;
+use std::marker::PhantomData;
 
 use libipt_sys::{
     pt_event,
@@ -31,16 +32,16 @@ use libipt_sys::{
     pt_asid
 };
 
-pub struct BlockDecoder(pt_block_decoder);
-impl BlockDecoder {
+pub struct BlockDecoder<T>(pt_block_decoder, PhantomData<T>);
+impl<T> BlockDecoder<T> {
     /// Allocate an Intel PT block decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    pub fn new(cfg: &Config) -> Result<Self, PtError> {
+    pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
         deref_ptresult(unsafe{ pt_blk_alloc_decoder(&cfg.0) })
-            .map(|x| BlockDecoder(*x))
+            .map(|x| BlockDecoder::<T>(*x, PhantomData))
     }
 
     /// Return the current address space identifier.
@@ -78,7 +79,7 @@ impl BlockDecoder {
         }).map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
-    pub fn config(&self) -> Result<Config, PtError> {
+    pub fn config(&self) -> Result<Config<T>, PtError> {
         deref_ptresult(unsafe { pt_blk_get_config(&self.0) })
             .map(Config::from)
     }
@@ -206,6 +207,6 @@ impl BlockDecoder {
     }
 }
 
-impl Drop for BlockDecoder {
+impl<T> Drop for BlockDecoder<T> {
     fn drop(&mut self) { unsafe { pt_blk_free_decoder(&mut self.0) } }
 }

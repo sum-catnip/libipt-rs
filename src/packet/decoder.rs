@@ -3,6 +3,7 @@ use crate::error::{PtError, deref_ptresult, ensure_ptok};
 use crate::Config;
 
 use std::mem;
+use std::marker::PhantomData;
 
 use libipt_sys::{
     pt_packet_decoder,
@@ -18,19 +19,19 @@ use libipt_sys::{
     pt_pkt_sync_set
 };
 
-pub struct PacketDecoder(pt_packet_decoder);
-impl PacketDecoder {
+pub struct PacketDecoder<T>(pt_packet_decoder, PhantomData<T>);
+impl<T> PacketDecoder<T> {
     /// Allocate an Intel PT packet decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    pub fn new(cfg: &Config) -> Result<Self, PtError> {
+    pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
         deref_ptresult(unsafe { pt_pkt_alloc_decoder(&cfg.0) })
-            .map(|d| PacketDecoder(*d))
+            .map(|d| PacketDecoder::<T>(*d, PhantomData))
     }
 
-    pub fn config(&self) -> Result<Config, PtError> {
+    pub fn config(&self) -> Result<Config<T>, PtError> {
         deref_ptresult(unsafe { pt_pkt_get_config(&self.0) })
             .map(Config::from)
     }
@@ -62,7 +63,7 @@ impl PacketDecoder {
     /// Returns BadPacket if an unknown packet payload is encountered.
     /// Returns Eos if decoder reached the end of the Intel PT buffer.
     /// Returns Nosync if decoder is out of sync.
-    pub fn next(&mut self) -> Result<Packet, PtError> {
+    pub fn next(&mut self) -> Result<Packet<T>, PtError> {
         let mut pkt: pt_packet = unsafe { mem::zeroed() };
         ensure_ptok(unsafe {
             pt_pkt_next(&mut self.0,
@@ -95,6 +96,6 @@ impl PacketDecoder {
     }
 }
 
-impl Drop for PacketDecoder {
+impl<T> Drop for PacketDecoder<T> {
     fn drop(&mut self) { unsafe { pt_pkt_free_decoder(&mut self.0) }}
 }
