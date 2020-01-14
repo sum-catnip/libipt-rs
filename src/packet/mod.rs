@@ -60,14 +60,14 @@ pub mod unknown;
 pub mod decoder;
 pub use decoder::PacketDecoder;
 
-pub enum Packet {
+pub enum Packet<'a> {
     Invalid(invalid::Invalid),
     Psbend(psbend::Psbend),
     Stop(stop::Stop),
     Pad(pad::Pad),
     Psb(psb::Psb),
     Ovf(ovf::Ovf),
-    Unknown(unknown::Unknown),
+    Unknown(unknown::Unknown<'a>),
 
     Fup(ip::Fup),
     Tip(ip::Tip),
