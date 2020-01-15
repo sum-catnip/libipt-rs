@@ -4,7 +4,6 @@ use super::filter::AddrFilter;
 use crate::packet::unknown::Unknown;
 
 use std::mem;
-use std::any::Any;
 use std::marker::PhantomData;
 use std::ffi::c_void;
 use std::os::raw::c_int;
@@ -20,7 +19,6 @@ mod test {
     use super::*;
     use crate::config::*;
     use crate::packet::unknown::Unknown;
-    use std::any::TypeId;
 
     #[test]
     fn test_config_empty() {
@@ -51,7 +49,7 @@ mod test {
         f.set_addr3(AddrRange::new(7, 8, AddrConfig::STOP));
         c.set_filter(f);
         c.set_callback(|c, p| {
-            (Unknown::new(Some(123)), 1)
+            (Unknown::new(c.0.cpu.model + p[0]), 1)
         });
 
         assert_eq!(c.0.cpu.family, 1);
@@ -97,58 +95,56 @@ mod test {
                                              &c.0, c.0.begin,
                                              c.0.decode.context),
                 1);
-            let pkt: Unknown<i32> = Unknown::from(ukn);
-            assert_eq!(pkt.data().unwrap(), 123);
+            let pkt: Unknown<u8> = Unknown::from(ukn);
+            assert_eq!(pkt.data().unwrap(), 20);
         }
     }
-/*
-    fn check_callback(cfg: &mut Config, expect: i32) -> bool {
+
+    fn check_callback<T>(cfg: &mut Config<T>, expect: T, expect_sz: i32) -> bool
+        where T: PartialEq {
         unsafe {
             let mut ukn: pt_packet_unknown = std::mem::zeroed();
             return
                 cfg.0.decode.callback.unwrap()(&mut ukn,
-                                             &cfg.0, &11,
-                                             cfg.0.decode.context)
-                == expect
+                                               &cfg.0, cfg.0.begin,
+                                               cfg.0.decode.context)
+                == expect_sz
+                && Unknown::<T>::from(ukn).data().unwrap() == expect;
         }
     }
-*/
-    fn test_boxany() -> Box<Box<dyn Any>> {
-        Box::new(Box::new("yeet".to_string()))
-    }
 
-    #[test]
-    fn test() {
-        // t: 9832638357655698176
-        println!("String {:?}", TypeId::of::<String>());
-        let orig = test_boxany();
-        // passes
-        assert!((&*orig).is::<String>());
-        // t: 9832638357655698176
-        println!("orig1 {:?}", (&*orig).type_id());
-        // leak box
-        let raw: *mut c_void = Box::into_raw(orig) as *mut _;
-        // catch box
-        let raw = raw as *mut Box<dyn Any>;
-        // t: 11266574366495284750
-        unsafe { println!("raw2 {:?}", (*raw).type_id()) };
-        let orig = unsafe { Box::from_raw(raw) };
-        // t: 11266574366495284750
-        println!("orig2 {:?}", (&*orig).type_id());
-        println!("{:?}", orig);
-        // panics
-        assert!((&*orig).is::<String>());
-    }
-/*
     #[test]
     fn test_config_callback_safety() {
-        let mut cfg = Config::new(&mut [0;0]);
-        cfg.set_callback(|_, _, p| (p + 6) as i32 );
+        let mut kektop = [10;9];
+        let mut cfg = Config::new(&mut kektop);
+        cfg.set_cpu(Cpu::intel(1, 2, 3));
+        cfg.set_callback(|c, p,| {
+            (Unknown::new(c.0.cpu.stepping + p[8]), 17)
+        });
 
-        for _ in 0..10 { assert!(check_callback(&mut cfg, 17)) }
-        cfg.set_callback(|_, _, p| (p + 3) as i32);
-        for _ in 0..10 { assert!(check_callback(&mut cfg, 14)) }
-    }*/
+        for _ in 0..10 { assert!(check_callback(&mut cfg, 13, 17)) }
+        cfg.set_callback(|c, p| {
+            (Unknown::new(c.0.cpu.model + p[0]), 1)
+        });
+        for _ in 0..10 { assert!(check_callback(&mut cfg, 12, 1)) }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_config_callback_out_of_bounds() {
+        let mut kektop = [10;9];
+        let mut cfg = Config::new(&mut kektop);
+        cfg.set_cpu(Cpu::intel(1, 2, 3));
+        cfg.set_callback(|_, p,| {
+            (Unknown::new(p[100]), 17)
+        });
+        unsafe {
+            let mut ukn: pt_packet_unknown = std::mem::zeroed();
+            cfg.0.decode.callback.unwrap()(&mut ukn,
+                                           &cfg.0, cfg.0.begin,
+                                           cfg.0.decode.context);
+        }
+    }
 }
 
 
