@@ -5,9 +5,12 @@ use libipt_sys::pt_packet_unknown;
 pub struct Unknown<T> (pub(crate) Option<Box<T>>);
 impl<T> Unknown<T> {
     // Create new instance of Unknown, putting `data` in a box
-    pub fn new(data: Option<T>) -> Self {
-        Unknown(data.map(|x| Box::new(x)))
+    pub fn new(data: T) -> Self {
+        Unknown(Some(Box::new(data)))
     }
+
+    // Create an empty Unknown, for when you dont want to return something
+    pub fn none() -> Self { Unknown(None) }
 
     pub(crate) fn from(pkt: pt_packet_unknown) -> Self {
         match pkt.priv_ {
