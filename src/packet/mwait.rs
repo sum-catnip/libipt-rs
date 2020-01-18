@@ -2,7 +2,7 @@ use libipt_sys::{pt_packet_mwait, pt_packet_type_ppt_mwait};
 
 /// A MWAIT packet.
 /// Packet: mwait
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Mwait (pt_packet_mwait);
 impl Mwait {
     #[inline]

@@ -3,6 +3,42 @@ use crate::event::ExecModeType;
 use std::convert::TryFrom;
 use libipt_sys::pt_block;
 
+#[cfg(test)]
+mod test {
+    use super::*;
+    use libipt_sys::{
+        pt_exec_mode_ptem_32bit,
+        pt_insn_class_ptic_error,
+    };
+
+    #[test]
+    fn test_block_props() {
+        let data: [u8; 15] = [17; 15];
+        let blk = Block(pt_block {
+            ip: 1,
+            end_ip: 2,
+            isid: 3,
+            mode: pt_exec_mode_ptem_32bit,
+            iclass: pt_insn_class_ptic_error,
+            ninsn: 4,
+            raw: data,
+            size: 8,
+            _bitfield_1: pt_block::new_bitfield_1(0, 1),
+            __bindgen_padding_0: Default::default()
+       });
+
+       assert_eq!(blk.ip(), 1);
+       assert_eq!(blk.end_ip(), 2);
+       assert_eq!(blk.isid(), 3);
+       assert_eq!(blk.mode(), ExecModeType::Bit32);
+       assert_eq!(blk.class(), Class::Error);
+       assert_eq!(blk.ninsn(), 4);
+       assert_eq!(blk.raw(), Some(&data[..8]));
+       assert!(blk.truncated());
+       assert!(!blk.speculative());
+    }
+}
+
 /// A block of instructions.
 ///
 /// Instructions in this block are executed sequentially but are not necessarily

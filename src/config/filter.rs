@@ -3,8 +3,37 @@ use std::convert::TryFrom;
 use libipt_sys::pt_conf_addr_filter;
 use num_enum::TryFromPrimitive;
 
+#[cfg(test)]
+mod test {
+    use super::*;
 
-#[derive(Clone, Copy, TryFromPrimitive)]
+    #[test]
+    fn test_addrfilter() {
+        let mut filter = AddrFilter::new();
+        filter.set_addr0(AddrRange::new(1, 2, AddrConfig::DISABLED));
+        filter.set_addr1(AddrRange::new(3, 4, AddrConfig::FILTER));
+        filter.set_addr2(AddrRange::new(5, 6, AddrConfig::STOP));
+        filter.set_addr3(AddrRange::new(7, 8, AddrConfig::DISABLED));
+
+        assert_eq!(filter.addr0().a(), 1);
+        assert_eq!(filter.addr0().b(), 2);
+        assert_eq!(filter.addr0().cfg(), AddrConfig::DISABLED);
+
+        assert_eq!(filter.addr1().a(), 3);
+        assert_eq!(filter.addr1().b(), 4);
+        assert_eq!(filter.addr1().cfg(), AddrConfig::FILTER);
+
+        assert_eq!(filter.addr2().a(), 5);
+        assert_eq!(filter.addr2().b(), 6);
+        assert_eq!(filter.addr2().cfg(), AddrConfig::STOP);
+
+        assert_eq!(filter.addr3().a(), 7);
+        assert_eq!(filter.addr3().b(), 8);
+        assert_eq!(filter.addr3().cfg(), AddrConfig::DISABLED);
+    }
+}
+
+#[derive(Clone, Copy, TryFromPrimitive, PartialEq, Debug)]
 #[repr(u32)]
 pub enum AddrConfig {DISABLED, FILTER, STOP }
 

@@ -16,7 +16,7 @@ use libipt_sys::{
 ///
 /// We provide only a very coarse classification suitable for reconstructing
 /// the execution flow.
-#[derive(Clone, Copy, TryFromPrimitive)]
+#[derive(Clone, Copy, Debug, TryFromPrimitive, PartialEq)]
 #[repr(i32)]
 pub enum Class {
     /// The instruction is a near (function) call.

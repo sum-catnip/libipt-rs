@@ -2,7 +2,7 @@ use libipt_sys::{pt_packet_vmcs, pt_packet_type_ppt_vmcs};
 
 /// A VMCS packet.
 /// Packet: vmcs
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Vmcs (pt_packet_vmcs);
 impl Vmcs {
     #[inline]

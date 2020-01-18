@@ -6,7 +6,7 @@ use libipt_sys::{
 
 /// A EXSTOP packet.
 /// Packet: exstop
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Exstop (pt_packet_exstop);
 impl Exstop {
     #[inline]

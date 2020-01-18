@@ -6,7 +6,7 @@ use libipt_sys::{
 
 /// A PWRE packet.
 /// Packet: pwre
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Pwre (pt_packet_pwre);
 impl Pwre {
     #[inline]

@@ -55,6 +55,41 @@ pub use mnt::*;
 pub mod cbr;
 pub use cbr::*;
 
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::mem;
+    use libipt_sys::pt_event_type_ptev_stop;
+
+    #[test]
+    fn test_create_event() {
+        let evt = pt_event {
+            type_: pt_event_type_ptev_stop,
+            tsc: 1,
+            lost_mtc: 2,
+            lost_cyc: 3,
+            _bitfield_1: pt_event::new_bitfield_1(1, 0, 1),
+            variant: unsafe { mem::zeroed() },
+            reserved: [0; 2]
+        };
+
+        let evt = Event(evt);
+        assert!(evt.ip_suppressed());
+        assert!(!evt.status_update());
+        assert!(evt.has_tsc());
+
+        assert_eq!(evt.tsc(), 1);
+        assert_eq!(evt.lost_mtc(), 2);
+        assert_eq!(evt.lost_cyc(), 3);
+
+        match evt.payload() {
+            Payload::Stop => assert!(true),
+            _ => unreachable!()
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum Payload {
     Enabled(Enabled),
     Disabled(Disabled),
