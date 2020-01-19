@@ -36,7 +36,7 @@ use libipt_sys::{
     pt_error_code_pte_bad_cpu
 };
 
-#[derive(Clone, Copy, Debug, TryFromPrimitive)]
+#[derive(Clone, Copy, Debug, TryFromPrimitive, PartialEq)]
 #[repr(i32)]
 pub enum PtErrorCode {
     /// No error. Everything is OK
@@ -125,6 +125,18 @@ impl PtError {
             PtErrorCode::try_from(-code).unwrap(),
             unsafe { CStr::from_ptr(pt_errstr(-code)).to_str().unwrap() }
         )
+    }
+
+    /// get the pt error code
+    #[inline]
+    pub fn code(self) -> PtErrorCode {
+        self.code
+    }
+
+    /// get a human readable error message
+    #[inline]
+    pub fn msg(self) -> &'static str {
+        self.msg
     }
 }
 

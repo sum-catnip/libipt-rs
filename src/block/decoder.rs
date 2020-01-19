@@ -1,10 +1,14 @@
 use super::Block;
 use crate::asid::Asid;
 use crate::config::Config;
-use crate::error::{PtError, ensure_ptok, extract_pterr, deref_ptresult};
 use crate::event::Event;
 use crate::flags::Status;
 use crate::image::Image;
+use crate::error::{
+    PtError, ensure_ptok,
+    extract_pterr, deref_ptresult,
+    PtErrorCode
+};
 
 use std::mem;
 use std::ptr;
@@ -32,6 +36,23 @@ use libipt_sys::{
     pt_asid
 };
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_blkdec_alloc() {
+        BlockDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
+    }
+
+    // #[test ]
+    // fn test_blkdec_props() {
+    //     let b = BlockDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
+    //     let a = b.asid().unwrap();
+    //     println!("{:?}", a);
+    // }
+}
+
 pub struct BlockDecoder<T>(pt_block_decoder, PhantomData<T>);
 impl<T> BlockDecoder<T> {
     /// Allocate an Intel PT block decoder.
@@ -40,6 +61,8 @@ impl<T> BlockDecoder<T> {
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
+        // deref_ptresult(unsafe{ pt_blk_alloc_decoder(&cfg.0) })
+        //     .map(|x| BlockDecoder::<T>(*x, PhantomData))
         deref_ptresult(unsafe{ pt_blk_alloc_decoder(&cfg.0) })
             .map(|x| BlockDecoder::<T>(*x, PhantomData))
     }
@@ -207,6 +230,20 @@ impl<T> BlockDecoder<T> {
     }
 }
 
+impl<T> Iterator for BlockDecoder<T> {
+    type Item = Result<Block, PtError>;
+
+    fn next(&mut self) -> Option<Result<Block, PtError>> {
+        match self.next() {
+            // eos to stop iterating
+            Err(x) if x.code() == PtErrorCode::Eos => None,
+            x => Some(x)
+        }
+    }
+}
+
 impl<T> Drop for BlockDecoder<T> {
-    fn drop(&mut self) { unsafe { pt_blk_free_decoder(&mut self.0) } }
+    fn drop(&mut self) {
+        unsafe { pt_blk_free_decoder(&mut self.0) }
+    }
 }
