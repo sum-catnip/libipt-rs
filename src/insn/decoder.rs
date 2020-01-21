@@ -1,4 +1,8 @@
-use crate::error::{PtError, deref_ptresult, ensure_ptok, extract_pterr};
+use crate::error::{
+    PtError, deref_ptresult,
+    deref_ptresult_mut,
+    ensure_ptok, extract_pterr
+};
 use crate::Config;
 use crate::Asid;
 use crate::Event;
@@ -88,8 +92,8 @@ impl<T> InsnDecoder<T> {
     /// The returned image may be modified as long as no decoder that uses this image is running.
     /// Returns the traced image the decoder uses for reading memory.
     pub fn image(&mut self) -> Result<Image, PtError> {
-        deref_ptresult(unsafe { pt_insn_get_image(&mut self.0) })
-            .map(|i| Image(*i))
+        deref_ptresult_mut(unsafe { pt_insn_get_image(&mut self.0) })
+            .map(|i| Image(i))
     }
 
     /// Get the current decoder position.
@@ -141,7 +145,7 @@ impl<T> InsnDecoder<T> {
             pt_insn_set_image(&mut self.0,
                              match img {
                                  None => ptr::null_mut(),
-                                 Some(i) => &mut i.0
+                                 Some(i) => i.0
                              })
         })
     }

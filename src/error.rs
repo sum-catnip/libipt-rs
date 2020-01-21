@@ -164,6 +164,19 @@ pub(crate) fn deref_ptresult<T>(res: *const T) -> Result<&'static T, PtError> {
     }
 }
 
+/// Dereferences a pointer returned by one of the libipt functions.
+/// Checks the pointer for NULL.
+/// Negative values will be translated into the appropriate error value.
+#[inline]
+pub(crate) fn deref_ptresult_mut<T>(res: *mut T) -> Result<&'static mut T, PtError> {
+    match res as isize {
+        // null reference, no error info
+        0 => Err(PtError::new(PtErrorCode::NoInfo, "No further information")),
+        x if x < 0 => Err(PtError::from_code(x as i32)),
+        _ => Ok(unsafe { res.as_mut().unwrap() })
+    }
+}
+
 // Translates a pt error code into a result enum.
 // Discards the error code
 #[inline]
