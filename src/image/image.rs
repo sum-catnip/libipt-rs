@@ -92,19 +92,7 @@ mod test {
 
     #[test]
     fn test_img_copy() {
-        let file: PathBuf = [
-            env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"
-        ].iter().collect();
-    
-        let mut i = Image::new(None).unwrap();
-        let asid = Asid::new(Some(3), Some(4));
-        i.add_file(file.to_str().unwrap(), 3, 10, Some(asid), 0x666)
-            .unwrap();
- 
-        assert_eq!(
-            img_with_file().copy(&i).unwrap(),
-            1
-        )
+        assert_eq!(img_with_file().copy(&img_with_file()).unwrap(), 0)
     }
 
     #[test]

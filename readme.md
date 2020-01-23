@@ -8,13 +8,11 @@
 - config:  ✔️
 - event:   ✔️
 - image:   ✔️
-- insn:    ❌
-- packet:  ❌
+- insn:    ✔️
+- packet:  ✔️
 - asid:    ✔️️
-- encoder: ❌
-- error:   ❌
-- flags:   ❌
-- query:   ❌
+- encoder: ✔️
+- query:   ✔️
 - version: ✔️
 
 # Integration Tests

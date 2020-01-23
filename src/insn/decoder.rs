@@ -1,6 +1,6 @@
 use crate::error::{
     PtError, deref_ptresult,
-    deref_ptresult_mut,
+    deref_ptresult_mut, PtErrorCode,
     ensure_ptok, extract_pterr
 };
 use crate::Config;
@@ -41,12 +41,12 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_blkdec_alloc() {
+    fn test_insndec_alloc() {
         InsnDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
     }
 
     #[test ]
-    fn test_blkdec_props() {
+    fn test_insndec_props() {
         // this just checks memory safety for property access
         // usage can be found in the integration tests
         let mut b = InsnDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
@@ -54,6 +54,7 @@ mod test {
         assert!(a.cr3().is_none());
         assert!(a.vmcs().is_none());
 
+        assert!(b.event().is_err());
         assert!(b.core_bus_ratio().is_err());
         assert!(b.event().is_err());
         assert!(b.config().is_ok());
@@ -67,6 +68,9 @@ mod test {
     }
 }
 
+/// The decoder will work on the buffer defined in the Config,
+/// it shall contain raw trace data and remain valid for the lifetime of the decoder.
+/// The decoder needs to be synchronized before it can be used.
 pub struct InsnDecoder<'a, T>(&'a mut pt_insn_decoder, PhantomData<T>);
 impl<'a, T> InsnDecoder<'a, T> {
     /// Allocate an Intel PT instruction flow decoder.
@@ -237,6 +241,18 @@ impl<'a, T> InsnDecoder<'a, T> {
                              &mut lost_cyc)
             }
         ).map(|_| (time, lost_mtc, lost_cyc))
+    }
+}
+
+impl<'a, T> Iterator for InsnDecoder<'a, T> {
+    type Item = Result<(Insn, Status), PtError>;
+
+    fn next(&mut self) -> Option<Result<(Insn, Status), PtError>> {
+        match self.next() {
+            // eos to stop iterating
+            Err(x) if x.code() == PtErrorCode::Eos => None,
+            x => Some(x)
+        }
     }
 }
 

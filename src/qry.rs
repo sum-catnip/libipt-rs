@@ -1,4 +1,8 @@
-use crate::error::{PtError, deref_ptresult, ensure_ptok, extract_pterr};
+use crate::error::{
+    PtError, deref_ptresult,
+    ensure_ptok, extract_pterr,
+    deref_ptresult_mut, PtErrorCode
+};
 use crate::Config;
 use crate::Status;
 use crate::Event;
@@ -26,6 +30,36 @@ use libipt_sys::{
     pt_qry_time
 };
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_qrydec_alloc() {
+        QueryDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
+    }
+
+    #[test ]
+    fn test_qrydec_props() {
+        // this just checks memory safety for property access
+        // usage can be found in the integration tests
+        let mut b = QueryDecoder::new(&Config::<()>::new(&mut [0; 0]))
+            .unwrap();
+
+        assert!(b.cond_branch().is_err());
+        assert!(b.indirect_branch().is_err());
+        assert!(b.event().is_err());
+        assert!(b.core_bus_ratio().is_err());
+        assert!(b.event().is_err());
+        assert!(b.config().is_ok());
+        assert!(b.offset().is_err());
+        assert!(b.sync_offset().is_err());
+        assert!(b.sync_backward().is_err());
+        assert!(b.sync_forward().is_err());
+        assert!(b.time().is_err());
+    }
+}
+
 #[derive(Clone, Copy, TryFromPrimitive)]
 #[repr(i32)]
 pub enum CondBranch {
@@ -33,16 +67,19 @@ pub enum CondBranch {
     NotTaken = 0
 }
 
-pub struct QueryDecoder<T>(pt_query_decoder, PhantomData<T>);
-impl<T> QueryDecoder<T> {
+/// The decoder will work on the buffer defined in the config,
+/// it shall contain raw trace data and remain valid for the lifetime of the decoder.
+/// The decoder needs to be synchronized before it can be used.
+pub struct QueryDecoder<'a, T>(&'a mut pt_query_decoder, PhantomData<T>);
+impl<'a, T> QueryDecoder<'a, T> {
     /// Allocate an Intel PT query decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
-        deref_ptresult(unsafe { pt_qry_alloc_decoder(cfg.0.as_ref()) })
-            .map(|d| QueryDecoder::<T>(*d, PhantomData))
+        deref_ptresult_mut(unsafe { pt_qry_alloc_decoder(cfg.0.as_ref()) })
+            .map(|d| QueryDecoder::<T>(d, PhantomData))
     }
 
     /// Query whether the next unconditional branch has been taken.
@@ -56,7 +93,7 @@ impl<T> QueryDecoder<T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn cond_branch(&mut self) -> Result<(CondBranch, Status), PtError> {
         let mut taken: i32 = 0;
-        extract_pterr(unsafe { pt_qry_cond_branch(&mut self.0, &mut taken) })
+        extract_pterr(unsafe { pt_qry_cond_branch(self.0, &mut taken) })
             .map(|s| (
                 CondBranch::try_from(taken).unwrap(),
                 Status::from_bits(s).unwrap()))
@@ -69,7 +106,7 @@ impl<T> QueryDecoder<T> {
     /// Returns NoCbr if there has not been a CBR packet.
     pub fn core_bus_ratio(&mut self) -> Result<u32, PtError> {
         let mut cbr: u32 = 0;
-        ensure_ptok(unsafe { pt_qry_core_bus_ratio(&mut self.0, &mut cbr) })
+        ensure_ptok(unsafe { pt_qry_core_bus_ratio(self.0, &mut cbr) })
             .map(|_| cbr)
     }
 
@@ -84,14 +121,14 @@ impl<T> QueryDecoder<T> {
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
         let mut evt: pt_event = unsafe { mem::zeroed() };
         extract_pterr(unsafe {
-            pt_qry_event(&mut self.0,
+            pt_qry_event(self.0,
                          &mut evt,
                          mem::size_of::<pt_event>())
         }).map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
     pub fn config(&self) -> Result<Config<T>, PtError> {
-        deref_ptresult(unsafe { pt_qry_get_config(&self.0) })
+        deref_ptresult(unsafe { pt_qry_get_config(self.0) })
             .map(Config::from)
     }
 
@@ -100,7 +137,7 @@ impl<T> QueryDecoder<T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn offset(&self) -> Result<u64, PtError> {
         let mut off: u64 = 0;
-        ensure_ptok(unsafe { pt_qry_get_offset(&self.0, &mut off) })
+        ensure_ptok(unsafe { pt_qry_get_offset(self.0, &mut off) })
             .map(|_| off)
     }
 
@@ -110,7 +147,7 @@ impl<T> QueryDecoder<T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn sync_offset(&self) -> Result<u64, PtError> {
         let mut off: u64 = 0;
-        ensure_ptok(unsafe { pt_qry_get_sync_offset(&self.0, &mut off) })
+        ensure_ptok(unsafe { pt_qry_get_sync_offset(self.0, &mut off) })
             .map(|_| off)
     }
 
@@ -126,7 +163,7 @@ impl<T> QueryDecoder<T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn indirect_branch(&mut self) -> Result<u64, PtError> {
         let mut ip: u64 = 0;
-        ensure_ptok(unsafe { pt_qry_indirect_branch(&mut self.0, &mut ip) })
+        ensure_ptok(unsafe { pt_qry_indirect_branch(self.0, &mut ip) })
             .map(|_| ip)
     }
 
@@ -142,7 +179,7 @@ impl<T> QueryDecoder<T> {
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_backward(&mut self) -> Result<(u64, Status), PtError> {
         let mut ip: u64 = 0;
-        extract_pterr(unsafe { pt_qry_sync_backward(&mut self.0, &mut ip)})
+        extract_pterr(unsafe { pt_qry_sync_backward(self.0, &mut ip)})
             .map(|s| (ip, Status::from_bits(s).unwrap()))
     }
 
@@ -158,7 +195,7 @@ impl<T> QueryDecoder<T> {
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_forward(&mut self) -> Result<(u64, Status), PtError> {
         let mut ip: u64 = 0;
-        extract_pterr(unsafe { pt_qry_sync_forward(&mut self.0, &mut ip) })
+        extract_pterr(unsafe { pt_qry_sync_forward(self.0, &mut ip) })
             .map(|s| (ip, Status::from_bits(s).unwrap()))
     }
 
@@ -174,7 +211,7 @@ impl<T> QueryDecoder<T> {
     /// Returns Nosync if there is no syncpoint at @offset.
     pub fn sync_set(&mut self, offset: u64) -> Result<(u64, Status), PtError> {
         let mut ip: u64 = 0;
-        extract_pterr(unsafe { pt_qry_sync_set(&mut self.0, &mut ip, offset)})
+        extract_pterr(unsafe { pt_qry_sync_set(self.0, &mut ip, offset)})
             .map(|s| (ip, Status::from_bits(s).unwrap()))
     }
 
@@ -195,7 +232,7 @@ impl<T> QueryDecoder<T> {
         let mut mtc: u32 = 0;
         let mut cyc: u32 = 0;
         ensure_ptok(unsafe {
-            pt_qry_time(&mut self.0,
+            pt_qry_time(self.0,
                         &mut time,
                         &mut mtc,
                         &mut cyc)
@@ -203,6 +240,18 @@ impl<T> QueryDecoder<T> {
     }
 }
 
-impl<T> Drop for QueryDecoder<T> {
-    fn drop(&mut self) { unsafe { pt_qry_free_decoder(&mut self.0) }}
+impl<'a, T> Iterator for QueryDecoder<'a, T> {
+    type Item = Result<(Event, Status), PtError>;
+
+    fn next(&mut self) -> Option<Result<(Event, Status), PtError>> {
+        match self.event() {
+            // eos to stop iterating
+            Err(x) if x.code() == PtErrorCode::Eos => None,
+            x => Some(x)
+        }
+    }
+}
+
+impl<'a, T> Drop for QueryDecoder<'a, T> {
+    fn drop(&mut self) { unsafe { pt_qry_free_decoder(self.0) }}
 }

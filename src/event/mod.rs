@@ -83,7 +83,7 @@ mod test {
         assert_eq!(evt.lost_cyc(), 3);
 
         match evt.payload() {
-            Payload::Stop => assert!(true),
+            Payload::Stop => (),
             _ => unreachable!()
         }
     }

@@ -60,6 +60,28 @@ pub mod unknown;
 pub mod decoder;
 pub use decoder::PacketDecoder;
 
+#[cfg(test)]
+mod test {
+    use super::*;
+    use libipt_sys::pt_packet_mnt;
+    use libipt_sys::pt_packet__bindgen_ty_1;
+
+    #[test]
+    fn test_pkt_from() {
+        let p1 = pt_packet_mnt { payload: 666 };
+        let p2 = pt_packet {
+            type_: PT_PACKET_TYPE_PPT_MNT,
+            size: std::mem::size_of::<pt_packet_mnt>() as u8,
+            payload: pt_packet__bindgen_ty_1 { mnt: p1 }
+        };
+        let p3: Packet::<()> = p2.into();
+        match p3 {
+            Packet::Mnt(m) => assert_eq!(m.payload(), p1.payload),
+            _ => unreachable!()
+        };
+    }
+}
+
 pub enum Packet<T> {
     Invalid(invalid::Invalid),
     Psbend(psbend::Psbend),
