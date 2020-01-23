@@ -66,6 +66,12 @@ mod test {
     }
 }
 
+/// The decoder will work on the buffer defined in a Config, it shall contain
+/// raw trace data and remain valid for the lifetime of the decoder.
+///
+/// The decoder needs to be synchronized before it can be used.
+///
+/// * `T` - The Callback Closure Type in the Config
 pub struct BlockDecoder<'a, T>(&'a mut pt_block_decoder, PhantomData<T>);
 impl<'a, T> BlockDecoder<'a, T> {
     /// Allocate an Intel PT block decoder.
