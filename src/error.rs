@@ -192,7 +192,7 @@ pub(crate) fn ensure_ptok(code: i32) -> Result<(), PtError> {
 #[inline]
 pub(crate) fn extract_pterr(code: i32) -> Result<u32, PtError> {
     match code {
-        0 => Ok(code as u32),
+        x if x >= 0 => Ok(code as u32),
         _ => Err(PtError::from_code(code))
     }
 }
