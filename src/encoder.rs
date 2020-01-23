@@ -27,8 +27,8 @@ impl<T> Encoder<T> {
     ///
     /// The encoder will work on the buffer defined in @config, it shall contain raw trace data and remain valid for the lifetime of the encoder.
     /// The encoder starts at the beginning of the trace buffer.
-    pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
-        deref_ptresult(unsafe{pt_alloc_encoder(&cfg.0)})
+    pub fn new(cfg: &mut Config<T>) -> Result<Self, PtError> {
+        deref_ptresult(unsafe { pt_alloc_encoder(cfg.0.to_mut()) })
             .map(|x| Encoder::<T>(*x, PhantomData))
     }
 

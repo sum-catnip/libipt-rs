@@ -27,7 +27,7 @@ impl<T> PacketDecoder<T> {
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
-        deref_ptresult(unsafe { pt_pkt_alloc_decoder(&cfg.0) })
+        deref_ptresult(unsafe { pt_pkt_alloc_decoder(cfg.0.as_ref()) })
             .map(|d| PacketDecoder::<T>(*d, PhantomData))
     }
 

@@ -76,7 +76,7 @@ impl<'a, T> BlockDecoder<'a, T> {
     pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
         // deref_ptresult(unsafe{ pt_blk_alloc_decoder(&cfg.0) })
         //     .map(|x| BlockDecoder::<T>(*x, PhantomData))
-        deref_ptresult_mut(unsafe{ pt_blk_alloc_decoder(&cfg.0) })
+        deref_ptresult_mut(unsafe{ pt_blk_alloc_decoder(cfg.0.as_ref()) })
             .map(|x| BlockDecoder::<T>(x, PhantomData))
     }
 

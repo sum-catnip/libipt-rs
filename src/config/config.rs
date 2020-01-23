@@ -4,6 +4,7 @@ use super::filter::AddrFilter;
 use crate::packet::unknown::Unknown;
 
 use std::mem;
+use std::borrow::Cow;
 use std::marker::PhantomData;
 use std::ffi::c_void;
 use std::os::raw::c_int;
@@ -92,7 +93,7 @@ mod test {
             let mut ukn: pt_packet_unknown = std::mem::zeroed();
             assert_eq!(
                 c.0.decode.callback.unwrap()(&mut ukn,
-                                             &c.0, c.0.begin,
+                                             c.0.as_ref(), c.0.begin,
                                              c.0.decode.context),
                 1);
             let pkt: Unknown<u8> = Unknown::from(ukn);
@@ -106,7 +107,7 @@ mod test {
             let mut ukn: pt_packet_unknown = std::mem::zeroed();
             return
                 cfg.0.decode.callback.unwrap()(&mut ukn,
-                                               &cfg.0, cfg.0.begin,
+                                               cfg.0.as_ref(), cfg.0.begin,
                                                cfg.0.decode.context)
                 == expect_sz
                 && Unknown::<T>::from(ukn).data().unwrap() == expect;
@@ -134,14 +135,18 @@ mod test {
     fn test_config_callback_out_of_bounds() {
         let mut kektop = [10;9];
         let mut cfg = Config::new(&mut kektop);
+        let mut raw: *const pt_config = cfg.0.as_ref();
         cfg.set_cpu(Cpu::intel(1, 2, 3));
-        cfg.set_callback(|_, p,| {
+        cfg.set_callback(|c, p,| {
+            // make sure no move or copy is done
+            if let Cow::Owned(_) = c.0 { panic!("BUG!") }
+            assert_eq!(c.0.as_ref() as *const _, raw);
             (Unknown::new(p[100]), 17)
         });
         unsafe {
             let mut ukn: pt_packet_unknown = std::mem::zeroed();
             cfg.0.decode.callback.unwrap()(&mut ukn,
-                                           &cfg.0, cfg.0.begin,
+                                           cfg.0.as_ref(), cfg.0.begin,
                                            cfg.0.decode.context);
         }
     }
@@ -188,7 +193,7 @@ unsafe extern "C" fn decode_callback<'a, F, C>(ukn: *mut pt_packet_unknown,
 }
 
 /// A libipt configuration
-pub struct Config<'a, C> (pub(crate) pt_config, PhantomData<&'a C>);
+pub struct Config<'a, C> (pub(crate) Cow<'a, pt_config>, PhantomData<C>);
 impl<'a, C> Config<'a, C> {
     /// Initializes a Config instance with only a buffer.
     ///
@@ -198,7 +203,15 @@ impl<'a, C> Config<'a, C> {
         cfg.size  = mem::size_of::<pt_config>();
         cfg.begin = buf.as_mut_ptr();
         cfg.end   = unsafe { buf.as_mut_ptr().offset(buf.len() as isize) };
-        Config::<C>(cfg, PhantomData)
+        Config::<C>(Cow::Owned(cfg), PhantomData)
+    }
+
+    #[inline]
+    fn ensure_owned(&mut self) -> &mut pt_config {
+        match &mut self.0 {
+            Cow::Borrowed(_) => unreachable!(),
+            Cow::Owned(c) => c
+        }
     }
 
     /// The cpu used for capturing the data.
@@ -206,29 +219,31 @@ impl<'a, C> Config<'a, C> {
     /// Processor specific workarounds will be identified this way.
     #[inline]
     pub fn set_cpu(&mut self, cpu: Cpu) {
-        self.0.cpu = cpu.0;
-        self.0.errata = cpu.determine_errata();
+        let c = self.ensure_owned();
+        c.cpu = cpu.0;
+        c.errata = cpu.determine_errata();
     }
 
     /// Frequency values used for timing packets (mtc)
     #[inline]
     pub fn set_freq(&mut self, freq: Frequency) {
-        self.0.mtc_freq = freq.mtc;
-        self.0.nom_freq = freq.nom;
-        self.0.cpuid_0x15_eax = freq.tsc;
-        self.0.cpuid_0x15_ebx = freq.ctc;
+        let c = self.ensure_owned();
+        c.mtc_freq = freq.mtc;
+        c.nom_freq = freq.nom;
+        c.cpuid_0x15_eax = freq.tsc;
+        c.cpuid_0x15_ebx = freq.ctc;
     }
 
     /// Decoder specific flags
     #[inline]
     pub fn set_flags(&mut self, flags: impl Into<pt_conf_flags>) {
-        self.0.flags = flags.into();
+        self.ensure_owned().flags = flags.into()
     }
 
     /// Address filter configuration
     #[inline]
     pub fn set_filter(&mut self, filter: AddrFilter) {
-        self.0.addr_filter = filter.0;
+        self.ensure_owned().addr_filter = filter.0
     }
 
     /// A callback for decoding unknown packets
@@ -236,14 +251,14 @@ impl<'a, C> Config<'a, C> {
     pub fn set_callback<'b, F>(&mut self, mut cb: F)
         where F: FnMut(&Config<C>, &[u8]) -> (Unknown<C>, u32),
               F: 'a {
-
-        self.0.decode.callback = Some(decode_callback::<F, C>);
-        self.0.decode.context  = &mut cb as *mut _ as *mut c_void;
+        let c = self.ensure_owned();
+        c.decode.callback = Some(decode_callback::<F, C>);
+        c.decode.context  = &mut cb as *mut _ as *mut c_void;
     }
 }
 
-impl<'a, C> From<&pt_config> for Config<'_, C> {
-    fn from(cfg: &pt_config) -> Self {
-        Config(*cfg, PhantomData)
+impl<'a, C> From<&'a pt_config> for Config<'a, C> {
+    fn from(cfg: &'a pt_config) -> Self {
+        Config(Cow::Borrowed(cfg), PhantomData)
     }
 }
