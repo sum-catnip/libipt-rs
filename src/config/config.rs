@@ -152,23 +152,6 @@ mod test {
     }
 }
 
-
-// TODO
-// potentially make a type for reading packet bytes from the current position
-// i think the user defined thingy should be provided within the callback
-// kina sounds like it:
-// The *pt_packet_unknown* object can be used to provide user-defined
-// information back to the user when using the packet decoder to iterate over
-// Intel PT packets.  Other decoders ignore this information but will skip
-// the packet if a non-zero size is returned by the callback function.
-
-// i should think about what happens to the pt_config ptr in the callback
-// does it get copied? moved? pretty sure it copied
-// but do i want a copy on each callback?
-
-// also i need to think about the priv_ type of the unknown packet
-// i have no fucking idea how to propagate the type
-
 unsafe extern "C" fn decode_callback<'a, F, C>(ukn: *mut pt_packet_unknown,
                                                cfg: *const pt_config,
                                                pos: *const u8,
