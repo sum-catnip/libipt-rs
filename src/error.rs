@@ -108,7 +108,7 @@ pub struct PtError {
 
 impl PtError {
     #[inline]
-    pub fn new(code: PtErrorCode, msg: &'static str) -> Self {
+    pub(crate) fn new(code: PtErrorCode, msg: &'static str) -> Self {
         PtError { code, msg }
     }
 
@@ -117,7 +117,7 @@ impl PtError {
     /// pt functions always return negative error codes
     /// *error codes not included in the pt_error enum will panic!*
     #[inline]
-    pub fn from_code(code: i32) -> Self {
+    pub(crate) fn from_code(code: i32) -> Self {
         // panicing here is fine since this should only be called
         // for return values of libipt functions
         // so invalid returns = bug in libipt or the bindings
