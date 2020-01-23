@@ -135,7 +135,7 @@ mod test {
     fn test_config_callback_out_of_bounds() {
         let mut kektop = [10;9];
         let mut cfg = Config::new(&mut kektop);
-        let mut raw: *const pt_config = cfg.0.as_ref();
+        let raw: *const pt_config = cfg.0.as_ref();
         cfg.set_cpu(Cpu::intel(1, 2, 3));
         cfg.set_callback(|c, p,| {
             // make sure no move or copy is done
