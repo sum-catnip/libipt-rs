@@ -7,7 +7,7 @@
 - block:   ✔️
 - config:  ✔️
 - event:   ✔️
-- image:   ❌
+- image:   ✔️
 - insn:    ❌
 - packet:  ❌
 - asid:    ✔️️

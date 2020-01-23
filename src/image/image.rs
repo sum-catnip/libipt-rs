@@ -26,6 +26,28 @@ use libipt_sys::{
     pt_asid
 };
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // not much to test for in the unit tests
+    // the integration tests should have way more stuffs
+
+    #[test]
+    fn test_img_alloc() {
+        Image::new(None).unwrap();
+        Image::new(Some("yeet")).unwrap();
+    }
+
+    #[test]
+    fn test_img_name() {
+        let i = Image::new(Some("yeet")).unwrap();
+        assert_eq!(i.name().unwrap(), "yeet");
+        let i = Image::new(None).unwrap();
+        assert!(i.name().is_none());
+    }
+}
+
 unsafe extern "C" fn read_callback(buffer: *mut u8,
                                    size: usize,
                                    asid: *const pt_asid,
@@ -51,12 +73,11 @@ impl<'a> Image<'a> {
     pub fn new(name: Option<&str>) -> Result<Self, PtError> {
         deref_ptresult_mut( unsafe { match name {
             None => pt_image_alloc(ptr::null()),
-            Some(n) =>
-                pt_image_alloc(CString::new(n).map_err(|_| PtError::new(
+            Some(n) => pt_image_alloc(
+                CString::new(n).map_err(|_| PtError::new(
                     PtErrorCode::Invalid,
                     "invalid @name string: contains null bytes"
-                ))?
-                .as_ptr())
+                ))?.as_ptr())
         }}).map(|i| Image { inner: i, dealloc: true })
     }
 
@@ -139,9 +160,7 @@ impl<'a> Image<'a> {
                       isid: i32,
                       asid: Asid) -> Result<(), PtError> {
         ensure_ptok( unsafe {
-            pt_image_add_cached(self.inner,
-                                &mut iscache.0,
-                                isid, &asid.0
+            pt_image_add_cached(self.inner, iscache.0, isid, &asid.0
         )})
     }
 
