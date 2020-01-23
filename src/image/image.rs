@@ -29,6 +29,7 @@ use libipt_sys::{
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::path::PathBuf;
 
     // not much to test for in the unit tests
     // the integration tests should have way more stuffs
@@ -45,6 +46,82 @@ mod test {
         assert_eq!(i.name().unwrap(), "yeet");
         let i = Image::new(None).unwrap();
         assert!(i.name().is_none());
+    }
+
+    fn img_with_file<'a>() -> Image<'a> {
+        let file: PathBuf = [
+            env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"
+        ].iter().collect();
+    
+        let mut i = Image::new(None).unwrap();
+        let asid = Asid::new(Some(1), Some(2));
+        i.add_file(file.to_str().unwrap(), 3, 10, Some(asid), 0x123)
+            .unwrap();
+        i
+    }
+
+    #[test]
+    fn test_img_file() {
+        img_with_file();
+    }
+
+    #[test]
+    fn test_img_remove_filename() {
+        let file: PathBuf = [
+            env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"
+        ].iter().collect();
+
+        assert_eq!(
+            img_with_file()
+                .remove_by_filename(file.to_str().unwrap(), 
+                                    Asid::new(Some(1), Some(2)))
+                .unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn test_img_remove_asid() {
+        assert_eq!(
+            img_with_file()
+                .remove_by_asid(Asid::new(Some(1), Some(2)))
+                .unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn test_img_copy() {
+        let file: PathBuf = [
+            env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"
+        ].iter().collect();
+    
+        let mut i = Image::new(None).unwrap();
+        let asid = Asid::new(Some(3), Some(4));
+        i.add_file(file.to_str().unwrap(), 3, 10, Some(asid), 0x666)
+            .unwrap();
+ 
+        assert_eq!(
+            img_with_file().copy(&i).unwrap(),
+            1
+        )
+    }
+
+    #[test]
+    fn test_img_add_cached() {
+        let file: PathBuf = [
+            env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"
+        ].iter().collect();
+        println!("{:?}", file);
+
+        let mut c = SectionCache::new(None).unwrap();
+        let isid = c.add_file(file.to_str().unwrap(), 5, 15, 0x1337).unwrap();
+        let mut i = img_with_file();
+        i.add_cached(&mut c, isid, Asid::new(Some(3), Some(4))).unwrap();
+        assert_eq!(
+            i.remove_by_asid(Asid::new(Some(3), Some(4))).unwrap(),
+            1
+        );
     }
 }
 
@@ -115,11 +192,11 @@ impl<'a> Image<'a> {
         let cfilename = CString::new(filename).map_err(|_| PtError::new(
             PtErrorCode::Invalid,
             "Error converting filename to Cstring as it contains null bytes")
-        )?.as_ptr();
+        )?;
 
         extract_pterr( unsafe {
             pt_image_remove_by_filename(self.inner,
-                                        cfilename,
+                                        cfilename.as_ptr(),
                                         &asid.0)
         })
     }
@@ -147,7 +224,7 @@ impl<'a> Image<'a> {
     /// Sections that could not be added will be ignored.
     /// Returns the number of ignored sections on success.
     pub fn copy(&mut self, src: &Image) -> Result<u32, PtError> {
-        extract_pterr( unsafe { pt_image_copy(self.inner, src.inner)})
+        extract_pterr( unsafe { pt_image_copy(self.inner, src.inner) })
     }
 
     /// Add a section from an image section cache.
@@ -157,10 +234,10 @@ impl<'a> Image<'a> {
     /// Returns BadImage if @iscache does not contain @isid.
     pub fn add_cached(&mut self,
                       iscache: &mut SectionCache,
-                      isid: i32,
+                      isid: u32,
                       asid: Asid) -> Result<(), PtError> {
         ensure_ptok( unsafe {
-            pt_image_add_cached(self.inner, iscache.0, isid, &asid.0
+            pt_image_add_cached(self.inner, iscache.0, isid as i32, &asid.0
         )})
     }
 
@@ -184,11 +261,11 @@ impl<'a> Image<'a> {
         let cfilename = CString::new(filename).map_err(|_| PtError::new(
             PtErrorCode::Invalid,
             "Error converting filename to Cstring as it contains null bytes")
-        )?.as_ptr();
+        )?;
 
         ensure_ptok( unsafe {
             pt_image_add_file(self.inner,
-                              cfilename,
+                              cfilename.as_ptr(),
                               offset,
                               size,
                               match asid {

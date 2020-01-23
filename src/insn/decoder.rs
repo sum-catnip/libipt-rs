@@ -36,23 +36,54 @@ use libipt_sys::{
     pt_insn_time
 };
 
-pub struct InsnDecoder<T>(pt_insn_decoder, PhantomData<T>);
-impl<T> InsnDecoder<T> {
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_blkdec_alloc() {
+        InsnDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
+    }
+
+    #[test ]
+    fn test_blkdec_props() {
+        // this just checks memory safety for property access
+        // usage can be found in the integration tests
+        let mut b = InsnDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
+        let a = b.asid().unwrap();
+        assert!(a.cr3().is_none());
+        assert!(a.vmcs().is_none());
+
+        assert!(b.core_bus_ratio().is_err());
+        assert!(b.event().is_err());
+        assert!(b.config().is_ok());
+        assert!(b.image().unwrap().name().is_none());
+        assert!(b.offset().is_err());
+        assert!(b.sync_offset().is_err());
+        assert!(b.next().is_err());
+        assert!(b.sync_backward().is_err());
+        assert!(b.sync_forward().is_err());
+        assert!(b.time().is_err());
+    }
+}
+
+pub struct InsnDecoder<'a, T>(&'a mut pt_insn_decoder, PhantomData<T>);
+impl<'a, T> InsnDecoder<'a, T> {
     /// Allocate an Intel PT instruction flow decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
-        deref_ptresult(unsafe { pt_insn_alloc_decoder(cfg.0.as_ref()) })
-            .map(|d| InsnDecoder::<T>(*d, PhantomData))
+        deref_ptresult_mut(unsafe { pt_insn_alloc_decoder(cfg.0.as_ref()) })
+            .map(|d| InsnDecoder::<T>(d, PhantomData))
     }
 
     /// Return the current address space identifier.
     pub fn asid(&self) -> Result<Asid, PtError> {
         let mut asid: pt_asid = unsafe { mem::zeroed() };
         ensure_ptok(unsafe {
-            pt_insn_asid(&self.0,
+            pt_insn_asid(self.0,
                          &mut asid,
                          mem::size_of::<pt_asid>())
         }).map(|_| Asid(asid))
@@ -65,7 +96,7 @@ impl<T> InsnDecoder<T> {
     /// Returns NoCbr if there has not been a CBR packet.
     pub fn core_bus_ratio(&mut self) -> Result<u32, PtError> {
         let mut cbr: u32 = 0;
-        ensure_ptok(unsafe { pt_insn_core_bus_ratio(&mut self.0, &mut cbr) })
+        ensure_ptok(unsafe { pt_insn_core_bus_ratio(self.0, &mut cbr) })
             .map(|_| cbr)
     }
 
@@ -76,14 +107,14 @@ impl<T> InsnDecoder<T> {
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
         let mut evt: pt_event = unsafe { mem::zeroed() };
         extract_pterr(unsafe {
-            pt_insn_event(&mut self.0,
+            pt_insn_event(self.0,
                           &mut evt,
                           mem::size_of::<pt_event>())
         }).map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
     pub fn config(&self) -> Result<Config<T>, PtError> {
-        deref_ptresult(unsafe { pt_insn_get_config(&self.0) })
+        deref_ptresult(unsafe { pt_insn_get_config(self.0) })
             .map(Config::from)
     }
 
@@ -92,7 +123,7 @@ impl<T> InsnDecoder<T> {
     /// The returned image may be modified as long as no decoder that uses this image is running.
     /// Returns the traced image the decoder uses for reading memory.
     pub fn image(&mut self) -> Result<Image, PtError> {
-        deref_ptresult_mut(unsafe { pt_insn_get_image(&mut self.0) })
+        deref_ptresult_mut(unsafe { pt_insn_get_image(self.0) })
             .map(Image::from)
     }
 
@@ -101,7 +132,7 @@ impl<T> InsnDecoder<T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn offset(&self) -> Result<u64, PtError> {
         let mut off: u64 = 0;
-        ensure_ptok(unsafe { pt_insn_get_offset(&self.0, &mut off) })
+        ensure_ptok(unsafe { pt_insn_get_offset(self.0, &mut off) })
             .map(|_| off)
     }
 
@@ -110,7 +141,7 @@ impl<T> InsnDecoder<T> {
     /// Returns Nosync if @decoder is out of sync.
     pub fn sync_offset(&self) -> Result<u64, PtError> {
         let mut off = 0;
-        ensure_ptok(unsafe { pt_insn_get_sync_offset(&self.0, &mut off) })
+        ensure_ptok(unsafe { pt_insn_get_sync_offset(self.0, &mut off) })
             .map(|_| off)
     }
 
@@ -129,7 +160,7 @@ impl<T> InsnDecoder<T> {
     pub fn next(&mut self) -> Result<(Insn, Status), PtError> {
         let mut insn: pt_insn = unsafe { mem::zeroed() };
         extract_pterr(unsafe {
-            pt_insn_next(&mut self.0,
+            pt_insn_next(self.0,
                          &mut insn,
                          mem::size_of::<pt_insn>())
         }).map(|s| (Insn(insn), Status::from_bits(s).unwrap()))
@@ -142,7 +173,7 @@ impl<T> InsnDecoder<T> {
     /// Only one image can be active at any time.
     pub fn set_image(&mut self, img: Option<&mut Image>) -> Result<(), PtError> {
         ensure_ptok(unsafe {
-            pt_insn_set_image(&mut self.0,
+            pt_insn_set_image(self.0,
                              match img {
                                  None => ptr::null_mut(),
                                  Some(i) => i.inner
@@ -151,7 +182,7 @@ impl<T> InsnDecoder<T> {
     }
 
     pub fn sync_backward(&mut self) -> Result<(), PtError> {
-        ensure_ptok(unsafe { pt_insn_sync_backward(&mut self.0) })
+        ensure_ptok(unsafe { pt_insn_sync_backward(self.0) })
     }
 
     /// Synchronize an Intel PT instruction flow decoder.
@@ -165,7 +196,7 @@ impl<T> InsnDecoder<T> {
     /// Returns BadPacket if an unknown packet payload is encountered.
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_forward(&mut self) -> Result<(), PtError> {
-        ensure_ptok(unsafe { pt_insn_sync_forward(&mut self.0) })
+        ensure_ptok(unsafe { pt_insn_sync_forward(self.0) })
     }
 
     /// Manually synchronize an Intel PT instruction flow decoder.
@@ -178,7 +209,7 @@ impl<T> InsnDecoder<T> {
     /// Returns Eos if decoder reaches the end of its trace buffer.
     /// Returns Nosync if there is no syncpoint at @offset.
     pub fn sync_set(&mut self, offset: u64) -> Result<(), PtError> {
-        ensure_ptok(unsafe { pt_insn_sync_set(&mut self.0, offset) })
+        ensure_ptok(unsafe { pt_insn_sync_set(self.0, offset) })
     }
 
     /// Return the current time.
@@ -200,7 +231,7 @@ impl<T> InsnDecoder<T> {
         let mut lost_cyc: u32 = 0;
         ensure_ptok(
             unsafe {
-                pt_insn_time(&mut self.0,
+                pt_insn_time(self.0,
                              &mut time,
                              &mut lost_mtc,
                              &mut lost_cyc)
@@ -209,6 +240,6 @@ impl<T> InsnDecoder<T> {
     }
 }
 
-impl<T> Drop for InsnDecoder<T> {
-    fn drop(&mut self) { unsafe { pt_insn_free_decoder(&mut self.0) } }
+impl<'a, T> Drop for InsnDecoder<'a, T> {
+    fn drop(&mut self) { unsafe { pt_insn_free_decoder(self.0) } }
 }
