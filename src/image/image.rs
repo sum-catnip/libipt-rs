@@ -37,7 +37,13 @@ unsafe extern "C" fn read_callback(buffer: *mut u8,
 }
 
 /// The traced memory image.
-pub struct Image<'a>(pub(crate) &'a mut pt_image);
+pub struct Image<'a> {
+    // the wrapped inst
+    pub(crate) inner: &'a mut pt_image,
+    // do we need to free this instance on drop?
+    dealloc: bool
+}
+
 impl<'a> Image<'a> {
     /// Allocate a traced memory image.
     /// An optional @name may be given to the image.
@@ -51,13 +57,13 @@ impl<'a> Image<'a> {
                     "invalid @name string: contains null bytes"
                 ))?
                 .as_ptr())
-        }}).map(|i| Image(i))
+        }}).map(|i| Image { inner: i, dealloc: true })
     }
 
     /// Get the image name.
     /// The name is optional.
     pub fn name(&self) -> Option<&str> {
-        deref_ptresult( unsafe { pt_image_name(self.0) })
+        deref_ptresult( unsafe { pt_image_name(self.inner) })
             .ok()
             .map(|s| unsafe { CStr::from_ptr(s) }.to_str().expect(
                 concat!("failed to convert c into rust string. ",
@@ -72,7 +78,7 @@ impl<'a> Image<'a> {
     /// Returns the number of removed sections on success.
     pub fn remove_by_asid(&mut self, asid: Asid) -> Result<u32, PtError> {
         extract_pterr( unsafe {
-            pt_image_remove_by_asid(self.0, &asid.0)
+            pt_image_remove_by_asid(self.inner, &asid.0)
         })
     }
 
@@ -91,7 +97,7 @@ impl<'a> Image<'a> {
         )?.as_ptr();
 
         extract_pterr( unsafe {
-            pt_image_remove_by_filename(self.0,
+            pt_image_remove_by_filename(self.inner,
                                         cfilename,
                                         &asid.0)
         })
@@ -106,9 +112,9 @@ impl<'a> Image<'a> {
     pub fn set_callback<F>(&mut self, callback: Option<F>) -> Result<(), PtError>
                            where F: FnMut(&mut [u8], u64, Asid) -> i32 {
         ensure_ptok(unsafe { match callback {
-            None => pt_image_set_callback(self.0, None, ptr::null_mut()),
+            None => pt_image_set_callback(self.inner, None, ptr::null_mut()),
             Some(mut cb) =>
-                pt_image_set_callback(self.0, 
+                pt_image_set_callback(self.inner,
                                       Some(read_callback),
                                       &mut &mut cb as *mut _ as *mut c_void)
         }})
@@ -120,7 +126,7 @@ impl<'a> Image<'a> {
     /// Sections that could not be added will be ignored.
     /// Returns the number of ignored sections on success.
     pub fn copy(&mut self, src: &Image) -> Result<u32, PtError> {
-        extract_pterr( unsafe { pt_image_copy(self.0, src.0)})
+        extract_pterr( unsafe { pt_image_copy(self.inner, src.inner)})
     }
 
     /// Add a section from an image section cache.
@@ -133,7 +139,7 @@ impl<'a> Image<'a> {
                       isid: i32,
                       asid: Asid) -> Result<(), PtError> {
         ensure_ptok( unsafe {
-            pt_image_add_cached(self.0,
+            pt_image_add_cached(self.inner,
                                 &mut iscache.0,
                                 isid, &asid.0
         )})
@@ -162,7 +168,7 @@ impl<'a> Image<'a> {
         )?.as_ptr();
 
         ensure_ptok( unsafe {
-            pt_image_add_file(self.0,
+            pt_image_add_file(self.inner,
                               cfilename,
                               offset,
                               size,
@@ -173,6 +179,16 @@ impl<'a> Image<'a> {
         })}
 }
 
+impl<'a> From<&'a mut pt_image> for Image<'a> {
+    fn from(img: &'a mut pt_image) -> Self {
+        Image { inner: img, dealloc: false }
+    }
+}
+
 impl<'a> Drop for Image<'a> {
-    fn drop(&mut self) { unsafe { pt_image_free(self.0) } }
+    fn drop(&mut self) {
+        if self.dealloc {
+            unsafe { pt_image_free(self.inner) }
+        }
+    }
 }

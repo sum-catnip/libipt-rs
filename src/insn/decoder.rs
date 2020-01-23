@@ -93,7 +93,7 @@ impl<T> InsnDecoder<T> {
     /// Returns the traced image the decoder uses for reading memory.
     pub fn image(&mut self) -> Result<Image, PtError> {
         deref_ptresult_mut(unsafe { pt_insn_get_image(&mut self.0) })
-            .map(|i| Image(i))
+            .map(Image::from)
     }
 
     /// Get the current decoder position.
@@ -145,7 +145,7 @@ impl<T> InsnDecoder<T> {
             pt_insn_set_image(&mut self.0,
                              match img {
                                  None => ptr::null_mut(),
-                                 Some(i) => i.0
+                                 Some(i) => i.inner
                              })
         })
     }

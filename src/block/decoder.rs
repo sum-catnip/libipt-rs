@@ -56,7 +56,7 @@ mod test {
         assert!(b.core_bus_ratio().is_err());
         assert!(b.event().is_err());
         assert!(b.config().is_ok());
-        assert!(b.image().is_err());
+        assert!(b.image().unwrap().name().is_none());
         assert!(b.offset().is_err());
         assert!(b.sync_offset().is_err());
         assert!(b.next().is_err());
@@ -126,7 +126,7 @@ impl<'a, T> BlockDecoder<'a, T> {
     /// Returns the traced image the decoder uses for reading memory.
     pub fn image(&mut self) -> Result<Image, PtError> {
         deref_ptresult_mut(unsafe { pt_blk_get_image(self.0) })
-            .map(|i| Image(i))
+            .map(Image::from)
     }
 
     /// Get the current decoder position.
@@ -182,7 +182,7 @@ impl<'a, T> BlockDecoder<'a, T> {
             pt_blk_set_image(self.0,
                              match img {
                                  None => ptr::null_mut(),
-                                 Some(i) => i.0
+                                 Some(i) => i.inner
                              })
         })
     }
