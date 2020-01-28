@@ -49,7 +49,7 @@ bitflags! {
 }
 
 /// A Cpu identifier
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Cpu (pub(super) pt_cpu);
 impl Cpu {
     pub fn new(vendor: CpuVendor, family: u16, model: u8, stepping: u8) -> Self {
