@@ -9,11 +9,12 @@ mod test {
 
     #[test]
     fn test_addrfilter() {
-        let mut filter = AddrFilter::new();
-        filter.set_addr0(AddrRange::new(1, 2, AddrConfig::DISABLED));
-        filter.set_addr1(AddrRange::new(3, 4, AddrConfig::FILTER));
-        filter.set_addr2(AddrRange::new(5, 6, AddrConfig::STOP));
-        filter.set_addr3(AddrRange::new(7, 8, AddrConfig::DISABLED));
+        let mut filter = AddrFilterBuilder::new()
+            .addr0(AddrRange::new(1, 2, AddrConfig::DISABLED))
+            .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
+            .addr2(AddrRange::new(5, 6, AddrConfig::STOP))
+            .addr3(AddrRange::new(7, 8, AddrConfig::DISABLED))
+            .finish();
 
         assert_eq!(filter.addr0().a(), 1);
         assert_eq!(filter.addr0().b(), 2);
@@ -75,43 +76,11 @@ impl AddrRange {
     pub fn set_cfg(&mut self, cfg: AddrConfig) { self.cfg = cfg }
 }
 
-// could've written a macro, i know
-// but its just like 4 variables i think its fine
 
 /// the address filter configuration
 #[derive(Clone, Copy)]
 pub struct AddrFilter (pub(super) pt_conf_addr_filter);
 impl AddrFilter {
-    pub fn new() -> Self { unsafe { mem::zeroed() }}
-
-    #[inline]
-    pub fn set_addr0(&mut self, range: AddrRange) {
-        self.0.addr0_a = range.a;
-        self.0.addr0_b = range.b;
-        unsafe { self.0.config.ctl.set_addr0_cfg(range.cfg as u32) };
-    }
-
-    #[inline]
-    pub fn set_addr1(&mut self, range: AddrRange) {
-        self.0.addr1_a = range.a;
-        self.0.addr1_b = range.b;
-        unsafe { self.0.config.ctl.set_addr1_cfg(range.cfg as u32) };
-    }
-
-    #[inline]
-    pub fn set_addr2(&mut self, range: AddrRange) {
-        self.0.addr2_a = range.a;
-        self.0.addr2_b = range.b;
-        unsafe { self.0.config.ctl.set_addr2_cfg(range.cfg as u32) };
-    }
-
-    #[inline]
-    pub fn set_addr3(&mut self, range: AddrRange) {
-        self.0.addr3_a = range.a;
-        self.0.addr3_b = range.b;
-        unsafe { self.0.config.ctl.set_addr3_cfg(range.cfg as u32) };
-    }
-
     #[inline]
     pub fn addr0(&self) -> AddrRange {
         unsafe {
@@ -143,4 +112,47 @@ impl AddrFilter {
                 AddrConfig::try_from(self.0.config.ctl.addr3_cfg()).unwrap())
         }
     }
+}
+
+pub struct AddrFilterBuilder (pub(super) pt_conf_addr_filter);
+impl AddrFilterBuilder {
+    pub fn new() -> Self { unsafe { mem::zeroed() }}
+
+    #[inline]
+    pub fn addr0(&mut self, range: AddrRange) -> &mut Self {
+        self.0.addr0_a = range.a;
+        self.0.addr0_b = range.b;
+        unsafe { self.0.config.ctl.set_addr0_cfg(range.cfg as u32) };
+
+        self
+    }
+
+    #[inline]
+    pub fn addr1(&mut self, range: AddrRange) -> &mut Self {
+        self.0.addr1_a = range.a;
+        self.0.addr1_b = range.b;
+        unsafe { self.0.config.ctl.set_addr1_cfg(range.cfg as u32) };
+
+        self
+    }
+
+    #[inline]
+    pub fn addr2(&mut self, range: AddrRange) -> &mut Self {
+        self.0.addr2_a = range.a;
+        self.0.addr2_b = range.b;
+        unsafe { self.0.config.ctl.set_addr2_cfg(range.cfg as u32) };
+
+        self
+    }
+
+    #[inline]
+    pub fn addr3(&mut self, range: AddrRange) -> &mut Self {
+        self.0.addr3_a = range.a;
+        self.0.addr3_b = range.b;
+        unsafe { self.0.config.ctl.set_addr3_cfg(range.cfg as u32) };
+
+        self
+    }
+
+    pub fn finish(&self) -> AddrFilter { AddrFilter(self.0) }
 }
