@@ -1,5 +1,5 @@
 [package]
-name = "libipt-rs"
+name = "libipt"
 version = "0.1.0"
 authors = ["sum_catnip <catnip@catnip.fyi>"]
 edition = "2018"
