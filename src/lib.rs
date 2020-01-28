@@ -1,6 +1,7 @@
 pub mod config;
-pub use config::Config;
+pub use config::*;
 pub mod encoder;
+pub use encoder::Encoder;
 pub mod error;
 pub use error::PtError;
 pub mod packet;
