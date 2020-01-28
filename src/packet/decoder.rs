@@ -4,7 +4,7 @@ use crate::error::{
     ensure_ptok
 };
 use super::Packet;
-use crate::Config;
+use crate::config::Config;
 
 use std::mem;
 use std::marker::PhantomData;

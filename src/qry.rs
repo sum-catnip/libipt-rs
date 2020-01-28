@@ -3,7 +3,7 @@ use crate::error::{
     ensure_ptok, extract_pterr,
     deref_ptresult_mut, PtErrorCode
 };
-use crate::Config;
+use crate::config::Config;
 use crate::Status;
 use crate::Event;
 
