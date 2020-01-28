@@ -39,17 +39,19 @@ use libipt_sys::{
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::config::ConfigBuilder;
 
     #[test]
     fn test_insndec_alloc() {
-        InsnDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
+        InsnDecoder::new(&ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
     }
 
     #[test ]
     fn test_insndec_props() {
         // this just checks memory safety for property access
         // usage can be found in the integration tests
-        let mut b = InsnDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
+        let mut b = InsnDecoder::new(
+            &ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
         let a = b.asid().unwrap();
         assert!(a.cr3().is_none());
         assert!(a.vmcs().is_none());

@@ -9,7 +9,7 @@ mod test {
 
     #[test]
     fn test_addrfilter() {
-        let mut filter = AddrFilterBuilder::new()
+        let filter = AddrFilterBuilder::new()
             .addr0(AddrRange::new(1, 2, AddrConfig::DISABLED))
             .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
             .addr2(AddrRange::new(5, 6, AddrConfig::STOP))

@@ -26,17 +26,19 @@ use libipt_sys::{
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::config::ConfigBuilder;
 
     #[test]
     fn test_pktdec_alloc() {
-        PacketDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
+        PacketDecoder::new(&ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
     }
 
     #[test ]
     fn test_pktdec_props() {
         // this just checks memory safety for property access
         // usage can be found in the integration tests
-        let mut p = PacketDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
+        let mut p = PacketDecoder::new(
+            &ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
         assert!(p.config().is_ok());
         assert!(p.offset().is_err());
         assert!(p.sync_offset().is_err());

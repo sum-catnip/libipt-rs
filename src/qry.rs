@@ -33,18 +33,19 @@ use libipt_sys::{
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::config::ConfigBuilder;
 
     #[test]
     fn test_qrydec_alloc() {
-        QueryDecoder::new(&Config::<()>::new(&mut [0; 0])).unwrap();
+        QueryDecoder::new(&ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
     }
 
     #[test ]
     fn test_qrydec_props() {
         // this just checks memory safety for property access
         // usage can be found in the integration tests
-        let mut b = QueryDecoder::new(&Config::<()>::new(&mut [0; 0]))
-            .unwrap();
+        let mut b = QueryDecoder::new(
+            &ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
 
         assert!(b.cond_branch().is_err());
         assert!(b.indirect_branch().is_err());

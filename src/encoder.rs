@@ -21,18 +21,19 @@ use libipt_sys::{
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::ConfigBuilder;
     use crate::packet::mnt::Mnt;
 
     #[test]
     fn test_pktdec_alloc() {
-        Encoder::new(&mut Config::<()>::new(&mut [0; 0])).unwrap();
+        Encoder::new(&mut ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
     }
 
     #[test ]
     fn test_pktdec_props() {
         // this just checks memory safety for property access
         // usage can be found in the integration tests
-        let mut p = Encoder::new(&mut Config::<()>::new(&mut [0; 0]))
+        let mut p = Encoder::new(&mut ConfigBuilder::new(&mut [0; 0]).finish())
             .unwrap();
 
         assert!(p.config().is_ok());
