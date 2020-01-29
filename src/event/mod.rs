@@ -22,38 +22,41 @@ use libipt_sys::{
     pt_event_type_ptev_vmcs as PT_EVENT_TYPE_PTEV_VMCS
 };
 
-pub mod enabled;
+mod enabled;
 pub use enabled::*;
-pub mod disabled;
+mod disabled;
 pub use disabled::*;
-pub mod branch;
+mod branch;
 pub use branch::*;
-pub mod paging;
+mod paging;
 pub use paging::*;
-pub mod overflow;
+mod overflow;
 pub use overflow::*;
-pub mod exec_mode;
+mod exec_mode;
 pub use exec_mode::*;
-pub mod tsx;
+mod tsx;
 pub use tsx::*;
-pub mod vmcs;
+mod vmcs;
 pub use vmcs::*;
-pub mod exstop;
+mod exstop;
 pub use exstop::*;
-pub mod mwait;
+mod mwait;
 pub use mwait::*;
-pub mod pwre;
+mod pwre;
 pub use pwre::*;
-pub mod pwrx;
+mod pwrx;
 pub use pwrx::*;
-pub mod ptwrite;
+mod ptwrite;
 pub use ptwrite::*;
-pub mod tick;
+mod tick;
 pub use tick::*;
-pub mod mnt;
+mod mnt;
 pub use mnt::*;
-pub mod cbr;
+mod cbr;
 pub use cbr::*;
+
+mod qry;
+pub use qry::*;
 
 #[cfg(test)]
 mod test {

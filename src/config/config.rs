@@ -1,7 +1,7 @@
 use super::cpu::Cpu;
 use super::freqency::Frequency;
 use super::filter::AddrFilter;
-use crate::packet::unknown::Unknown;
+use crate::packet::Unknown;
 
 use std::mem;
 use std::borrow::Cow;
@@ -19,7 +19,7 @@ use libipt_sys::{
 mod test {
     use super::*;
     use crate::config::*;
-    use crate::packet::unknown::Unknown;
+    use crate::packet::Unknown;
 
     #[test]
     fn test_config_empty() {

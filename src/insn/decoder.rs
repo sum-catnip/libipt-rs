@@ -5,7 +5,7 @@ use crate::error::{
 };
 use crate::config::Config;
 use crate::Asid;
-use crate::Event;
+use crate::event::Event;
 use crate::Status;
 use crate::Image;
 use super::Insn;

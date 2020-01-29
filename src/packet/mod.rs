@@ -32,33 +32,59 @@ use libipt_sys::{
 #[macro_use]
 mod conversions;
 
-pub mod pad;
-pub mod ovf;
-pub mod psb;
-pub mod psbend;
-pub mod stop;
-pub mod invalid;
+mod pad;
+pub use pad::*;
+mod ovf;
+pub use ovf::*;
+mod psb;
+pub use psb::*;
+mod psbend;
+pub use psbend::*;
+mod stop;
+pub use stop::*;
+mod invalid;
+pub use invalid::*;
 
-pub mod tnt;
-pub mod ip;
-pub mod mode;
-pub mod pip;
-pub mod tsc;
-pub mod cbr;
-pub mod tma;
-pub mod mtc;
-pub mod cyc;
-pub mod vmcs;
-pub mod mnt;
-pub mod exstop;
-pub mod mwait;
-pub mod pwre;
-pub mod pwrx;
-pub mod ptw;
-pub mod unknown;
+mod tnt;
+pub use tnt::*;
+mod ip;
+pub use ip::*;
+mod mode;
+pub use mode::*;
+mod pip;
+pub use pip::*;
+mod tsc;
+pub use tsc::*;
+mod cbr;
+pub use cbr::*;
+mod tma;
+pub use tma::*;
+mod mtc;
+pub use mtc::*;
+mod cyc;
+pub use cyc::*;
+mod vmcs;
+pub use vmcs::*;
+mod mnt;
+pub use mnt::*;
+mod exstop;
+pub use exstop::*;
+mod mwait;
+pub use mwait::*;
+mod pwre;
+pub use pwre::*;
+mod pwrx;
+pub use pwrx::*;
+mod ptw;
+pub use ptw::*;
+mod unknown;
+pub use unknown::*;
 
-pub mod decoder;
+mod decoder;
 pub use decoder::PacketDecoder;
+
+mod encoder;
+pub use encoder::Encoder;
 
 #[cfg(test)]
 mod test {

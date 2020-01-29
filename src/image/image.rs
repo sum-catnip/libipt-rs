@@ -123,7 +123,8 @@ unsafe extern "C" fn read_callback(buffer: *mut u8,
     c(slice::from_raw_parts_mut(buffer, size), ip, Asid(*asid))
 }
 
-/// The traced memory image.
+/// An Image defines the memory image that was traced as a collection
+/// of file sections and the virtual addresses at which those sections were loaded.
 pub struct Image<'a> {
     // the wrapped inst
     pub(crate) inner: &'a mut pt_image,

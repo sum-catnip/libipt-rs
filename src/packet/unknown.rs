@@ -25,10 +25,4 @@ impl<T> Unknown<T> {
     pub fn data(self) -> Option<T> {
         self.0.map(|d| *d)
     }
-
-    /*
-    /// The custom data you returned from the callback
-    pub fn data_mut(&mut self) -> Option<&mut dyn Any> {
-        self.0.as_mut().map(|x| &mut **x as &mut dyn Any)
-    }*/
 }

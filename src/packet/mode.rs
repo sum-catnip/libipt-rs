@@ -54,7 +54,9 @@ impl Into<pt_packet_mode__bindgen_ty_1> for Tsx {
 
 #[derive(Clone, Copy)]
 pub enum Payload {
+    /// A mode.exec packet.
     Exec(Exec),
+    /// A mode.tsx packet.
     Tsx(Tsx)
 }
 
