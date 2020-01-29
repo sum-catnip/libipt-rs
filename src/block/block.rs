@@ -109,9 +109,8 @@ impl Block {
     /// instruction does not fit entirely into this block's section.
     ///
     /// This field is only valid if truncated is set.
-    pub fn raw(&self) -> Option<&[u8]> {
-        if self.truncated() { Some(&self.0.raw[..self.0.size as usize]) }
-        else { None }
+    pub fn raw(&self) -> &[u8] {
+        &self.0.raw[..self.0.size as usize]
     }
 
     /// A collection of flags giving additional information about the
