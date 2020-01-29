@@ -33,7 +33,7 @@ mod test {
        assert_eq!(blk.mode(), ExecModeType::Bit32);
        assert_eq!(blk.class(), Class::Error);
        assert_eq!(blk.ninsn(), 4);
-       assert_eq!(blk.raw(), Some(&data[..8]));
+       assert_eq!(blk.raw(), &data[..8]);
        assert!(blk.truncated());
        assert!(!blk.speculative());
     }
@@ -60,7 +60,7 @@ mod test {
        assert_eq!(blk.mode(), ExecModeType::Bit32);
        assert_eq!(blk.class(), Class::Error);
        assert_eq!(blk.ninsn(), 4);
-       assert!(blk.raw().is_none());
+       assert!(blk.raw().len() > 0);
        assert!(!blk.truncated());
        assert!(!blk.speculative());
     }
