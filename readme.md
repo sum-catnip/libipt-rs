@@ -6,6 +6,8 @@ it can be partially or fully integrated into your tool.
 
 This Repository contains high level rust bindings for the complete functionality provided by [the original libipt library](https://github.com/intel/libipt).
 
+Huge thanks to the rust discord community for being awesome and helping me out with some stuffs :D.
+
 # State
 
 ## Testing
