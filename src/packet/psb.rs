@@ -3,6 +3,11 @@ use libipt_sys::{pt_packet, pt_packet_type_ppt_psb};
 
 #[derive(Clone, Copy)]
 pub struct Psb {}
+
+impl Psb {
+    pub fn new() -> Self { Psb {} }
+}
+
 impl From<Psb> for pt_packet {
     fn from(_: Psb) -> Self {
         pt_packet {

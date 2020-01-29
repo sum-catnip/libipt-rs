@@ -3,6 +3,11 @@ use libipt_sys::{pt_packet, pt_packet_type_ppt_psbend};
 
 #[derive(Clone, Copy)]
 pub struct Psbend {}
+
+impl Psbend {
+    pub fn new() -> Self { Psbend {} }
+}
+
 impl From<Psbend> for pt_packet {
     fn from(_: Psbend) -> Self {
         pt_packet {

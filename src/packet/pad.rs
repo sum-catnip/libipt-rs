@@ -3,6 +3,11 @@ use libipt_sys::{pt_packet, pt_packet_type_ppt_pad};
 
 #[derive(Clone, Copy)]
 pub struct Pad {}
+
+impl Pad {
+    pub fn new() -> Self { Pad {} }
+}
+
 impl From<Pad> for pt_packet {
     fn from(_: Pad) -> Self {
         pt_packet {
