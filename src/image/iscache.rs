@@ -16,7 +16,8 @@ use libipt_sys::{
     pt_iscache_alloc,
     pt_iscache_name,
     pt_iscache_read,
-    pt_iscache_set_limit
+    pt_iscache_set_limit,
+    pt_iscache_free
 };
 
 #[cfg(test)]
@@ -164,5 +165,11 @@ impl<'a> SectionCache<'a> {
     /// A limit of zero disables caching.
     pub fn set_limit(&mut self, limit: u64) -> Result<(), PtError> {
         ensure_ptok(unsafe { pt_iscache_set_limit(self.0, limit) })
+    }
+}
+
+impl<'a> Drop for SectionCache<'a> {
+    fn drop(&mut self) {
+        unsafe { pt_iscache_free(self.0) }
     }
 }
