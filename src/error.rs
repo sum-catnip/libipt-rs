@@ -181,10 +181,7 @@ pub(crate) fn deref_ptresult_mut<T>(res: *mut T) -> Result<&'static mut T, PtErr
 // Discards the error code
 #[inline]
 pub(crate) fn ensure_ptok(code: i32) -> Result<(), PtError> {
-    match code {
-        x if x >= 0 => Ok(()),
-        _ => Err(PtError::from_code(code))
-    }
+    extract_pterr(code).map(|_|())
 }
 
 // Turns a negative code into a PtErr.
