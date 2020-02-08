@@ -5,6 +5,7 @@ use libipt::packet::*;
 fn test_encoder_all_packets() {
     let mut inp = [0; 132];
     let mut cfg = ConfigBuilder::new(&mut inp)
+        .unwrap()
         .cpu(Cpu::intel(1, 2, 3))
         .finish();
 

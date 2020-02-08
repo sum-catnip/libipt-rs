@@ -37,15 +37,20 @@ mod test {
 
     #[test]
     fn test_qrydec_alloc() {
-        QueryDecoder::new(&ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
+        let kek = &mut [2; 1];
+        QueryDecoder::new(
+            &ConfigBuilder::new(kek).unwrap().finish()
+        ).unwrap();
     }
 
     #[test ]
     fn test_qrydec_props() {
+        let kek = &mut [2; 3];
         // this just checks memory safety for property access
         // usage can be found in the integration tests
         let mut b = QueryDecoder::new(
-            &ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
+            &ConfigBuilder::new(kek).unwrap().finish()
+        ).unwrap();
 
         assert!(b.cond_branch().is_err());
         assert!(b.indirect_branch().is_err());

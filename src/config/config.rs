@@ -2,6 +2,7 @@ use super::cpu::Cpu;
 use super::freqency::Frequency;
 use super::filter::AddrFilter;
 use crate::packet::Unknown;
+use crate::error::{ PtError, PtErrorCode };
 
 use std::mem;
 use std::borrow::Cow;
@@ -22,8 +23,9 @@ mod test {
     use crate::packet::Unknown;
 
     #[test]
+    #[should_panic]
     fn test_config_empty() {
-        let c = ConfigBuilder::new(&mut [0; 0]).finish();
+        let c = ConfigBuilder::new(&mut [0; 0]).unwrap().finish();
         assert_eq!(c.0.begin, c.0.end);
         assert_eq!(c.0.size, mem::size_of::<pt_config>());
     }
@@ -32,7 +34,7 @@ mod test {
     fn test_config_buf() {
         let mut data = [0; 16];
         let len = data.len();
-        let c = ConfigBuilder::new(&mut data).finish();
+        let c = ConfigBuilder::new(&mut data).unwrap().finish();
         assert_eq!(c.0.end as usize - c.0.begin as usize, len);
     }
 
@@ -42,6 +44,7 @@ mod test {
         let c = ConfigBuilder::with_callback(
             &mut data, |c, p| {
                 (Unknown::new(c.0.cpu.model + p[0]), 1) })
+            .unwrap()
             .filter(AddrFilterBuilder::new()
                 .addr0(AddrRange::new(1, 2, AddrConfig::STOP))
                 .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
@@ -120,7 +123,9 @@ mod test {
         let mut cfg = ConfigBuilder::with_callback(
             &mut kektop,
             |c, p,| { (Unknown::new(c.0.cpu.stepping + p[8]), 17) })
-        .cpu(Cpu::intel(1, 2, 3)).finish();
+            .unwrap()
+            .cpu(Cpu::intel(1, 2, 3))
+            .finish();
 
         for _ in 0..10 { assert!(check_callback(&mut cfg, 13, 17)) }
     }
@@ -134,7 +139,7 @@ mod test {
             if let Cow::Owned(_) = c.0 { panic!("BUG!") }
             // assert_eq!(c.0.as_ref() as *const _, raw);
             (Unknown::new(p[100]), 17)
-        }).cpu(Cpu::intel(1, 2, 3)).finish();
+        }).unwrap().cpu(Cpu::intel(1, 2, 3)).finish();
 
         unsafe {
             let mut ukn: pt_packet_unknown = std::mem::zeroed();
@@ -149,7 +154,7 @@ mod test {
         let mut x = [10; 10];
         let a : Config<()>;
         {
-            let mut c = ConfigBuilder::new(&mut x);
+            let mut c = ConfigBuilder::new(&mut x).unwrap();
             a = c.finish();
             c.cpu(Cpu::intel(1, 2, 3));
             let b = c.finish();
@@ -183,17 +188,22 @@ unsafe extern "C" fn decode_callback<'a, F, C>(ukn: *mut pt_packet_unknown,
 /// A helper type to create the libipt Configuration instance
 pub struct ConfigBuilder<'a, T> (pt_config, PhantomData<&'a mut T>);
 impl<'a, T> ConfigBuilder<'a, T> {
+    // when theres a bug here, there might be on in `new` too.
     /// Initializes a Config instance with a buffer and decoder callback
     pub fn with_callback<F>(buf: &'a mut [u8], mut cb: F) -> Result<Self, PtError>
         where F: FnMut(&Config<T>, &[u8]) -> (Unknown<T>, u32),
               F: 'a {
+        // yeah.. libipt doesnt handle this -_-
+        if buf.len() < 1 { return Err(
+            PtError::new(PtErrorCode::Invalid, "buffer cant be empty!")
+        )}
         let mut cfg: pt_config = unsafe { mem::zeroed() };
         cfg.size  = mem::size_of::<pt_config>();
         cfg.begin = buf.as_mut_ptr();
         cfg.end   = unsafe { buf.as_mut_ptr().offset(buf.len() as isize) };
         cfg.decode.callback = Some(decode_callback::<F, T>);
         cfg.decode.context  = &mut cb as *mut _ as *mut c_void;
-        ConfigBuilder::<T>(cfg, PhantomData)
+        Ok(ConfigBuilder::<T>(cfg, PhantomData))
     }
 
     /// The cpu used for capturing the data.
@@ -238,12 +248,16 @@ impl<'a> ConfigBuilder<'a, ()> {
     /// Initializes a Config instance with only a buffer.
     /// If you want to use a decoder callback,
     /// use the `with_callback` function
-    pub fn new(buf: &'a mut [u8]) -> ConfigBuilder<()> {
+    /// returns `Invalid` when buf is empty
+    pub fn new(buf: &'a mut [u8]) -> Result<ConfigBuilder<()>, PtError> {
+        if buf.len() < 1 { return Err(
+            PtError::new(PtErrorCode::Invalid, "buffer cant be empty!")
+        )}
         let mut cfg: pt_config = unsafe { mem::zeroed() };
         cfg.size  = mem::size_of::<pt_config>();
         cfg.begin = buf.as_mut_ptr();
         cfg.end   = unsafe { buf.as_mut_ptr().offset(buf.len() as isize) };
-        ConfigBuilder::<()>(cfg, PhantomData)
+        Ok(ConfigBuilder::<()>(cfg, PhantomData))
     }
 }
 

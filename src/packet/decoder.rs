@@ -30,15 +30,21 @@ mod test {
 
     #[test]
     fn test_pktdec_alloc() {
-        PacketDecoder::new(&ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
+        let daturu = &mut [11; 11];
+        PacketDecoder::new(&ConfigBuilder::new(daturu)
+            .unwrap()
+            .finish()
+        ).unwrap();
     }
 
     #[test ]
     fn test_pktdec_props() {
+        let daturu = &mut [11; 11];
         // this just checks memory safety for property access
         // usage can be found in the integration tests
         let mut p = PacketDecoder::new(
-            &ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
+            &ConfigBuilder::new(daturu).unwrap().finish()
+        ).unwrap();
         assert!(p.config().is_ok());
         assert!(p.offset().is_err());
         assert!(p.sync_offset().is_err());

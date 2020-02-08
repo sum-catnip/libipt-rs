@@ -26,15 +26,19 @@ mod tests {
 
     #[test]
     fn test_pktdec_alloc() {
-        Encoder::new(&mut ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
+        let kek = &mut [1; 2];
+        Encoder::new(&mut ConfigBuilder::new(kek).unwrap().finish())
+            .unwrap();
     }
 
     #[test ]
     fn test_pktdec_props() {
+        let kek = &mut [1; 2];
         // this just checks memory safety for property access
         // usage can be found in the integration tests
-        let mut p = Encoder::new(&mut ConfigBuilder::new(&mut [0; 0]).finish())
-            .unwrap();
+        let mut p = Encoder::new(
+            &mut ConfigBuilder::new(kek).unwrap().finish()
+        ).unwrap();
 
         assert!(p.config().is_ok());
         assert_eq!(p.offset().unwrap(), 0);

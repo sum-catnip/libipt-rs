@@ -43,15 +43,20 @@ mod test {
 
     #[test]
     fn test_blkdec_alloc() {
-        BlockDecoder::new(&ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
+        let kek = &mut [1; 2];
+        BlockDecoder::new(
+            &ConfigBuilder::new(kek).unwrap().finish()
+        ).unwrap();
     }
 
     #[test ]
     fn test_blkdec_props() {
+        let kek = &mut [1; 2];
         // this just checks memory safety for property access
         // usage can be found in the integration tests
         let mut b = BlockDecoder::new(
-            &ConfigBuilder::new(&mut [0; 0]).finish()).unwrap();
+            &ConfigBuilder::new(kek).unwrap().finish()
+        ).unwrap();
         let a = b.asid().unwrap();
         assert!(a.cr3().is_none());
         assert!(a.vmcs().is_none());
@@ -195,8 +200,9 @@ impl<'a, T> BlockDecoder<'a, T> {
         })
     }
 
-    pub fn sync_backward(&mut self) -> Result<(), PtError> {
-        ensure_ptok(unsafe { pt_blk_sync_backward(self.0) })
+    pub fn sync_backward(&mut self) -> Result<Status, PtError> {
+        extract_pterr(unsafe { pt_blk_sync_backward(self.0) })
+            .map(|s| Status::from_bits(s).unwrap())
     }
 
     /// Synchronize an Intel PT block decoder.
@@ -207,8 +213,9 @@ impl<'a, T> BlockDecoder<'a, T> {
     /// Returns BadOpc if an unknown packet is encountered.
     /// Returns BadPacket if an unknown packet payload is encountered.
     /// Returns Eos if no further synchronization point is found.
-    pub fn sync_forward(&mut self) -> Result<(), PtError> {
-        ensure_ptok(unsafe { pt_blk_sync_forward(self.0) })
+    pub fn sync_forward(&mut self) -> Result<Status, PtError> {
+        extract_pterr(unsafe { pt_blk_sync_forward(self.0) })
+            .map(|s| Status::from_bits(s).unwrap())
     }
 
     /// Manually synchronize an Intel PT block decoder.
