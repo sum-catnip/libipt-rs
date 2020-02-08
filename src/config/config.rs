@@ -172,8 +172,6 @@ unsafe extern "C" fn decode_callback<'a, F, C>(ukn: *mut pt_packet_unknown,
     let c = &mut *c;
 
     let (res, bytes) = c(&(&*cfg).into(), pos);
-    // TODO
-    // REMEMBER TO CATCH THE BOX FROM THE DECODER
     (*ukn).priv_ = match res.0 {
         Some(r) => Box::into_raw(r) as *mut _,
         None => std::ptr::null_mut()
@@ -186,7 +184,7 @@ unsafe extern "C" fn decode_callback<'a, F, C>(ukn: *mut pt_packet_unknown,
 pub struct ConfigBuilder<'a, T> (pt_config, PhantomData<&'a mut T>);
 impl<'a, T> ConfigBuilder<'a, T> {
     /// Initializes a Config instance with a buffer and decoder callback
-    pub fn with_callback<F>(buf: &'a mut [u8], mut cb: F) -> Self
+    pub fn with_callback<F>(buf: &'a mut [u8], mut cb: F) -> Result<Self, PtError>
         where F: FnMut(&Config<T>, &[u8]) -> (Unknown<T>, u32),
               F: 'a {
         let mut cfg: pt_config = unsafe { mem::zeroed() };

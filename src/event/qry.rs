@@ -162,10 +162,10 @@ impl<'a, T> QueryDecoder<'a, T> {
     /// Returns BadQuery if no indirect branch is found.
     /// Returns Eos if decoding reached the end of the Intel PT buffer.
     /// Returns Nosync if decoder is out of sync.
-    pub fn indirect_branch(&mut self) -> Result<u64, PtError> {
+    pub fn indirect_branch(&mut self) -> Result<(u64, Status), PtError> {
         let mut ip: u64 = 0;
-        ensure_ptok(unsafe { pt_qry_indirect_branch(self.0, &mut ip) })
-            .map(|_| ip)
+        extract_pterr(unsafe { pt_qry_indirect_branch(self.0, &mut ip) })
+            .map(|s| (ip, Status::from_bits(s).unwrap()))
     }
 
     /// Synchronize an Intel PT query decoder.
