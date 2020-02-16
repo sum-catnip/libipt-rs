@@ -1,6 +1,6 @@
 [package]
 name = "libipt"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["sum_catnip <catnip@catnip.fyi>"]
 edition = "2018"
 license = "MIT"
