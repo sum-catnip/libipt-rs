@@ -38,7 +38,7 @@ pub mod insn;
 mod version;
 pub use version::Version;
 mod image;
-pub use image::Image;
+pub use image::*;
 mod asid;
 pub use asid::Asid;
 mod flags;
