@@ -2,7 +2,7 @@ use libipt_sys::{pt_packet_tsc, pt_packet_type_ppt_tsc};
 
 /// A TSC packet.
 /// Packet: tsc
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Tsc (pt_packet_tsc);
 impl Tsc {
     #[inline]

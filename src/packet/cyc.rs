@@ -2,7 +2,7 @@ use libipt_sys::{pt_packet_cyc, pt_packet_type_ppt_cyc};
 
 /// A CYC packet.
 /// Packet: cyc
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Cyc (pt_packet_cyc);
 impl Cyc {
     #[inline]

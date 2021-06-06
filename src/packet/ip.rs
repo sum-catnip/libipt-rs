@@ -15,7 +15,7 @@ use libipt_sys::{
 };
 
 /// The IP compression
-#[derive(Clone, Copy, TryFromPrimitive, IntoPrimitive)]
+#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
 #[repr(i32)]
 pub enum Compression {
     /// No payload. The IP has been suppressed
@@ -39,7 +39,7 @@ pub enum Compression {
 
 /// A packet with IP payload.
 /// Packet: tip
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Tip (pt_packet_ip);
 impl Tip {
     #[inline]
@@ -71,7 +71,7 @@ impl Tip {
 
 /// A packet with IP payload.
 /// Packet: fup
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Fup (pt_packet_ip);
 impl Fup {
     #[inline]
@@ -103,7 +103,7 @@ impl Fup {
 
 /// A packet with IP payload.
 /// Packet: tip.pge
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct TipPge (pt_packet_ip);
 impl TipPge {
     #[inline]
@@ -135,7 +135,7 @@ impl TipPge {
 
 /// A packet with IP payload.
 /// Packet: tip.pgd
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct TipPgd (pt_packet_ip);
 impl TipPgd {
     #[inline]

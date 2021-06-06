@@ -1,6 +1,6 @@
 use libipt_sys::pt_packet;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Invalid {}
 
 impl Into<Invalid> for pt_packet {

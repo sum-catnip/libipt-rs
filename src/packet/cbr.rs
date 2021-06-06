@@ -2,7 +2,7 @@ use libipt_sys::{pt_packet_cbr, pt_packet_type_ppt_cbr};
 
 /// A CBR packet.
 /// Packet: cbr
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Cbr (pt_packet_cbr);
 impl Cbr {
     #[inline]

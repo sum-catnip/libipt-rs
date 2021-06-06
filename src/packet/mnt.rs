@@ -2,7 +2,7 @@ use libipt_sys::{pt_packet_mnt, pt_packet_type_ppt_mnt};
 
 /// A MNT packet.
 /// Packet: mnt
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Mnt (pt_packet_mnt);
 impl Mnt {
     #[inline]

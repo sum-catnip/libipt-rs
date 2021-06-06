@@ -6,7 +6,7 @@ use libipt_sys::{
 
 /// A PIP packet.
 /// Packet: pip
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Pip (pt_packet_pip);
 impl Pip {
     #[inline]

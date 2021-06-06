@@ -6,7 +6,7 @@ use libipt_sys::{
 
 /// A PTW packet.
 /// Packet: ptw
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Ptw (pt_packet_ptw);
 impl Ptw {
     #[inline]

@@ -2,7 +2,7 @@ use libipt_sys::{pt_packet_tma, pt_packet_type_ppt_tma};
 
 /// A TMA packet.
 /// Packet: tma
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Tma (pt_packet_tma);
 impl Tma {
     #[inline]
