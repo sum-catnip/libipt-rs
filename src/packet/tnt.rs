@@ -6,7 +6,7 @@ use libipt_sys::{
 
 /// A TNT-8 packet.
 /// Packet: tnt-8
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Tnt8 (pt_packet_tnt);
 impl Tnt8 {
     #[inline]
@@ -32,7 +32,7 @@ impl Tnt8 {
 
 /// A TNT-64 packet.
 /// Packet: tnt-64
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Tnt64 (pt_packet_tnt);
 impl Tnt64 {
     #[inline]

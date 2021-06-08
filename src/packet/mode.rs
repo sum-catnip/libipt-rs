@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Formatter};
+
 use bitflags::bitflags;
 use libipt_sys::{
     pt_mode_leaf_pt_mol_exec as PT_MODE_LEAF_PT_MOL_EXEC,
@@ -107,7 +109,13 @@ impl Mode {
             Payload::Tsx(t)  => self.0.bits = t.into()
         }
     }
-} 
+}
+
+impl Debug for Mode {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        f.write_fmt(format_args!("Mode({{ leaf: {:?} }})", self.0.leaf))
+    }
+}
 
 wrap2raw!(Mode, pt_packet_type_ppt_mode, mode);
 raw2wrap!(Mode, Mode, pt_packet_mode);

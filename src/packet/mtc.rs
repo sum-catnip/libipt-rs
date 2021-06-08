@@ -2,7 +2,7 @@ use libipt_sys::{pt_packet_mtc, pt_packet_type_ppt_mtc};
 
 /// A MTC packet.
 /// Packet: mtc
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Mtc (pt_packet_mtc);
 impl Mtc {
     #[inline]

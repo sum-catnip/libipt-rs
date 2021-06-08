@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Formatter};
+
 use libipt_sys::{
     pt_packet,
     pt_packet_type_ppt_cbr as PT_PACKET_TYPE_PPT_CBR,
@@ -137,6 +139,40 @@ pub enum Packet<T> {
     Pwre(pwre::Pwre),
     Pwrx(pwrx::Pwrx),
     Ptw(ptw::Ptw)
+}
+
+impl<T> Debug for Packet<T> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Self::Invalid(pack) => f.write_fmt(format_args!("Invalid({:?})", pack)),
+            Self::Psbend(pack) => f.write_fmt(format_args!("Psbend({:?})", pack)),
+            Self::Stop(pack) => f.write_fmt(format_args!("Stop({:?})", pack)),
+            Self::Pad(pack) => f.write_fmt(format_args!("Pad({:?})", pack)),
+            Self::Psb(pack) => f.write_fmt(format_args!("Psb({:?})", pack)),
+            Self::Ovf(pack) => f.write_fmt(format_args!("Ovf({:?})", pack)),
+            Self::Unknown(_) => f.write_str("Unknown"),
+            Self::Fup(pack) => f.write_fmt(format_args!("Fup({:?})", pack)),
+            Self::Tip(pack) => f.write_fmt(format_args!("Tip({:?})", pack)),
+            Self::TipPge(pack) => f.write_fmt(format_args!("TipPge({:?})", pack)),
+            Self::TipPgd(pack) => f.write_fmt(format_args!("TipPgd({:?})", pack)),
+            Self::Tnt8(pack) => f.write_fmt(format_args!("Tnt8({:?})", pack)),
+            Self::Tnt64(pack) => f.write_fmt(format_args!("Tnt64({:?})", pack)),
+            Self::Mode(pack) => f.write_fmt(format_args!("Mode({:?})", pack)),
+            Self::Pip(pack) => f.write_fmt(format_args!("Pip({:?})", pack)),
+            Self::Vmcs(pack) => f.write_fmt(format_args!("Vmcs({:?})", pack)),
+            Self::Cbr(pack) => f.write_fmt(format_args!("Cbr({:?})", pack)),
+            Self::Tsc(pack) => f.write_fmt(format_args!("Tsc({:?})", pack)),
+            Self::Tma(pack) => f.write_fmt(format_args!("Tma({:?})", pack)),
+            Self::Mtc(pack) => f.write_fmt(format_args!("Mtc({:?})", pack)),
+            Self::Cyc(pack) => f.write_fmt(format_args!("Cyc({:?})", pack)),
+            Self::Mnt(pack) => f.write_fmt(format_args!("Mnt({:?})", pack)),
+            Self::Exstop(pack) => f.write_fmt(format_args!("Exstop({:?})", pack)),
+            Self::Mwait(pack) => f.write_fmt(format_args!("Mwait({:?})", pack)),
+            Self::Pwre(pack) => f.write_fmt(format_args!("Pwre({:?})", pack)),
+            Self::Pwrx(pack) => f.write_fmt(format_args!("Pwrx({:?})", pack)),
+            Self::Ptw(pack) => f.write_fmt(format_args!("Ptw({:?})", pack)),
+        }
+    }
 }
 
 impl<T> From<pt_packet> for Packet<T> {

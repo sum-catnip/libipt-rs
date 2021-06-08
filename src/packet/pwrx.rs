@@ -2,7 +2,7 @@ use libipt_sys::{pt_packet_pwrx, pt_packet_type_ppt_pwrx};
 
 /// A PWRX packet.
 /// Packet: pwrx
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Pwrx (pt_packet_pwrx);
 impl Pwrx {
     #[inline]

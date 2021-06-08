@@ -1,7 +1,7 @@
 use std::mem;
 use libipt_sys::{pt_packet, pt_packet_type_ppt_ovf};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Ovf {}
 
 impl Ovf {
