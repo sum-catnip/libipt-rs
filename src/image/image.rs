@@ -35,6 +35,62 @@ mod test {
     // the integration tests should have way more stuffs
 
     #[test]
+    fn test_box_func_and_call() {
+        fn func(buf: &mut [u8], size: u64, asid: Asid) -> i32 {
+            assert_eq!(buf, &[10u8, 20u8, 30u8, 40u8]);
+            assert_eq!(size, 50);
+            assert!(asid.cr3().is_none());
+            assert!(asid.vmcs().is_none());
+            42
+        }
+
+        let boxed = BoxedCallback::box_callback(func);
+
+        let mut buf = vec![10u8, 20u8, 30u8, 40u8];
+        let ret = unsafe {
+            BoxedCallback::call(boxed.0, &mut buf, 50, Asid::new(None, None))
+        };
+        assert_eq!(ret, 42);
+    }
+
+    #[test]
+    fn test_box_no_capture_closure_and_call() {
+        let boxed = BoxedCallback::box_callback(|buf, size, asid| {
+            assert_eq!(buf, &[10u8, 20u8, 30u8, 40u8]);
+            assert_eq!(size, 50);
+            assert!(asid.cr3().is_none());
+            assert!(asid.vmcs().is_none());
+            42
+        });
+
+        let mut buf = vec![10u8, 20u8, 30u8, 40u8];
+        let ret = unsafe {
+            BoxedCallback::call(boxed.0, &mut buf, 50, Asid::new(None, None))
+        };
+        assert_eq!(ret, 42);
+    }
+
+    #[test]
+    fn test_box_capture_closure_and_call() {
+        let data = 60;
+
+        let boxed = BoxedCallback::box_callback(move |buf, size, asid| {
+            assert_eq!(buf, &[10u8, 20u8, 30u8, 40u8]);
+            assert_eq!(size, 50);
+            assert_eq!(data, 60);
+            assert!(asid.cr3().is_none());
+            assert!(asid.vmcs().is_none());
+            42
+        });
+
+        let mut buf = vec![10u8, 20u8, 30u8, 40u8];
+        let ret = unsafe {
+            BoxedCallback::call(boxed.0, &mut buf, 50, Asid::new(None, None))
+        };
+        assert_eq!(ret, 42);
+    }
+
+    #[test]
     fn test_img_alloc() {
         Image::new(None).unwrap();
         Image::new(Some("yeet")).unwrap();
@@ -118,9 +174,80 @@ unsafe extern "C" fn read_callback(buffer: *mut u8,
                                    asid: *const pt_asid,
                                    ip: u64,
                                    context: *mut c_void) -> i32 {
-    let c: &mut &mut dyn FnMut(&mut [u8], u64, Asid) -> i32
-        = mem::transmute(context);
-    c(slice::from_raw_parts_mut(buffer, size), ip, Asid(*asid))
+    let buffer = std::slice::from_raw_parts_mut(buffer, size);
+    let asid = Asid(*asid);
+    BoxedCallback::call(context, buffer, ip, asid)
+}
+
+/// Represent a boxed Rust function that can be passed to and from C code.
+///
+/// # Internals
+///
+/// The wrapped raw pointer points to the following structure on the heap:
+///
+/// ```text
+///                   ┌───────────────── Heap ──────────────────┐
+///                   │                                         │
+///                   │                 ┌───────────────────────┼────►┌──────────┐
+///                   │                 │                       │     │          │
+/// box_callback()────┼─►┌────────────┐ │  ┌───►┌────────────┐  │     │  vtable  │
+///                   │  │            │ │  │    │            │  │     │          │
+///                   │  │ vtable ptr ├─┘  │    │            │  │     └──────────┘
+///                   │  │            │    │    │  Captured  │  │
+///                   │  ├────────────┤    │    │            │  │
+///                   │  │            │    │    │    Data    │  │
+///                   │  │  captures  ├────┘    │            │  │
+///                   │  │            │         │            │  │
+///                   │  └────────────┘         └────────────┘  │
+///                   │                                         │
+///                   └─────────────────────────────────────────┘
+/// ```
+#[derive(Debug, Eq, PartialEq)]
+#[repr(transparent)]
+struct BoxedCallback(*mut c_void);
+
+impl BoxedCallback {
+    /// Box the given Rust closure into a `BoxedCallback`.
+    fn box_callback<F>(callback: F) -> Self
+    where
+        F: FnMut(&mut [u8], u64, Asid) -> i32,
+    {
+        // The callback can be an arbitrary Rust closure. So move it onto the heap
+        // (the allocation only takes place when the closure captures).
+        let boxed_dyn_callback: Box<dyn FnMut(&mut [u8], u64, Asid) -> i32>
+            = Box::new(callback);
+
+        // `boxed_dyn_callback` is itself a fat pointer and we cannot just return it.
+        // Instead, move `boxed_dyn_callback` onto the heap and returns the pointer
+        // to the fat pointer on heap.
+        //
+        // Note that we convert `boxed_dyn_callback` into raw pointer as below. This is
+        // because `Box<T: ?Sized>` is not guaranteed to be ABI-compliant with `*T`.
+        let boxed_ptr = Box::new(Box::into_raw(boxed_dyn_callback));
+        let raw_ptr = Box::into_raw(boxed_ptr) as *mut c_void;
+        Self(raw_ptr)
+    }
+
+    /// Invoke the callback behind the given opaque boxed callback pointer.
+    unsafe fn call(opaque_cb: *mut c_void, buf: &mut [u8], size: u64, asid: Asid) -> i32 {
+        let raw_boxed_ptr = opaque_cb
+            as *mut *mut dyn FnMut(&mut [u8], u64, Asid) -> i32;
+        let func = (*raw_boxed_ptr).as_mut().unwrap();
+        func(buf, size, asid)
+    }
+}
+
+impl Drop for BoxedCallback {
+    fn drop(&mut self) {
+        let raw_boxed_ptr = self.0
+            as *mut *mut dyn FnMut(&mut [u8], u64, Asid) -> i32;
+
+        unsafe {
+            // Drop from inside to outside.
+            drop(Box::from(*raw_boxed_ptr));
+            drop(Box::from(raw_boxed_ptr));
+        }
+    }
 }
 
 /// An Image defines the memory image that was traced as a collection
@@ -129,7 +256,9 @@ pub struct Image<'a> {
     // the wrapped inst
     pub(crate) inner: &'a mut pt_image,
     // do we need to free this instance on drop?
-    dealloc: bool
+    dealloc: bool,
+    // Any read data callback set by this `Image` instance.
+    callback: Option<BoxedCallback>,
 }
 
 impl<'a> Image<'a> {
@@ -144,7 +273,7 @@ impl<'a> Image<'a> {
                     PtErrorCode::Invalid,
                     "invalid @name string: contains null bytes"
                 ))?.as_ptr())
-        }}).map(|i| Image { inner: i, dealloc: true })
+        }}).map(|i| Image { inner: i, dealloc: true, callback: None })
     }
 
     /// Get the image name.
@@ -198,12 +327,13 @@ impl<'a> Image<'a> {
     /// If @callback is None, the callback is removed.
     pub fn set_callback<F>(&mut self, callback: Option<F>) -> Result<(), PtError>
                            where F: FnMut(&mut [u8], u64, Asid) -> i32 {
-        ensure_ptok(unsafe { match callback {
+        self.callback = callback.map(BoxedCallback::box_callback);
+        ensure_ptok(unsafe { match &self.callback {
             None => pt_image_set_callback(self.inner, None, ptr::null_mut()),
-            Some(mut cb) =>
+            Some(cb) =>
                 pt_image_set_callback(self.inner,
                                       Some(read_callback),
-                                      &mut &mut cb as *mut _ as *mut c_void)
+                                      cb.0)
         }})
     }
 
@@ -266,7 +396,7 @@ impl<'a> Image<'a> {
 
 impl<'a> From<&'a mut pt_image> for Image<'a> {
     fn from(img: &'a mut pt_image) -> Self {
-        Image { inner: img, dealloc: false }
+        Image { inner: img, dealloc: false, callback: None }
     }
 }
 
