@@ -10,6 +10,6 @@ repository = "https://github.com/sum-catnip/libipt-rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libipt-sys = { git = "https://github.com/fmckeogh/libipt-sys" }
+libipt-sys = { git = "https://github.com/sum-catnip/libipt-sys" }
 bitflags = "2.4.1"
 num_enum = "0.7.1"
