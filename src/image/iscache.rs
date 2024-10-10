@@ -81,6 +81,7 @@ mod test {
 }
 
 /// A cache of traced image sections.
+#[derive(Debug)]
 pub struct SectionCache<'a>(pub(crate) &'a mut pt_image_section_cache);
 impl<'a> SectionCache<'a> {
     /// Allocate a traced memory image section cache.

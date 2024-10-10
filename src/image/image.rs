@@ -227,6 +227,7 @@ impl Drop for BoxedCallback {
 
 /// An Image defines the memory image that was traced as a collection
 /// of file sections and the virtual addresses at which those sections were loaded.
+#[derive(Debug)]
 pub struct Image<'a> {
     // the wrapped inst
     pub(crate) inner: &'a mut pt_image,
