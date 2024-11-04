@@ -249,7 +249,7 @@ impl<'a> ConfigBuilder<'a, ()> {
     /// If you want to use a decoder callback,
     /// use the `with_callback` function
     /// returns `Invalid` when buf is empty
-    pub fn new(buf: &'a mut [u8]) -> Result<ConfigBuilder<()>, PtError> {
+    pub fn new(buf: &'a mut [u8]) -> Result<ConfigBuilder<'a, ()>, PtError> {
         if buf.len() < 1 { return Err(
             PtError::new(PtErrorCode::Invalid, "buffer cant be empty!")
         )}
