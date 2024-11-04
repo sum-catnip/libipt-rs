@@ -19,9 +19,9 @@ bitflags! {
 
 impl Status {
     /// There is no more trace data available.
-    pub fn eos(self) -> bool { self.contains(Status::EOS) }
+    pub fn eos(&self) -> bool { self.contains(Status::EOS) }
     /// There is an event pending.
-    pub fn event_pending(self) -> bool { self.contains(Status::EVENT_PENDING) }
+    pub fn event_pending(&self) -> bool { self.contains(Status::EVENT_PENDING) }
     /// The address has been suppressed.
-    pub fn ip_supressed(self) -> bool { self.contains(Status::IP_SUPRESSED) }
+    pub fn ip_supressed(&self) -> bool { self.contains(Status::IP_SUPRESSED) }
 }

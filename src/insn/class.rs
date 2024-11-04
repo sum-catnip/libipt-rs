@@ -17,7 +17,7 @@ use libipt_sys::{
 /// We provide only a very coarse classification suitable for reconstructing
 /// the execution flow.
 #[derive(Clone, Copy, Debug, TryFromPrimitive, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum Class {
     /// The instruction is a near (function) call.
     Call = pt_insn_class_ptic_call,

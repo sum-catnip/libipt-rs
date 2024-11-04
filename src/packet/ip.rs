@@ -16,7 +16,7 @@ use libipt_sys::{
 
 /// The IP compression
 #[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum Compression {
     /// No payload. The IP has been suppressed
     Suppressed = pt_ip_compression_pt_ipc_suppressed,

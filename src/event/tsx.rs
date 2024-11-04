@@ -13,6 +13,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_tsx;
         evt.variant.tsx = pt_event__bindgen_ty_1__bindgen_ty_9 {
             ip: 11,
+            _bitfield_align_1: [],
             _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_9::new_bitfield_1(1, 0),
             __bindgen_padding_0: Default::default()
         };

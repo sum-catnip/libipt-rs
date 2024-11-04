@@ -106,9 +106,10 @@ bitflags! {
 
 impl From<BlockFlags> for pt_conf_flags {
     fn from(flags: BlockFlags) -> Self {
-        pt_conf_flags {
+        Self {
             variant: pt_conf_flags__bindgen_ty_1 {
                 block: pt_conf_flags__bindgen_ty_1__bindgen_ty_1 {
+                    _bitfield_align_1: [],
                     _bitfield_1: __BindgenBitfieldUnit::new([flags.bits()]),
                     __bindgen_padding_0: Default::default() }}}
     }
@@ -119,6 +120,7 @@ impl From<InsnFlags> for pt_conf_flags {
         pt_conf_flags {
             variant: pt_conf_flags__bindgen_ty_1 {
                 insn: pt_conf_flags__bindgen_ty_1__bindgen_ty_2 {
+                    _bitfield_align_1: [],
                     _bitfield_1: __BindgenBitfieldUnit::new([flags.bits()]),
                     __bindgen_padding_0: Default::default() }}}
     }
@@ -129,6 +131,7 @@ impl From<QueryFlags> for pt_conf_flags {
         pt_conf_flags {
             variant: pt_conf_flags__bindgen_ty_1 {
                 query: pt_conf_flags__bindgen_ty_1__bindgen_ty_3 {
+                    _bitfield_align_1: [],
                     _bitfield_1: __BindgenBitfieldUnit::new([flags.bits()]),
                     __bindgen_padding_0: Default::default() }}}
     }

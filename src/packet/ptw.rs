@@ -13,6 +13,7 @@ impl Ptw {
     pub fn new(payload: u64, plc: u8, ip: bool) -> Self {
         Ptw(pt_packet_ptw {
             payload, plc,
+            _bitfield_align_1: [],
             _bitfield_1: __BindgenBitfieldUnit::new([ip as u8]),
             __bindgen_padding_0: Default::default()
         })

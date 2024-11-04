@@ -23,6 +23,7 @@ mod test {
             ninsn: 4,
             raw: data,
             size: 8,
+            _bitfield_align_1: [],
             _bitfield_1: pt_block::new_bitfield_1(0, 1),
             __bindgen_padding_0: Default::default()
        });
@@ -50,6 +51,7 @@ mod test {
             ninsn: 4,
             raw: data,
             size: 8,
+            _bitfield_align_1: [],
             _bitfield_1: pt_block::new_bitfield_1(0, 0),
             __bindgen_padding_0: Default::default()
        });

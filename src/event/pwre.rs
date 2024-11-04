@@ -14,6 +14,7 @@ mod test {
         evt.variant.pwre = pt_event__bindgen_ty_1__bindgen_ty_14 {
             state: 11,
             sub_state: 22,
+            _bitfield_align_1: [],
             _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_14::new_bitfield_1(1),
             __bindgen_padding_0: Default::default()
         };

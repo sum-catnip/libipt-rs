@@ -32,6 +32,7 @@ impl Into<pt_packet_mode__bindgen_ty_1> for Exec {
     fn into(self) -> pt_packet_mode__bindgen_ty_1 {
         pt_packet_mode__bindgen_ty_1 {
             exec: pt_packet_mode_exec {
+                _bitfield_align_1: [],
                 _bitfield_1: __BindgenBitfieldUnit::new([self.bits() as u8]),
                 __bindgen_padding_0: Default::default(),
             },
@@ -43,6 +44,7 @@ impl Into<pt_packet_mode__bindgen_ty_1> for Tsx {
     fn into(self) -> pt_packet_mode__bindgen_ty_1 {
         pt_packet_mode__bindgen_ty_1 {
             tsx: pt_packet_mode_tsx {
+                _bitfield_align_1: [],
                 _bitfield_1: __BindgenBitfieldUnit::new([self.bits() as u8]),
                 __bindgen_padding_0: Default::default(),
             },

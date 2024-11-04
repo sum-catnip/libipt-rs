@@ -13,6 +13,7 @@ impl Pip {
     pub fn new(cr3: u64, nr: bool) -> Self {
         Pip(pt_packet_pip {
             cr3,
+            _bitfield_align_1: [],
             _bitfield_1: __BindgenBitfieldUnit::new([nr as u8]),
             __bindgen_padding_0: Default::default()
         })

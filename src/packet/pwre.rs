@@ -13,6 +13,7 @@ impl Pwre {
     pub fn new(state: u8, substate: u8, hw: bool) -> Self {
         Pwre(pt_packet_pwre{
             state, sub_state: substate,
+            _bitfield_align_1: [],
             _bitfield_1: __BindgenBitfieldUnit::new([hw as u8]),
             __bindgen_padding_0: Default::default()
         })

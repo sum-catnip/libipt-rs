@@ -37,7 +37,7 @@ mod test {
 }
 
 #[derive(Clone, Copy, TryFromPrimitive, Debug, PartialEq)]
-#[repr(i32)]
+#[repr(u32)]
 pub enum ExecModeType {
     Bit16 = pt_exec_mode_ptem_16bit,
     Bit32 = pt_exec_mode_ptem_32bit,

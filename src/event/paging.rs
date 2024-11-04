@@ -20,6 +20,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_paging;
         evt.variant.paging = pt_event__bindgen_ty_1__bindgen_ty_5 {
             cr3: 11,
+            _bitfield_align_1: [],
             _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_5::new_bitfield_1(1),
             __bindgen_padding_0: Default::default()
         };
@@ -41,7 +42,8 @@ mod test {
         evt.variant.async_paging = pt_event__bindgen_ty_1__bindgen_ty_6 {
             cr3: 11,
             ip: 12,
-            _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_6::new_bitfield_1(1)
+            _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_6::new_bitfield_1(1),
+            _bitfield_align_1: [],
         };
 
         let payload: Payload = evt.into();

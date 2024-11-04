@@ -73,7 +73,8 @@ mod test {
             lost_cyc: 3,
             _bitfield_1: pt_event::new_bitfield_1(1, 0, 1),
             variant: unsafe { mem::zeroed() },
-            reserved: [0; 2]
+            reserved: [0; 2],
+            _bitfield_align_1: [],
         };
 
         let evt = Event(evt);

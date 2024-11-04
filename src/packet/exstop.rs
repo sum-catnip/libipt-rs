@@ -12,6 +12,7 @@ impl Exstop {
     #[inline]
     pub fn new(ip: bool) -> Self {
         Exstop(pt_packet_exstop {
+            _bitfield_align_1: [],
             _bitfield_1: __BindgenBitfieldUnit::new([ip as u8]),
             __bindgen_padding_0: Default::default()
         })
