@@ -77,7 +77,7 @@ pub enum CondBranch {
 /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
 /// The decoder needs to be synchronized before it can be used.
 pub struct QueryDecoder<'a, T>(&'a mut pt_query_decoder, PhantomData<T>);
-impl<'a, T> QueryDecoder<'a, T> {
+impl<T> QueryDecoder<'_, T> {
     /// Allocate an Intel PT query decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
@@ -246,7 +246,7 @@ impl<'a, T> QueryDecoder<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for QueryDecoder<'a, T> {
+impl<T> Iterator for QueryDecoder<'_, T> {
     type Item = Result<(Event, Status), PtError>;
 
     fn next(&mut self) -> Option<Result<(Event, Status), PtError>> {
@@ -258,6 +258,6 @@ impl<'a, T> Iterator for QueryDecoder<'a, T> {
     }
 }
 
-impl<'a, T> Drop for QueryDecoder<'a, T> {
+impl<T> Drop for QueryDecoder<'_, T> {
     fn drop(&mut self) { unsafe { pt_qry_free_decoder(self.0) }}
 }

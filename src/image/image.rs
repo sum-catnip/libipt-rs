@@ -237,7 +237,7 @@ pub struct Image<'a> {
     callback: Option<BoxedCallback>,
 }
 
-impl<'a> Image<'a> {
+impl Image<'_> {
     /// Allocate a traced memory image.
     /// An optional @name may be given to the image.
     /// The name string is copied.
@@ -398,7 +398,7 @@ impl<'a> From<&'a mut pt_image> for Image<'a> {
     }
 }
 
-impl<'a> Drop for Image<'a> {
+impl Drop for Image<'_> {
     fn drop(&mut self) {
         if self.dealloc {
             unsafe { pt_image_free(self.inner) }

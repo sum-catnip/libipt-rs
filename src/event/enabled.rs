@@ -13,6 +13,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_enabled;
         evt.variant.enabled = pt_event__bindgen_ty_1__bindgen_ty_1 {
             ip: 11,
+            _bitfield_align_1: [],
             _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(1),
             __bindgen_padding_0: Default::default()
         };

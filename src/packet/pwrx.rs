@@ -18,7 +18,8 @@ impl Pwrx {
                 interrupt as u32,
                 store as u32,
                 autonomous as u32
-            )
+            ),
+            _bitfield_align_1: [],
         })
     }
 

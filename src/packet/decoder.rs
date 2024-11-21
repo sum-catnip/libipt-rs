@@ -55,7 +55,7 @@ mod test {
 }
 
 pub struct PacketDecoder<'a, T>(&'a mut pt_packet_decoder, PhantomData<T>);
-impl<'a, T> PacketDecoder<'a, T> {
+impl<T> PacketDecoder<'_, T> {
     /// Allocate an Intel PT packet decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
@@ -131,7 +131,7 @@ impl<'a, T> PacketDecoder<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for PacketDecoder<'a, T> {
+impl<T> Iterator for PacketDecoder<'_, T> {
     type Item = Result<Packet<T>, PtError>;
 
     fn next(&mut self) -> Option<Result<Packet<T>, PtError>> {
@@ -143,6 +143,6 @@ impl<'a, T> Iterator for PacketDecoder<'a, T> {
     }
 }
 
-impl<'a, T> Drop for PacketDecoder<'a, T> {
+impl<T> Drop for PacketDecoder<'_, T> {
     fn drop(&mut self) { unsafe { pt_pkt_free_decoder(self.0) }}
 }

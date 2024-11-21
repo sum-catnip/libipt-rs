@@ -4,6 +4,12 @@ use libipt_sys::{pt_packet, pt_packet_type_ppt_ovf};
 #[derive(Clone, Copy, Debug)]
 pub struct Ovf {}
 
+impl Default for Ovf {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Ovf {
     pub fn new() -> Self { Ovf {} }
 }
@@ -18,6 +24,6 @@ impl From<Ovf> for pt_packet {
     }
 }
 
-impl Into<Ovf> for pt_packet {
-    fn into(self) -> Ovf{ Ovf{} }
+impl From<pt_packet> for Ovf {
+    fn from(_val: pt_packet) -> Self{ Ovf{} }
 }

@@ -21,6 +21,7 @@ mod test {
             iclass: pt_insn_class_ptic_call,
             raw: data,
             size: 8,
+            _bitfield_align_1: [],
             _bitfield_1: pt_insn::new_bitfield_1(0, 1),
             __bindgen_padding_0: Default::default()
        });

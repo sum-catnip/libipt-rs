@@ -42,7 +42,7 @@ mod test {
 
 bitflags! {
     /// i suppose this is relevant when/if amd finally gets intelpt support?
-    pub struct CpuVendor: i32 {
+    pub struct CpuVendor: u32 {
         const INTEL = pt_cpu_vendor_pcv_intel;
         const UNKNOWN = pt_cpu_vendor_pcv_unknown;
     }
@@ -64,6 +64,7 @@ impl Cpu {
     /// determines processor specific workarounds
     pub(super) fn determine_errata(self) -> pt_errata {
         let mut errata = pt_errata {
+            _bitfield_align_1: [],
             _bitfield_1: Default::default(),
             reserved: Default::default()
         };

@@ -4,6 +4,12 @@ use libipt_sys::{pt_packet, pt_packet_type_ppt_stop};
 #[derive(Clone, Copy, Debug)]
 pub struct Stop {}
 
+impl Default for Stop {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Stop {
     pub fn new() -> Self { Stop {} }
 }
@@ -18,6 +24,6 @@ impl From<Stop> for pt_packet {
     }
 }
 
-impl Into<Stop> for pt_packet {
-    fn into(self) -> Stop { Stop{} }
+impl From<pt_packet> for Stop {
+    fn from(_val: pt_packet) -> Self { Stop{} }
 }

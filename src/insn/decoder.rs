@@ -79,7 +79,7 @@ mod test {
 /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
 /// The decoder needs to be synchronized before it can be used.
 pub struct InsnDecoder<'a, T>(&'a mut pt_insn_decoder, PhantomData<T>);
-impl<'a, T> InsnDecoder<'a, T> {
+impl<T> InsnDecoder<'_, T> {
     /// Allocate an Intel PT instruction flow decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
@@ -253,7 +253,7 @@ impl<'a, T> InsnDecoder<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for InsnDecoder<'a, T> {
+impl<T> Iterator for InsnDecoder<'_, T> {
     type Item = Result<(Insn, Status), PtError>;
 
     fn next(&mut self) -> Option<Result<(Insn, Status), PtError>> {
@@ -265,6 +265,6 @@ impl<'a, T> Iterator for InsnDecoder<'a, T> {
     }
 }
 
-impl<'a, T> Drop for InsnDecoder<'a, T> {
+impl<T> Drop for InsnDecoder<'_, T> {
     fn drop(&mut self) { unsafe { pt_insn_free_decoder(self.0) } }
 }

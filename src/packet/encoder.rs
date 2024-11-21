@@ -48,7 +48,7 @@ mod tests {
 }
 
 pub struct Encoder<'a, T>(&'a mut pt_encoder, PhantomData<T>);
-impl<'a, T> Encoder<'a, T> {
+impl<T> Encoder<'_, T> {
     /// Allocate an Intel PT packet encoder.
     ///
     /// The encoder will work on the buffer defined in @config, it shall contain raw trace data and remain valid for the lifetime of the encoder.
@@ -97,6 +97,6 @@ impl<'a, T> Encoder<'a, T> {
     }
 }
 
-impl<'a, T> Drop for Encoder<'a, T> {
+impl<T> Drop for Encoder<'_, T> {
     fn drop(&mut self) { unsafe { pt_free_encoder(self.0) } }
 }
