@@ -196,13 +196,13 @@ impl<'a, T> ConfigBuilder<'a, T> {
         where F: FnMut(&Config<T>, &[u8]) -> (Unknown<T>, u32),
               F: 'a {
         // yeah.. libipt doesnt handle this -_-
-        if buf.len() < 1 { return Err(
+        if buf.is_empty() { return Err(
             PtError::new(PtErrorCode::Invalid, "buffer cant be empty!")
         )}
         let mut cfg: pt_config = unsafe { mem::zeroed() };
         cfg.size  = mem::size_of::<pt_config>();
         cfg.begin = buf.as_mut_ptr();
-        cfg.end   = unsafe { buf.as_mut_ptr().offset(buf.len() as isize) };
+        cfg.end   = unsafe { buf.as_mut_ptr().add(buf.len()) };
         cfg.decode.callback = Some(decode_callback::<F, T>);
         cfg.decode.context  = &mut cb as *mut _ as *mut c_void;
         Ok(ConfigBuilder::<T>(cfg, PhantomData))
@@ -252,13 +252,13 @@ impl<'a> ConfigBuilder<'a, ()> {
     /// use the `with_callback` function
     /// returns `Invalid` when buf is empty
     pub fn new(buf: &'a mut [u8]) -> Result<ConfigBuilder<'a, ()>, PtError> {
-        if buf.len() < 1 { return Err(
+        if buf.is_empty() { return Err(
             PtError::new(PtErrorCode::Invalid, "buffer cant be empty!")
         )}
         let mut cfg: pt_config = unsafe { mem::zeroed() };
         cfg.size  = mem::size_of::<pt_config>();
         cfg.begin = buf.as_mut_ptr();
-        cfg.end   = unsafe { buf.as_mut_ptr().offset(buf.len() as isize) };
+        cfg.end   = unsafe { buf.as_mut_ptr().add(buf.len()) };
         Ok(ConfigBuilder::<()>(cfg, PhantomData))
     }
 }

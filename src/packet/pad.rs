@@ -4,6 +4,12 @@ use libipt_sys::{pt_packet, pt_packet_type_ppt_pad};
 #[derive(Clone, Copy, Debug)]
 pub struct Pad {}
 
+impl Default for Pad {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Pad {
     pub fn new() -> Self { Pad {} }
 }
@@ -18,6 +24,6 @@ impl From<Pad> for pt_packet {
     }
 }
 
-impl Into<Pad> for pt_packet {
-    fn into(self) -> Pad { Pad{} }
+impl From<pt_packet> for Pad {
+    fn from(_val: pt_packet) -> Self { Pad{} }
 }

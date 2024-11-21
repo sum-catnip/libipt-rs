@@ -83,7 +83,7 @@ mod test {
 /// A cache of traced image sections.
 #[derive(Debug)]
 pub struct SectionCache<'a>(pub(crate) &'a mut pt_image_section_cache);
-impl<'a> SectionCache<'a> {
+impl SectionCache<'_> {
     /// Allocate a traced memory image section cache.
     ///
     /// An optional @name may be given to the cache.
@@ -97,7 +97,7 @@ impl<'a> SectionCache<'a> {
                     PtErrorCode::Invalid,
                     "invalid @name string: contains null bytes")
                 )?.as_ptr())
-        }}).map(|s| SectionCache(s))
+        }}).map(SectionCache)
     }
 
     /// Get the image section cache name.
@@ -146,8 +146,8 @@ impl<'a> SectionCache<'a> {
     /// Returns number of bytes read on success.
     /// Returns Nomap if @vaddr is not contained in section @isid.
     /// Returns BadImage if @iscache does not contain @isid.
-    pub fn read<'b>(&mut self,
-                    buffer: &'b mut [u8],
+    pub fn read(&mut self,
+                    buffer: &mut [u8],
                     isid: u32,
                     vaddr: u64) -> Result<u32, PtError> {
        extract_pterr(unsafe {
@@ -169,7 +169,7 @@ impl<'a> SectionCache<'a> {
     }
 }
 
-impl<'a> Drop for SectionCache<'a> {
+impl Drop for SectionCache<'_> {
     fn drop(&mut self) {
         unsafe { pt_iscache_free(self.0) }
     }

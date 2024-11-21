@@ -4,6 +4,12 @@ use libipt_sys::{pt_packet, pt_packet_type_ppt_psbend};
 #[derive(Clone, Copy, Debug)]
 pub struct Psbend {}
 
+impl Default for Psbend {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Psbend {
     pub fn new() -> Self { Psbend {} }
 }
@@ -18,6 +24,6 @@ impl From<Psbend> for pt_packet {
     }
 }
 
-impl Into<Psbend> for pt_packet {
-    fn into(self) -> Psbend { Psbend{} }
+impl From<pt_packet> for Psbend {
+    fn from(_val: pt_packet) -> Self { Psbend{} }
 }

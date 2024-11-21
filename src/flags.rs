@@ -9,11 +9,11 @@ bitflags! {
     /// Status flags for various IntelPT actions
     pub struct Status: u32 {
         /// There is no more trace data available.
-        const EOS = pt_status_flag_pts_eos as u32;
+        const EOS = pt_status_flag_pts_eos;
         /// There is an event pending.
-        const EVENT_PENDING = pt_status_flag_pts_event_pending as u32;
+        const EVENT_PENDING = pt_status_flag_pts_event_pending;
         /// The address has been suppressed.
-        const IP_SUPRESSED  = pt_status_flag_pts_ip_suppressed as u32;
+        const IP_SUPRESSED  = pt_status_flag_pts_ip_suppressed;
     }
 }
 

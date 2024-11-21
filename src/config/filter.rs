@@ -115,6 +115,12 @@ impl AddrFilter {
 }
 
 pub struct AddrFilterBuilder (pub(super) pt_conf_addr_filter);
+impl Default for AddrFilterBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AddrFilterBuilder {
     pub fn new() -> Self { unsafe { mem::zeroed() }}
 

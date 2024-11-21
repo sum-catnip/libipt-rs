@@ -59,7 +59,7 @@ mod test {
 ///
 /// * `T` - The Callback Closure Type in the Config
 pub struct BlockDecoder<'a, T>(&'a mut pt_block_decoder, PhantomData<T>);
-impl<'a, T> BlockDecoder<'a, T> {
+impl<T> BlockDecoder<'_, T> {
     /// Allocate an Intel PT block decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
@@ -217,7 +217,7 @@ impl<'a, T> BlockDecoder<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for BlockDecoder<'a, T> {
+impl<T> Iterator for BlockDecoder<'_, T> {
     type Item = Result<(Block, Status), PtError>;
 
     fn next(&mut self) -> Option<Result<(Block, Status), PtError>> {
@@ -229,7 +229,7 @@ impl<'a, T> Iterator for BlockDecoder<'a, T> {
     }
 }
 
-impl<'a, T> Drop for BlockDecoder<'a, T> {
+impl<T> Drop for BlockDecoder<'_, T> {
     fn drop(&mut self) {
         unsafe { pt_blk_free_decoder(self.0) }
     }

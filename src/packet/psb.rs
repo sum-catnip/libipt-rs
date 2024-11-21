@@ -4,6 +4,12 @@ use libipt_sys::{pt_packet, pt_packet_type_ppt_psb};
 #[derive(Clone, Copy, Debug)]
 pub struct Psb {}
 
+impl Default for Psb {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Psb {
     pub fn new() -> Self { Psb {} }
 }
@@ -18,6 +24,6 @@ impl From<Psb> for pt_packet {
     }
 }
 
-impl Into<Psb> for pt_packet {
-    fn into(self) -> Psb { Psb{} }
+impl From<pt_packet> for Psb {
+    fn from(_val: pt_packet) -> Self { Psb{} }
 }
