@@ -49,7 +49,7 @@ mod test {
     }
 }
 
-#[derive(Clone, Copy, TryFromPrimitive)]
+#[derive(Debug, Clone, Copy, TryFromPrimitive)]
 #[repr(i32)]
 pub enum CondBranch {
     Taken = 1,
@@ -59,6 +59,7 @@ pub enum CondBranch {
 /// The decoder will work on the buffer defined in the config,
 /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
 /// The decoder needs to be synchronized before it can be used.
+#[derive(Debug)]
 pub struct QueryDecoder<'a, T>(&'a mut pt_query_decoder, PhantomData<T>);
 impl<T> QueryDecoder<'_, T> {
     /// Allocate an Intel PT query decoder.

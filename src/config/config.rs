@@ -208,6 +208,7 @@ where
 }
 
 /// A helper type to create the libipt Configuration instance
+#[derive(Debug)]
 pub struct ConfigBuilder<'a, T>(pt_config, PhantomData<&'a mut T>);
 impl<'a, T> ConfigBuilder<'a, T> {
     // when theres a bug here, there might be on in `new` too.
@@ -286,6 +287,7 @@ impl<'a> ConfigBuilder<'a, ()> {
 }
 
 /// A libipt configuration
+#[derive(Debug)]
 pub struct Config<'a, C>(pub(crate) Cow<'a, pt_config>, PhantomData<&'a mut C>);
 impl<'a, C> Config<'a, C> {
     /// Gets this configs buffer.

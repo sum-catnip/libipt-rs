@@ -154,7 +154,7 @@ impl From<pt_event> for Payload {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Event(pub(crate) pt_event);
 impl Event {
     /// A flag indicating that the event IP has been suppressed.

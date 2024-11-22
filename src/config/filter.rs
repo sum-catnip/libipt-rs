@@ -43,7 +43,7 @@ pub enum AddrConfig {
 }
 
 /// an address range inside the address filter
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct AddrRange {
     /// This corresponds to the IA32_RTIT_ADDRn_A MSRs
     a: u64,
@@ -93,7 +93,7 @@ impl AddrRange {
 }
 
 /// the address filter configuration
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct AddrFilter(pub(super) pt_conf_addr_filter);
 impl AddrFilter {
     #[inline]
@@ -141,6 +141,7 @@ impl AddrFilter {
     }
 }
 
+#[derive(Debug)]
 pub struct AddrFilterBuilder(pub(super) pt_conf_addr_filter);
 impl Default for AddrFilterBuilder {
     fn default() -> Self {

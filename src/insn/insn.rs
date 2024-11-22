@@ -40,7 +40,7 @@ mod test {
 }
 
 /// A single traced instruction.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Insn(pub(crate) pt_insn);
 impl Insn {
     /// The virtual address in its process.

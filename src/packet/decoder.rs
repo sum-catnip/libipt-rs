@@ -37,6 +37,7 @@ mod test {
     }
 }
 
+#[derive(Debug)]
 pub struct PacketDecoder<'a, T>(&'a mut pt_packet_decoder, PhantomData<T>);
 impl<T> PacketDecoder<'_, T> {
     /// Allocate an Intel PT packet decoder.

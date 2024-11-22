@@ -75,6 +75,7 @@ mod test {
 
 bitflags! {
     /// flags for the block decoder
+    #[derive(Debug)]
     pub struct BlockFlags: u8 {
         /// End a block after a call instruction
         const END_ON_CALL        = 0b00000001;
@@ -89,6 +90,7 @@ bitflags! {
 
 bitflags! {
     /// flags for the instruction flow decoder
+    #[derive(Debug)]
     pub struct InsnFlags: u8 {
         /// Enable tick events for timing updates
         const ENABLE_TICK_EVENTS = 0b00000001;
@@ -99,6 +101,7 @@ bitflags! {
 
 bitflags! {
     /// flags for the query decoder
+    #[derive(Debug)]
     pub struct QueryFlags: u8 {
         /// Preserve timing calibration on overflow
         const KEEP_TCAL_ON_OVF = 0b00000001;

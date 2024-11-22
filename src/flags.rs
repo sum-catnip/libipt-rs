@@ -8,6 +8,7 @@ use libipt_sys::{
 
 bitflags! {
     /// Status flags for various IntelPT actions
+    #[derive(Debug)]
     pub struct Status: u32 {
         /// There is no more trace data available.
         const EOS = pt_status_flag_pts_eos as u32;

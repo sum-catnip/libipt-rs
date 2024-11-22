@@ -2,6 +2,7 @@ use libipt_sys::pt_packet_unknown;
 
 /// An unknown packet decodable by the optional decoder callback.
 /// Packet: unknown
+#[derive(Debug)]
 pub struct Unknown<T>(pub(crate) Option<Box<T>>);
 impl<T> Unknown<T> {
     // Create new instance of Unknown, putting `data` in a box

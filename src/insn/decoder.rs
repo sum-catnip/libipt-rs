@@ -58,6 +58,7 @@ mod test {
 /// The decoder will work on the buffer defined in the Config,
 /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
 /// The decoder needs to be synchronized before it can be used.
+#[derive(Debug)]
 pub struct InsnDecoder<'a, T>(&'a mut pt_insn_decoder, PhantomData<T>);
 impl<T> InsnDecoder<'_, T> {
     /// Allocate an Intel PT instruction flow decoder.

@@ -23,7 +23,7 @@ mod test {
 }
 
 /// Frequency values used for timing packets
-#[derive(Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Frequency {
     /// The Mini Time Counter (MTC) frequency as defined in IA32_RTIT_CTL.MTCFreq.
     ///

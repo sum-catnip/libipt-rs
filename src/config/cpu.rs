@@ -42,6 +42,7 @@ mod test {
 
 bitflags! {
     /// i suppose this is relevant when/if amd finally gets intelpt support?
+    #[derive(Debug)]
     pub struct CpuVendor: u32 {
         const INTEL = pt_cpu_vendor_pcv_intel as u32;
         const UNKNOWN = pt_cpu_vendor_pcv_unknown as u32;
