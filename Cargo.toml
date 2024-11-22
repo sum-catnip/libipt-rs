@@ -1,6 +1,6 @@
 [package]
 name = "libipt"
-version = "0.2.0-rc.2"
+version = "0.2.0"
 authors = ["sum_catnip <catnip@catnip.fyi>", "Marcondiro"]
 edition = "2021"
 license = "MIT"
@@ -8,6 +8,6 @@ description = "The Intel Processor Trace (Intel PT) Decoder Library is Intel's r
 repository = "https://github.com/sum-catnip/libipt-rs"
 
 [dependencies]
-libipt-sys = { git = "https://github.com/sum-catnip/libipt-sys" }
+libipt-sys = "0.2.0"
 bitflags = "2.4.1"
 num_enum = "0.7.1"
