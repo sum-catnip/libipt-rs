@@ -1,8 +1,7 @@
 use std::fmt::{Debug, Formatter};
 
 use libipt_sys::{
-    pt_packet,
-    pt_packet_type_ppt_cbr as PT_PACKET_TYPE_PPT_CBR,
+    pt_packet, pt_packet_type_ppt_cbr as PT_PACKET_TYPE_PPT_CBR,
     pt_packet_type_ppt_cyc as PT_PACKET_TYPE_PPT_CYC,
     pt_packet_type_ppt_exstop as PT_PACKET_TYPE_PPT_EXSTOP,
     pt_packet_type_ppt_fup as PT_PACKET_TYPE_PPT_FUP,
@@ -24,11 +23,11 @@ use libipt_sys::{
     pt_packet_type_ppt_tip_pgd as PT_PACKET_TYPE_PPT_TIP_PGD,
     pt_packet_type_ppt_tip_pge as PT_PACKET_TYPE_PPT_TIP_PGE,
     pt_packet_type_ppt_tma as PT_PACKET_TYPE_PPT_TMA,
-    pt_packet_type_ppt_tnt_8 as PT_PACKET_TYPE_PPT_TNT_8,
     pt_packet_type_ppt_tnt_64 as PT_PACKET_TYPE_PPT_TNT_64,
+    pt_packet_type_ppt_tnt_8 as PT_PACKET_TYPE_PPT_TNT_8,
     pt_packet_type_ppt_tsc as PT_PACKET_TYPE_PPT_TSC,
     pt_packet_type_ppt_unknown as PT_PACKET_TYPE_PPT_UNKNOWN,
-    pt_packet_type_ppt_vmcs as PT_PACKET_TYPE_PPT_VMCS
+    pt_packet_type_ppt_vmcs as PT_PACKET_TYPE_PPT_VMCS,
 };
 
 #[macro_use]
@@ -91,8 +90,8 @@ pub use encoder::Encoder;
 #[cfg(test)]
 mod test {
     use super::*;
-    use libipt_sys::pt_packet_mnt;
     use libipt_sys::pt_packet__bindgen_ty_1;
+    use libipt_sys::pt_packet_mnt;
 
     #[test]
     fn test_pkt_from() {
@@ -100,12 +99,12 @@ mod test {
         let p2 = pt_packet {
             type_: PT_PACKET_TYPE_PPT_MNT,
             size: std::mem::size_of::<pt_packet_mnt>() as u8,
-            payload: pt_packet__bindgen_ty_1 { mnt: p1 }
+            payload: pt_packet__bindgen_ty_1 { mnt: p1 },
         };
-        let p3: Packet::<()> = p2.into();
+        let p3: Packet<()> = p2.into();
         match p3 {
             Packet::Mnt(m) => assert_eq!(m.payload(), p1.payload),
-            _ => unreachable!()
+            _ => unreachable!(),
         };
     }
 }
@@ -138,7 +137,7 @@ pub enum Packet<T> {
     Mwait(mwait::Mwait),
     Pwre(pwre::Pwre),
     Pwrx(pwrx::Pwrx),
-    Ptw(ptw::Ptw)
+    Ptw(ptw::Ptw),
 }
 
 impl<T> Debug for Packet<T> {
@@ -205,8 +204,10 @@ impl<T> From<pt_packet> for Packet<T> {
                 PT_PACKET_TYPE_PPT_TNT_64 => Packet::Tnt64(pkt.payload.tnt.into()),
                 PT_PACKET_TYPE_PPT_TSC => Packet::Tsc(pkt.payload.tsc.into()),
                 PT_PACKET_TYPE_PPT_VMCS => Packet::Vmcs(pkt.payload.vmcs.into()),
-                PT_PACKET_TYPE_PPT_UNKNOWN => Packet::Unknown(unknown::Unknown::<T>::from(pkt.payload.unknown)),
-                _ => unreachable!("invalid packet type")
+                PT_PACKET_TYPE_PPT_UNKNOWN => {
+                    Packet::Unknown(unknown::Unknown::<T>::from(pkt.payload.unknown))
+                }
+                _ => unreachable!("invalid packet type"),
             }
         }
     }

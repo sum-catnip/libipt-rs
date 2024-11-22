@@ -2,10 +2,10 @@ use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_13;
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use super::super::Payload;
+    use super::*;
+    use libipt_sys::{pt_event, pt_event_type_ptev_mwait};
     use std::mem;
-    use libipt_sys::{ pt_event, pt_event_type_ptev_mwait };
 
     #[test]
     fn test_mwait_payload() {
@@ -14,7 +14,7 @@ mod test {
         evt.variant.mwait = pt_event__bindgen_ty_1__bindgen_ty_13 {
             ip: 11,
             hints: 22,
-            ext: 33
+            ext: 33,
         };
 
         let payload: Payload = evt.into();
@@ -23,8 +23,8 @@ mod test {
                 assert_eq!(e.ip(), 11);
                 assert_eq!(e.hints(), 22);
                 assert_eq!(e.ext(), 33);
-            },
-            _ => unreachable!("oof")
+            }
+            _ => unreachable!("oof"),
         }
     }
 }
@@ -36,15 +36,21 @@ impl Mwait {
     /// The address of the instruction causing the mwait.
     ///
     /// This field is not valid, if @ip_suppressed is set.
-    pub fn ip(self) -> u64 { self.0.ip }
+    pub fn ip(self) -> u64 {
+        self.0.ip
+    }
 
     /// The mwait hints (eax).
     ///
     /// Reserved bits are undefined.
-    pub fn hints(self) -> u32 { self.0.hints }
+    pub fn hints(self) -> u32 {
+        self.0.hints
+    }
 
     /// The mwait extensions (ecx).
     ///
     /// Reserved bits are undefined.
-    pub fn ext(self) -> u32 { self.0.ext }
+    pub fn ext(self) -> u32 {
+        self.0.ext
+    }
 }

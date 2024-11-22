@@ -87,30 +87,44 @@ impl Asid {
     /// The CR3 value.
     #[inline]
     pub fn cr3(self) -> Option<u64> {
-        match self.0.cr3 { NO_CR3 => None, x => Some(x) }
+        match self.0.cr3 {
+            NO_CR3 => None,
+            x => Some(x),
+        }
     }
 
     /// The CR3 value.
     #[inline]
-    pub fn set_cr3(&mut self, cr3: u64) { self.0.cr3 = cr3 }
-
-    /// The VMCS Base address.
-    #[inline]
-    pub fn vmcs(self) -> Option<u64> {
-        match self.0.vmcs { NO_VMCS => None, x => Some(x) }
+    pub fn set_cr3(&mut self, cr3: u64) {
+        self.0.cr3 = cr3
     }
 
     /// The VMCS Base address.
     #[inline]
-    pub fn set_vmcs(&mut self, vmcs: u64) { self.0.vmcs = vmcs }
+    pub fn vmcs(self) -> Option<u64> {
+        match self.0.vmcs {
+            NO_VMCS => None,
+            x => Some(x),
+        }
+    }
+
+    /// The VMCS Base address.
+    #[inline]
+    pub fn set_vmcs(&mut self, vmcs: u64) {
+        self.0.vmcs = vmcs
+    }
 }
 
 impl Default for Asid {
-    fn default() -> Self { Asid::new(None, None) }
+    fn default() -> Self {
+        Asid::new(None, None)
+    }
 }
 
 impl From<pt_asid> for Asid {
-    fn from(asid: pt_asid) -> Self { Asid(asid) }
+    fn from(asid: pt_asid) -> Self {
+        Asid(asid)
+    }
 }
 
 impl PartialEq for Asid {

@@ -4,5 +4,7 @@ use libipt_sys::pt_packet;
 pub struct Invalid {}
 
 impl From<pt_packet> for Invalid {
-    fn from(_val: pt_packet) -> Self { Invalid{} }
+    fn from(_val: pt_packet) -> Self {
+        Invalid {}
+    }
 }

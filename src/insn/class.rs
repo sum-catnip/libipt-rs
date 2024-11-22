@@ -1,19 +1,13 @@
 // Certain casts are required only on Windows. Inform Clippy to ignore them.
 #![allow(clippy::unnecessary_cast)]
 
-use num_enum::TryFromPrimitive;
 use libipt_sys::{
-    pt_insn_class_ptic_call,
-    pt_insn_class_ptic_cond_jump,
-    pt_insn_class_ptic_error,
-    pt_insn_class_ptic_far_call,
-    pt_insn_class_ptic_far_jump,
-    pt_insn_class_ptic_far_return,
-    pt_insn_class_ptic_jump,
-    pt_insn_class_ptic_other,
-    pt_insn_class_ptic_ptwrite,
-    pt_insn_class_ptic_return
+    pt_insn_class_ptic_call, pt_insn_class_ptic_cond_jump, pt_insn_class_ptic_error,
+    pt_insn_class_ptic_far_call, pt_insn_class_ptic_far_jump, pt_insn_class_ptic_far_return,
+    pt_insn_class_ptic_jump, pt_insn_class_ptic_other, pt_insn_class_ptic_ptwrite,
+    pt_insn_class_ptic_return,
 };
+use num_enum::TryFromPrimitive;
 
 /// The instruction class.
 ///

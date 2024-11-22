@@ -1,5 +1,5 @@
-use libipt::{ ConfigBuilder, Cpu };
 use libipt::packet::*;
+use libipt::{ConfigBuilder, Cpu};
 
 #[test]
 fn test_encoder_all_packets() {
@@ -24,14 +24,16 @@ fn test_encoder_all_packets() {
     size += enc.next(TipPgd::new(888, Compression::Update16)).unwrap();
     size += enc.next(Tnt8::new(3, 4)).unwrap();
     size += enc.next(Tnt64::new(4, 13)).unwrap();
-    size += enc.next(Mode::new(Payload::Exec(Exec::CSL | Exec::CSD))).unwrap();
+    size += enc
+        .next(Mode::new(Payload::Exec(Exec::CSL | Exec::CSD)))
+        .unwrap();
     size += enc.next(Pip::new(1337, false)).unwrap();
     size += enc.next(Tsc::new(69)).unwrap();
     size += enc.next(Cbr::new(5)).unwrap();
     size += enc.next(Tma::new(420, 421)).unwrap();
     size += enc.next(Mtc::new(0)).unwrap();
     size += enc.next(Cyc::new(0xCA7)).unwrap();
-    size += enc.next(Stop::new()).unwrap();    
+    size += enc.next(Stop::new()).unwrap();
     size += enc.next(Vmcs::new(111)).unwrap();
     size += enc.next(Mnt::new(222)).unwrap();
     size += enc.next(Exstop::new(true)).unwrap();

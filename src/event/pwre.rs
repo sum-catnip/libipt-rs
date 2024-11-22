@@ -2,10 +2,10 @@ use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_14;
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use super::super::Payload;
+    use super::*;
+    use libipt_sys::{pt_event, pt_event_type_ptev_pwre};
     use std::mem;
-    use libipt_sys::{ pt_event, pt_event_type_ptev_pwre };
 
     #[test]
     fn test_pwre_payload() {
@@ -16,30 +16,36 @@ mod test {
             sub_state: 22,
             _bitfield_align_1: [],
             _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_14::new_bitfield_1(1),
-            __bindgen_padding_0: Default::default()
+            __bindgen_padding_0: Default::default(),
         };
 
         let payload: Payload = evt.into();
         match payload {
-            Payload::Pwre (e) => {
+            Payload::Pwre(e) => {
                 assert_eq!(e.state(), 11);
                 assert_eq!(e.sub_state(), 22);
                 assert!(e.hw())
-            },
-            _ => unreachable!("oof")
+            }
+            _ => unreachable!("oof"),
         }
     }
 }
 
 /// A power state was entered
-#[derive(Clone, Copy, Debug)] 
+#[derive(Clone, Copy, Debug)]
 pub struct Pwre(pub(super) pt_event__bindgen_ty_1__bindgen_ty_14);
 impl Pwre {
     /// The resolved thread C-state.
-    pub fn state(self) -> u8 { self.0.state }
+    pub fn state(self) -> u8 {
+        self.0.state
+    }
     /// The resolved thread sub C-state
-    pub fn sub_state(self) -> u8 { self.0.sub_state }
+    pub fn sub_state(self) -> u8 {
+        self.0.sub_state
+    }
     /// A flag indicating whether the C-state entry was
     /// initiated by h/w.
-    pub fn hw(self) -> bool { self.0.hw() > 0 }
+    pub fn hw(self) -> bool {
+        self.0.hw() > 0
+    }
 }

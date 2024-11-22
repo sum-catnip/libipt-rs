@@ -1,39 +1,22 @@
-use crate::error::{
-    PtError, deref_ptresult,
-    deref_ptresult_mut, PtErrorCode,
-    ensure_ptok, extract_pterr
-};
-use crate::config::Config;
-use crate::Asid;
-use crate::event::Event;
-use crate::Status;
-use crate::Image;
 use super::Insn;
+use crate::config::Config;
+use crate::error::{
+    deref_ptresult, deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode,
+};
+use crate::event::Event;
+use crate::Asid;
+use crate::Image;
+use crate::Status;
 
+use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
-use std::marker::PhantomData;
 
 use libipt_sys::{
-    pt_insn_decoder,
-    pt_insn_alloc_decoder,
-    pt_insn_asid,
-    pt_asid,
-    pt_insn_core_bus_ratio,
-    pt_insn_event,
-    pt_event,
-    pt_insn_free_decoder,
-    pt_insn_get_config,
-    pt_insn_get_image,
-    pt_insn_get_offset,
-    pt_insn_get_sync_offset,
-    pt_insn_next,
-    pt_insn,
-    pt_insn_set_image,
-    pt_insn_sync_backward,
-    pt_insn_sync_forward,
-    pt_insn_sync_set,
-    pt_insn_time
+    pt_asid, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio,
+    pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_config, pt_insn_get_image,
+    pt_insn_get_offset, pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image,
+    pt_insn_sync_backward, pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time,
 };
 
 #[cfg(test)]
@@ -44,18 +27,15 @@ mod test {
     #[test]
     fn test_insndec_alloc() {
         let kek = &mut [1; 2];
-        InsnDecoder::new(&ConfigBuilder::new(kek).unwrap().finish())
-            .unwrap();
+        InsnDecoder::new(&ConfigBuilder::new(kek).unwrap().finish()).unwrap();
     }
 
-    #[test ]
+    #[test]
     fn test_insndec_props() {
         let kek = &mut [1; 2];
         // this just checks memory safety for property access
         // usage can be found in the integration tests
-        let mut b = InsnDecoder::new(
-            &ConfigBuilder::new(kek).unwrap().finish()
-        ).unwrap();
+        let mut b = InsnDecoder::new(&ConfigBuilder::new(kek).unwrap().finish()).unwrap();
 
         let a = b.asid().unwrap();
         assert!(a.cr3().is_none());
@@ -93,11 +73,8 @@ impl<T> InsnDecoder<'_, T> {
     /// Return the current address space identifier.
     pub fn asid(&self) -> Result<Asid, PtError> {
         let mut asid: pt_asid = unsafe { mem::zeroed() };
-        ensure_ptok(unsafe {
-            pt_insn_asid(self.0,
-                         &mut asid,
-                         mem::size_of::<pt_asid>())
-        }).map(|_| Asid(asid))
+        ensure_ptok(unsafe { pt_insn_asid(self.0, &mut asid, mem::size_of::<pt_asid>()) })
+            .map(|_| Asid(asid))
     }
 
     /// Return the current core bus ratio.
@@ -107,8 +84,7 @@ impl<T> InsnDecoder<'_, T> {
     /// Returns NoCbr if there has not been a CBR packet.
     pub fn core_bus_ratio(&mut self) -> Result<u32, PtError> {
         let mut cbr: u32 = 0;
-        ensure_ptok(unsafe { pt_insn_core_bus_ratio(self.0, &mut cbr) })
-            .map(|_| cbr)
+        ensure_ptok(unsafe { pt_insn_core_bus_ratio(self.0, &mut cbr) }).map(|_| cbr)
     }
 
     /// Get the next pending event.
@@ -117,16 +93,12 @@ impl<T> InsnDecoder<'_, T> {
     /// Returns BadQuery if there is no event.
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
         let mut evt: pt_event = unsafe { mem::zeroed() };
-        extract_pterr(unsafe {
-            pt_insn_event(self.0,
-                          &mut evt,
-                          mem::size_of::<pt_event>())
-        }).map(|s| (Event(evt), Status::from_bits(s).unwrap()))
+        extract_pterr(unsafe { pt_insn_event(self.0, &mut evt, mem::size_of::<pt_event>()) })
+            .map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
     pub fn config(&self) -> Result<Config<T>, PtError> {
-        deref_ptresult(unsafe { pt_insn_get_config(self.0) })
-            .map(Config::from)
+        deref_ptresult(unsafe { pt_insn_get_config(self.0) }).map(Config::from)
     }
 
     /// Get the traced image.
@@ -134,8 +106,7 @@ impl<T> InsnDecoder<'_, T> {
     /// The returned image may be modified as long as no decoder that uses this image is running.
     /// Returns the traced image the decoder uses for reading memory.
     pub fn image(&mut self) -> Result<Image, PtError> {
-        deref_ptresult_mut(unsafe { pt_insn_get_image(self.0) })
-            .map(Image::from)
+        deref_ptresult_mut(unsafe { pt_insn_get_image(self.0) }).map(Image::from)
     }
 
     /// Get the current decoder position.
@@ -143,8 +114,7 @@ impl<T> InsnDecoder<'_, T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn offset(&self) -> Result<u64, PtError> {
         let mut off: u64 = 0;
-        ensure_ptok(unsafe { pt_insn_get_offset(self.0, &mut off) })
-            .map(|_| off)
+        ensure_ptok(unsafe { pt_insn_get_offset(self.0, &mut off) }).map(|_| off)
     }
 
     /// Get the position of the last synchronization point.
@@ -152,8 +122,7 @@ impl<T> InsnDecoder<'_, T> {
     /// Returns Nosync if @decoder is out of sync.
     pub fn sync_offset(&self) -> Result<u64, PtError> {
         let mut off = 0;
-        ensure_ptok(unsafe { pt_insn_get_sync_offset(self.0, &mut off) })
-            .map(|_| off)
+        ensure_ptok(unsafe { pt_insn_get_sync_offset(self.0, &mut off) }).map(|_| off)
     }
 
     /// Determine the next instruction.
@@ -170,11 +139,8 @@ impl<T> InsnDecoder<'_, T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn next(&mut self) -> Result<(Insn, Status), PtError> {
         let mut insn: pt_insn = unsafe { mem::zeroed() };
-        extract_pterr(unsafe {
-            pt_insn_next(self.0,
-                         &mut insn,
-                         mem::size_of::<pt_insn>())
-        }).map(|s| (Insn(insn), Status::from_bits(s).unwrap()))
+        extract_pterr(unsafe { pt_insn_next(self.0, &mut insn, mem::size_of::<pt_insn>()) })
+            .map(|s| (Insn(insn), Status::from_bits(s).unwrap()))
     }
 
     /// Set the traced image.
@@ -184,11 +150,13 @@ impl<T> InsnDecoder<'_, T> {
     /// Only one image can be active at any time.
     pub fn set_image(&mut self, img: Option<&mut Image>) -> Result<(), PtError> {
         ensure_ptok(unsafe {
-            pt_insn_set_image(self.0,
-                             match img {
-                                 None => ptr::null_mut(),
-                                 Some(i) => i.inner
-                             })
+            pt_insn_set_image(
+                self.0,
+                match img {
+                    None => ptr::null_mut(),
+                    Some(i) => i.inner,
+                },
+            )
         })
     }
 
@@ -242,14 +210,8 @@ impl<T> InsnDecoder<'_, T> {
         let mut time: u64 = 0;
         let mut lost_mtc: u32 = 0;
         let mut lost_cyc: u32 = 0;
-        ensure_ptok(
-            unsafe {
-                pt_insn_time(self.0,
-                             &mut time,
-                             &mut lost_mtc,
-                             &mut lost_cyc)
-            }
-        ).map(|_| (time, lost_mtc, lost_cyc))
+        ensure_ptok(unsafe { pt_insn_time(self.0, &mut time, &mut lost_mtc, &mut lost_cyc) })
+            .map(|_| (time, lost_mtc, lost_cyc))
     }
 }
 
@@ -260,11 +222,13 @@ impl<T> Iterator for InsnDecoder<'_, T> {
         match self.next() {
             // eos to stop iterating
             Err(x) if x.code() == PtErrorCode::Eos => None,
-            x => Some(x)
+            x => Some(x),
         }
     }
 }
 
 impl<T> Drop for InsnDecoder<'_, T> {
-    fn drop(&mut self) { unsafe { pt_insn_free_decoder(self.0) } }
+    fn drop(&mut self) {
+        unsafe { pt_insn_free_decoder(self.0) }
+    }
 }

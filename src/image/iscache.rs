@@ -1,30 +1,20 @@
 use crate::error::{
-    PtError,
-    PtErrorCode,
-    deref_ptresult,
-    deref_ptresult_mut,
-    ensure_ptok,
-    extract_pterr
+    deref_ptresult, deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode,
 };
 
-use std::ffi::{CString, CStr};
+use std::ffi::{CStr, CString};
 use std::ptr;
 
 use libipt_sys::{
-    pt_image_section_cache,
-    pt_iscache_add_file,
-    pt_iscache_alloc,
-    pt_iscache_name,
-    pt_iscache_read,
-    pt_iscache_set_limit,
-    pt_iscache_free
+    pt_image_section_cache, pt_iscache_add_file, pt_iscache_alloc, pt_iscache_free,
+    pt_iscache_name, pt_iscache_read, pt_iscache_set_limit,
 };
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::path::PathBuf;
     use std::fs;
+    use std::path::PathBuf;
 
     #[test]
     fn test_isc_alloc() {
@@ -42,27 +32,26 @@ mod test {
 
     #[test]
     fn test_isc_file() {
-        let file: PathBuf = [
-            env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"
-        ].iter().collect();
+        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
+            .iter()
+            .collect();
         println!("{:?}", file);
 
-        SectionCache::new(None).unwrap()
-            .add_file(file.to_str().unwrap(), 5, 15, 0x1337).unwrap();
+        SectionCache::new(None)
+            .unwrap()
+            .add_file(file.to_str().unwrap(), 5, 15, 0x1337)
+            .unwrap();
     }
 
     #[test]
     fn test_isc_memsection() {
-        let file: PathBuf =
-            [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
-                .iter()
-                .collect();
+        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
+            .iter()
+            .collect();
 
         println!("{:?}", file);
         let mut isc = SectionCache::new(None).unwrap();
-        let isid = isc
-            .add_file(file.to_str().unwrap(), 5, 24, 0x666)
-            .unwrap();
+        let isid = isc.add_file(file.to_str().unwrap(), 5, 24, 0x666).unwrap();
 
         let mut buf = [0; 20];
         isc.read(&mut buf, isid, 0x66A).unwrap();
@@ -90,14 +79,22 @@ impl SectionCache<'_> {
     /// The name string is copied.
     /// Returns a new traced memory image section cache on success
     pub fn new(name: Option<&str>) -> Result<Self, PtError> {
-        deref_ptresult_mut(unsafe { match name {
-            None => pt_iscache_alloc(ptr::null()),
-            Some(n) => pt_iscache_alloc(
-                CString::new(n).map_err(|_| PtError::new(
-                    PtErrorCode::Invalid,
-                    "invalid @name string: contains null bytes")
-                )?.as_ptr())
-        }}).map(SectionCache)
+        deref_ptresult_mut(unsafe {
+            match name {
+                None => pt_iscache_alloc(ptr::null()),
+                Some(n) => pt_iscache_alloc(
+                    CString::new(n)
+                        .map_err(|_| {
+                            PtError::new(
+                                PtErrorCode::Invalid,
+                                "invalid @name string: contains null bytes",
+                            )
+                        })?
+                        .as_ptr(),
+                ),
+            }
+        })
+        .map(SectionCache)
     }
 
     /// Get the image section cache name.
@@ -105,10 +102,12 @@ impl SectionCache<'_> {
     pub fn name(&self) -> Option<&str> {
         deref_ptresult(unsafe { pt_iscache_name(self.0) })
             .ok()
-            .map(|s| unsafe { CStr::from_ptr(s) }.to_str().expect(
-                concat!("failed converting name c-string.",
-                        "this is a bug in either libipt or the bindings")
-            ))
+            .map(|s| {
+                unsafe { CStr::from_ptr(s) }.to_str().expect(concat!(
+                    "failed converting name c-string.",
+                    "this is a bug in either libipt or the bindings"
+                ))
+            })
     }
 
     /// Add a new file section to the traced memory image section cache.
@@ -118,22 +117,22 @@ impl SectionCache<'_> {
     /// Returns an image section identifier (isid) uniquely identifying that section in @iscache.
     /// The section is silently truncated to match the size of @filename.
     /// Returns Invalid if @offset is too big.
-    pub fn add_file(&mut self,
-                    filename: &str,
-                    offset: u64,
-                    size: u64,
-                    vaddr: u64) -> Result<u32, PtError> {
-        let cfilename = CString::new(filename)
-            .map_err(|_| PtError::new( PtErrorCode::Invalid,
-                "Error converting filename to Cstring as it contains null bytes")
-            )?;
+    pub fn add_file(
+        &mut self,
+        filename: &str,
+        offset: u64,
+        size: u64,
+        vaddr: u64,
+    ) -> Result<u32, PtError> {
+        let cfilename = CString::new(filename).map_err(|_| {
+            PtError::new(
+                PtErrorCode::Invalid,
+                "Error converting filename to Cstring as it contains null bytes",
+            )
+        })?;
 
         extract_pterr(unsafe {
-            pt_iscache_add_file(self.0,
-                                cfilename.as_ptr(),
-                                offset,
-                                size,
-                                vaddr)
+            pt_iscache_add_file(self.0, cfilename.as_ptr(), offset, size, vaddr)
         })
     }
 
@@ -146,16 +145,15 @@ impl SectionCache<'_> {
     /// Returns number of bytes read on success.
     /// Returns Nomap if @vaddr is not contained in section @isid.
     /// Returns BadImage if @iscache does not contain @isid.
-    pub fn read(&mut self,
-                    buffer: &mut [u8],
-                    isid: u32,
-                    vaddr: u64) -> Result<u32, PtError> {
-       extract_pterr(unsafe {
-            pt_iscache_read(self.0,
-                            buffer.as_mut_ptr(),
-                            buffer.len() as u64,
-                            isid as i32,
-                            vaddr)
+    pub fn read(&mut self, buffer: &mut [u8], isid: u32, vaddr: u64) -> Result<u32, PtError> {
+        extract_pterr(unsafe {
+            pt_iscache_read(
+                self.0,
+                buffer.as_mut_ptr(),
+                buffer.len() as u64,
+                isid as i32,
+                vaddr,
+            )
         })
     }
 

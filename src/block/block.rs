@@ -1,15 +1,12 @@
-use crate::insn::Class;
 use crate::event::ExecModeType;
-use std::convert::TryFrom;
+use crate::insn::Class;
 use libipt_sys::pt_block;
+use std::convert::TryFrom;
 
 #[cfg(test)]
 mod test {
     use super::*;
-    use libipt_sys::{
-        pt_exec_mode_ptem_32bit,
-        pt_insn_class_ptic_error,
-    };
+    use libipt_sys::{pt_exec_mode_ptem_32bit, pt_insn_class_ptic_error};
 
     #[test]
     fn test_block_props() {
@@ -25,18 +22,18 @@ mod test {
             size: 8,
             _bitfield_align_1: [],
             _bitfield_1: pt_block::new_bitfield_1(0, 1),
-            __bindgen_padding_0: Default::default()
-       });
+            __bindgen_padding_0: Default::default(),
+        });
 
-       assert_eq!(blk.ip(), 1);
-       assert_eq!(blk.end_ip(), 2);
-       assert_eq!(blk.isid(), 3);
-       assert_eq!(blk.mode(), ExecModeType::Bit32);
-       assert_eq!(blk.class(), Class::Error);
-       assert_eq!(blk.ninsn(), 4);
-       assert_eq!(blk.raw(), &data[..8]);
-       assert!(blk.truncated());
-       assert!(!blk.speculative());
+        assert_eq!(blk.ip(), 1);
+        assert_eq!(blk.end_ip(), 2);
+        assert_eq!(blk.isid(), 3);
+        assert_eq!(blk.mode(), ExecModeType::Bit32);
+        assert_eq!(blk.class(), Class::Error);
+        assert_eq!(blk.ninsn(), 4);
+        assert_eq!(blk.raw(), &data[..8]);
+        assert!(blk.truncated());
+        assert!(!blk.speculative());
     }
 
     #[test]
@@ -53,18 +50,18 @@ mod test {
             size: 8,
             _bitfield_align_1: [],
             _bitfield_1: pt_block::new_bitfield_1(0, 0),
-            __bindgen_padding_0: Default::default()
-       });
+            __bindgen_padding_0: Default::default(),
+        });
 
-       assert_eq!(blk.ip(), 1);
-       assert_eq!(blk.end_ip(), 2);
-       assert_eq!(blk.isid(), 3);
-       assert_eq!(blk.mode(), ExecModeType::Bit32);
-       assert_eq!(blk.class(), Class::Error);
-       assert_eq!(blk.ninsn(), 4);
-       assert!(blk.raw().len() > 0);
-       assert!(!blk.truncated());
-       assert!(!blk.speculative());
+        assert_eq!(blk.ip(), 1);
+        assert_eq!(blk.end_ip(), 2);
+        assert_eq!(blk.isid(), 3);
+        assert_eq!(blk.mode(), ExecModeType::Bit32);
+        assert_eq!(blk.class(), Class::Error);
+        assert_eq!(blk.ninsn(), 4);
+        assert!(blk.raw().len() > 0);
+        assert!(!blk.truncated());
+        assert!(!blk.speculative());
     }
 }
 
@@ -76,19 +73,25 @@ mod test {
 pub struct Block(pub(super) pt_block);
 impl Block {
     /// The IP of the first instruction in this block.
-    pub fn ip(&self) -> u64 { self.0.ip }
+    pub fn ip(&self) -> u64 {
+        self.0.ip
+    }
 
     /// The IP of the last instruction in this block.
     ///
     /// This can be used for error-detection.
-    pub fn end_ip(&self) -> u64 { self.0.end_ip }
+    pub fn end_ip(&self) -> u64 {
+        self.0.end_ip
+    }
 
     /// The image section that contains the instructions in this block.
     ///
     /// A value of zero means that the section did not have an identifier.
     /// The section was not added via an image section cache or the memory
     /// was read via the read memory callback.
-    pub fn isid(&self) -> i32 { self.0.isid }
+    pub fn isid(&self) -> i32 {
+        self.0.isid
+    }
 
     /// The execution mode for all instructions in this block.
     pub fn mode(&self) -> ExecModeType {
@@ -105,7 +108,9 @@ impl Block {
     }
 
     /// The number of instructions in this block.
-    pub fn ninsn(&self) -> u16 { self.0.ninsn }
+    pub fn ninsn(&self) -> u16 {
+        self.0.ninsn
+    }
 
     /// The raw bytes of the last instruction in this block in case the
     /// instruction does not fit entirely into this block's section.
@@ -119,7 +124,9 @@ impl Block {
     /// instructions in this block.
     ///
     /// - all instructions in this block were executed speculatively.
-    pub fn speculative(&self) -> bool { self.0.speculative() > 0 }
+    pub fn speculative(&self) -> bool {
+        self.0.speculative() > 0
+    }
 
     /// A collection of flags giving additional information about the
     /// instructions in this block.
@@ -131,5 +138,7 @@ impl Block {
     ///
     /// The raw bytes for the last instruction are provided in \@raw and
     /// its size in \@size in this case.
-    pub fn truncated(&self) -> bool { self.0.truncated() > 0 }
+    pub fn truncated(&self) -> bool {
+        self.0.truncated() > 0
+    }
 }

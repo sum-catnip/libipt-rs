@@ -1,10 +1,7 @@
 use libipt_sys::{
-    pt_conf_flags,
-    pt_conf_flags__bindgen_ty_1,
-    pt_conf_flags__bindgen_ty_1__bindgen_ty_1,
-    pt_conf_flags__bindgen_ty_1__bindgen_ty_2,
+    __BindgenBitfieldUnit, pt_conf_flags, pt_conf_flags__bindgen_ty_1,
+    pt_conf_flags__bindgen_ty_1__bindgen_ty_1, pt_conf_flags__bindgen_ty_1__bindgen_ty_2,
     pt_conf_flags__bindgen_ty_1__bindgen_ty_3,
-    __BindgenBitfieldUnit
 };
 
 use bitflags::bitflags;
@@ -24,11 +21,11 @@ mod test {
             assert_eq!(raw.variant.block.end_on_jump(), 1);
             assert_eq!(raw.variant.block.keep_tcal_on_ovf(), 0);
         }
-        
-        let blk: BlockFlags = BlockFlags::END_ON_CALL |
-        BlockFlags::END_ON_JUMP |
-        BlockFlags::ENABLE_TICK_EVENTS |
-        BlockFlags::KEEP_TCAL_ON_OVF;
+
+        let blk: BlockFlags = BlockFlags::END_ON_CALL
+            | BlockFlags::END_ON_JUMP
+            | BlockFlags::ENABLE_TICK_EVENTS
+            | BlockFlags::KEEP_TCAL_ON_OVF;
         let raw: pt_conf_flags = blk.into();
 
         unsafe {
@@ -63,12 +60,16 @@ mod test {
         let query = QueryFlags::empty();
         let raw: pt_conf_flags = query.into();
 
-        unsafe { assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 0); }
+        unsafe {
+            assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 0);
+        }
 
         let query: QueryFlags = QueryFlags::KEEP_TCAL_ON_OVF;
         let raw: pt_conf_flags = query.into();
 
-        unsafe { assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 1); }
+        unsafe {
+            assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 1);
+        }
     }
 }
 
@@ -111,7 +112,10 @@ impl From<BlockFlags> for pt_conf_flags {
                 block: pt_conf_flags__bindgen_ty_1__bindgen_ty_1 {
                     _bitfield_align_1: [],
                     _bitfield_1: __BindgenBitfieldUnit::new([flags.bits()]),
-                    __bindgen_padding_0: Default::default() }}}
+                    __bindgen_padding_0: Default::default(),
+                },
+            },
+        }
     }
 }
 
@@ -122,7 +126,10 @@ impl From<InsnFlags> for pt_conf_flags {
                 insn: pt_conf_flags__bindgen_ty_1__bindgen_ty_2 {
                     _bitfield_align_1: [],
                     _bitfield_1: __BindgenBitfieldUnit::new([flags.bits()]),
-                    __bindgen_padding_0: Default::default() }}}
+                    __bindgen_padding_0: Default::default(),
+                },
+            },
+        }
     }
 }
 
@@ -133,6 +140,9 @@ impl From<QueryFlags> for pt_conf_flags {
                 query: pt_conf_flags__bindgen_ty_1__bindgen_ty_3 {
                     _bitfield_align_1: [],
                     _bitfield_1: __BindgenBitfieldUnit::new([flags.bits()]),
-                    __bindgen_padding_0: Default::default() }}}
+                    __bindgen_padding_0: Default::default(),
+                },
+            },
+        }
     }
 }
