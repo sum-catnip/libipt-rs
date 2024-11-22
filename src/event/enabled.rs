@@ -2,10 +2,10 @@ use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_1;
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use super::super::Payload;
+    use super::*;
+    use libipt_sys::{pt_event, pt_event_type_ptev_enabled};
     use std::mem;
-    use libipt_sys::{ pt_event, pt_event_type_ptev_enabled };
 
     #[test]
     fn test_enabled_payload() {
@@ -15,7 +15,7 @@ mod test {
             ip: 11,
             _bitfield_align_1: [],
             _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(1),
-            __bindgen_padding_0: Default::default()
+            __bindgen_padding_0: Default::default(),
         };
 
         let payload: Payload = evt.into();
@@ -23,8 +23,8 @@ mod test {
             Payload::Enabled(e) => {
                 assert_eq!(e.ip(), 11);
                 assert!(e.resumed())
-            },
-            _ => unreachable!("oof")
+            }
+            _ => unreachable!("oof"),
         }
     }
 }
@@ -34,9 +34,13 @@ mod test {
 pub struct Enabled(pub(super) pt_event__bindgen_ty_1__bindgen_ty_1);
 impl Enabled {
     /// The address at which tracing resumes
-    pub fn ip(self) -> u64 { self.0.ip }
+    pub fn ip(self) -> u64 {
+        self.0.ip
+    }
 
     /// A flag indicating that tracing resumes from the IP
     /// at which tracing had been disabled before.
-    pub fn resumed(self) -> bool { self.0.resumed() > 0 }
+    pub fn resumed(self) -> bool {
+        self.0.resumed() > 0
+    }
 }

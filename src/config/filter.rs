@@ -1,7 +1,7 @@
-use std::mem;
-use std::convert::TryFrom;
 use libipt_sys::pt_conf_addr_filter;
 use num_enum::TryFromPrimitive;
+use std::convert::TryFrom;
+use std::mem;
 
 #[cfg(test)]
 mod test {
@@ -36,17 +36,21 @@ mod test {
 
 #[derive(Clone, Copy, TryFromPrimitive, PartialEq, Debug)]
 #[repr(u32)]
-pub enum AddrConfig {DISABLED, FILTER, STOP }
+pub enum AddrConfig {
+    DISABLED,
+    FILTER,
+    STOP,
+}
 
 /// an address range inside the address filter
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct AddrRange {
     /// This corresponds to the IA32_RTIT_ADDRn_A MSRs
     a: u64,
     /// This corresponds to the IA32_RTIT_ADDRn_B MSRs
     b: u64,
     /// this corresponds to the respective fields in IA32_RTIT_CTL MSR
-    cfg: AddrConfig
+    cfg: AddrConfig,
 }
 
 impl AddrRange {
@@ -57,64 +61,88 @@ impl AddrRange {
 
     /// This corresponds to the IA32_RTIT_ADDRn_A MSRs
     #[inline]
-    pub fn a(&self) -> u64 { self.a }
+    pub fn a(&self) -> u64 {
+        self.a
+    }
     /// This corresponds to the IA32_RTIT_ADDRn_B MSRs
     #[inline]
-    pub fn b(&self) -> u64 { self.b }
+    pub fn b(&self) -> u64 {
+        self.b
+    }
     /// this corresponds to the respective fields in IA32_RTIT_CTL MSR
     #[inline]
-    pub fn cfg(&self) -> AddrConfig { self.cfg }
-    
+    pub fn cfg(&self) -> AddrConfig {
+        self.cfg
+    }
+
     /// This corresponds to the IA32_RTIT_ADDRn_A MSRs
     #[inline]
-    pub fn set_a(&mut self, a: u64) { self.a = a; }
+    pub fn set_a(&mut self, a: u64) {
+        self.a = a;
+    }
     /// This corresponds to the IA32_RTIT_ADDRn_B MSRs
     #[inline]
-    pub fn set_b(&mut self, b: u64) { self.b = b; }
+    pub fn set_b(&mut self, b: u64) {
+        self.b = b;
+    }
     /// this corresponds to the respective fields in IA32_RTIT_CTL MSR
     #[inline]
-    pub fn set_cfg(&mut self, cfg: AddrConfig) { self.cfg = cfg }
+    pub fn set_cfg(&mut self, cfg: AddrConfig) {
+        self.cfg = cfg
+    }
 }
 
-
 /// the address filter configuration
-#[derive(Clone, Copy)]
-pub struct AddrFilter (pub(super) pt_conf_addr_filter);
+#[derive(Debug, Clone, Copy)]
+pub struct AddrFilter(pub(super) pt_conf_addr_filter);
 impl AddrFilter {
     #[inline]
     pub fn addr0(&self) -> AddrRange {
         unsafe {
-            AddrRange::new(self.0.addr0_a, self.0.addr0_b,
-                AddrConfig::try_from(self.0.config.ctl.addr0_cfg()).unwrap())
+            AddrRange::new(
+                self.0.addr0_a,
+                self.0.addr0_b,
+                AddrConfig::try_from(self.0.config.ctl.addr0_cfg()).unwrap(),
+            )
         }
     }
 
     #[inline]
     pub fn addr1(&self) -> AddrRange {
         unsafe {
-            AddrRange::new(self.0.addr1_a, self.0.addr1_b,
-                AddrConfig::try_from(self.0.config.ctl.addr1_cfg()).unwrap())
+            AddrRange::new(
+                self.0.addr1_a,
+                self.0.addr1_b,
+                AddrConfig::try_from(self.0.config.ctl.addr1_cfg()).unwrap(),
+            )
         }
     }
 
     #[inline]
     pub fn addr2(&self) -> AddrRange {
         unsafe {
-            AddrRange::new(self.0.addr2_a, self.0.addr2_b,
-                AddrConfig::try_from(self.0.config.ctl.addr2_cfg()).unwrap())
+            AddrRange::new(
+                self.0.addr2_a,
+                self.0.addr2_b,
+                AddrConfig::try_from(self.0.config.ctl.addr2_cfg()).unwrap(),
+            )
         }
     }
 
     #[inline]
     pub fn addr3(&self) -> AddrRange {
         unsafe {
-            AddrRange::new(self.0.addr3_a, self.0.addr3_b,
-                AddrConfig::try_from(self.0.config.ctl.addr3_cfg()).unwrap())
+            AddrRange::new(
+                self.0.addr3_a,
+                self.0.addr3_b,
+                AddrConfig::try_from(self.0.config.ctl.addr3_cfg()).unwrap(),
+            )
         }
     }
 }
 
-pub struct AddrFilterBuilder (pub(super) pt_conf_addr_filter);
+#[derive(Debug)]
+pub struct AddrFilterBuilder(pub(super) pt_conf_addr_filter);
 impl Default for AddrFilterBuilder {
     fn default() -> Self {
         Self::new()
@@ -122,7 +150,9 @@ impl Default for AddrFilterBuilder {
 }
 
 impl AddrFilterBuilder {
-    pub fn new() -> Self { unsafe { mem::zeroed() }}
+    pub fn new() -> Self {
+        unsafe { mem::zeroed() }
+    }
 
     #[inline]
     pub fn addr0(&mut self, range: AddrRange) -> &mut Self {
@@ -160,5 +190,7 @@ impl AddrFilterBuilder {
         self
     }
 
-    pub fn finish(&self) -> AddrFilter { AddrFilter(self.0) }
+    pub fn finish(&self) -> AddrFilter {
+        AddrFilter(self.0)
+    }
 }

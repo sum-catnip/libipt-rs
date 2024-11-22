@@ -1,15 +1,13 @@
 [package]
 name = "libipt"
-version = "0.2.0-rc.1"
+version = "0.2.0"
 authors = ["sum_catnip <catnip@catnip.fyi>", "Marcondiro"]
 edition = "2021"
 license = "MIT"
 description = "The Intel Processor Trace (Intel PT) Decoder Library is Intel's reference implementation for decoding Intel PT."
 repository = "https://github.com/sum-catnip/libipt-rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-libipt-sys = "0.2.0-rc.1"
+libipt-sys = "0.2.0"
 bitflags = "2.4.1"
 num_enum = "0.7.1"

@@ -1,8 +1,5 @@
+use libipt_sys::{pt_library_version, pt_version};
 use std::ffi::CStr;
-use libipt_sys::{
-    pt_version,
-    pt_library_version
-};
 
 #[cfg(test)]
 mod test {
@@ -25,22 +22,32 @@ impl Version {
     }
 
     /// Major version number.
-    pub fn major(&self) -> u8 { self.0.major }
+    pub fn major(&self) -> u8 {
+        self.0.major
+    }
 
     /// Minor version number.
-    pub fn minor(&self) -> u8 { self.0.minor }
+    pub fn minor(&self) -> u8 {
+        self.0.minor
+    }
 
     /// Patch level.
-    pub fn patch(&self) -> u16 { self.0.patch }
+    pub fn patch(&self) -> u16 {
+        self.0.patch
+    }
 
     /// Build number.
-    pub fn build(&self) -> u32 { self.0.build }
+    pub fn build(&self) -> u32 {
+        self.0.build
+    }
 
     /// Version extension.
     pub fn ext(&self) -> &str {
-        unsafe { CStr::from_ptr(self.0.ext) }.to_str().expect(
-            concat!("failed to convert version ext to rust string. ",
-                    "this is either a bug in libipt or the bindings")
-        )
+        unsafe { CStr::from_ptr(self.0.ext) }
+            .to_str()
+            .expect(concat!(
+                "failed to convert version ext to rust string. ",
+                "this is either a bug in libipt or the bindings"
+            ))
     }
 }

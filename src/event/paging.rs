@@ -1,18 +1,11 @@
-use libipt_sys::{
-    pt_event__bindgen_ty_1__bindgen_ty_5,
-    pt_event__bindgen_ty_1__bindgen_ty_6
-};
+use libipt_sys::{pt_event__bindgen_ty_1__bindgen_ty_5, pt_event__bindgen_ty_1__bindgen_ty_6};
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use super::super::Payload;
+    use super::*;
+    use libipt_sys::{pt_event, pt_event_type_ptev_async_paging, pt_event_type_ptev_paging};
     use std::mem;
-    use libipt_sys::{
-        pt_event,
-        pt_event_type_ptev_paging,
-        pt_event_type_ptev_async_paging
-    };
 
     #[test]
     fn test_paging_payload() {
@@ -22,7 +15,7 @@ mod test {
             cr3: 11,
             _bitfield_align_1: [],
             _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_5::new_bitfield_1(1),
-            __bindgen_padding_0: Default::default()
+            __bindgen_padding_0: Default::default(),
         };
 
         let payload: Payload = evt.into();
@@ -30,8 +23,8 @@ mod test {
             Payload::Paging(e) => {
                 assert_eq!(e.cr3(), 11);
                 assert!(e.non_root());
-            },
-            _ => unreachable!("oof")
+            }
+            _ => unreachable!("oof"),
         }
     }
 
@@ -52,8 +45,8 @@ mod test {
                 assert_eq!(e.cr3(), 11);
                 assert_eq!(e.ip(), 12);
                 assert!(e.non_root());
-            },
-            _ => unreachable!("oof")
+            }
+            _ => unreachable!("oof"),
         }
     }
 }
@@ -65,11 +58,15 @@ impl Paging {
     /// The updated CR3 value.
     /// The lower 5 bit have been zeroed out.
     /// The upper bits have been zeroed out depending on the maximum possible address.
-    pub fn cr3(self) -> u64 { self.0.cr3 }
+    pub fn cr3(self) -> u64 {
+        self.0.cr3
+    }
 
     /// A flag indicating whether the cpu is operating in
     /// vmx non-root (guest) mode.
-    pub fn non_root(self) -> bool { self.0.non_root() > 0 }
+    pub fn non_root(self) -> bool {
+        self.0.non_root() > 0
+    }
 }
 
 /// An asynchronous paging event
@@ -81,10 +78,16 @@ impl AsyncPaging {
     /// The lower 5 bit have been zeroed out.
     /// The upper bits have been zeroed out depending on the
     /// maximum possible address.
-    pub fn cr3(self) -> u64 { self.0.cr3 }
+    pub fn cr3(self) -> u64 {
+        self.0.cr3
+    }
     /// A flag indicating whether the cpu is operating in
     /// vmx non-root (guest) mode.
-    pub fn non_root(self) -> bool { self.0.non_root() > 0 }
+    pub fn non_root(self) -> bool {
+        self.0.non_root() > 0
+    }
     /// The address at which the event is effective
-    pub fn ip(self) -> u64 { self.0.ip }
+    pub fn ip(self) -> u64 {
+        self.0.ip
+    }
 }

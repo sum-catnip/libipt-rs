@@ -8,7 +8,7 @@ use std::fmt::{Debug, Formatter};
 
 bitflags! {
     /// A mode.exec packet
-    #[derive(Clone, Copy)]
+    #[derive(Debug, Clone, Copy)]
     pub struct Exec : u32 {
         /// The mode.exec csl bit
         const CSL = 0b00000001;
@@ -19,7 +19,7 @@ bitflags! {
 
 bitflags! {
     /// A mode.tsx packet
-    #[derive(Clone, Copy)]
+    #[derive(Debug, Clone, Copy)]
     pub struct Tsx : u32 {
         /// The mode.tsx intx bit
         const INTX = 0b00000001;
@@ -52,7 +52,7 @@ impl From<Tsx> for pt_packet_mode__bindgen_ty_1 {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum Payload {
     /// A mode.exec packet.
     Exec(Exec),

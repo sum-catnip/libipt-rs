@@ -2,10 +2,10 @@ use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_9;
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use super::super::Payload;
+    use super::*;
+    use libipt_sys::{pt_event, pt_event_type_ptev_tsx};
     use std::mem;
-    use libipt_sys::{ pt_event, pt_event_type_ptev_tsx };
 
     #[test]
     fn test_tsx_payload() {
@@ -15,7 +15,7 @@ mod test {
             ip: 11,
             _bitfield_align_1: [],
             _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_9::new_bitfield_1(1, 0),
-            __bindgen_padding_0: Default::default()
+            __bindgen_padding_0: Default::default(),
         };
 
         let payload: Payload = evt.into();
@@ -24,8 +24,8 @@ mod test {
                 assert_eq!(e.ip(), 11);
                 assert!(e.speculative());
                 assert!(!e.aborted());
-            },
-            _ => unreachable!("oof")
+            }
+            _ => unreachable!("oof"),
         }
     }
 }
@@ -37,11 +37,17 @@ impl Tsx {
     /// The address at which the event is effective.
     ///
     /// This field is not valid if @ip_suppressed is set.
-    pub fn ip(self) -> u64 { self.0.ip }
+    pub fn ip(self) -> u64 {
+        self.0.ip
+    }
 
     /// A flag indicating speculative execution mode
-    pub fn speculative(self) -> bool { self.0.speculative() > 0 }
+    pub fn speculative(self) -> bool {
+        self.0.speculative() > 0
+    }
 
     /// A flag indicating speculative execution aborts
-    pub fn aborted(self) -> bool { self.0.aborted() > 0 }
+    pub fn aborted(self) -> bool {
+        self.0.aborted() > 0
+    }
 }

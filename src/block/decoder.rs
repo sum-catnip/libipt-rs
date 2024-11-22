@@ -58,6 +58,7 @@ mod test {
 /// The decoder needs to be synchronized before it can be used.
 ///
 /// * `T` - The Callback Closure Type in the Config
+#[derive(Debug)]
 pub struct BlockDecoder<'a, T>(&'a mut pt_block_decoder, PhantomData<T>);
 impl<T> BlockDecoder<'_, T> {
     /// Allocate an Intel PT block decoder.

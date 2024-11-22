@@ -1,26 +1,14 @@
-use crate::error::{
-    PtError, PtErrorCode,
-    deref_ptresult, deref_ptresult_mut,
-    ensure_ptok
-};
 use super::Packet;
 use crate::config::Config;
+use crate::error::{deref_ptresult, deref_ptresult_mut, ensure_ptok, PtError, PtErrorCode};
 
-use std::mem;
 use std::marker::PhantomData;
+use std::mem;
 
 use libipt_sys::{
-    pt_packet_decoder,
-    pt_pkt_alloc_decoder,
-    pt_pkt_free_decoder,
-    pt_pkt_get_config,
-    pt_pkt_get_offset,
-    pt_pkt_get_sync_offset,
-    pt_pkt_next,
-    pt_packet,
-    pt_pkt_sync_backward,
-    pt_pkt_sync_forward,
-    pt_pkt_sync_set
+    pt_packet, pt_packet_decoder, pt_pkt_alloc_decoder, pt_pkt_free_decoder, pt_pkt_get_config,
+    pt_pkt_get_offset, pt_pkt_get_sync_offset, pt_pkt_next, pt_pkt_sync_backward,
+    pt_pkt_sync_forward, pt_pkt_sync_set,
 };
 
 #[cfg(test)]
@@ -31,20 +19,15 @@ mod test {
     #[test]
     fn test_pktdec_alloc() {
         let daturu = &mut [11; 11];
-        PacketDecoder::new(&ConfigBuilder::new(daturu)
-            .unwrap()
-            .finish()
-        ).unwrap();
+        PacketDecoder::new(&ConfigBuilder::new(daturu).unwrap().finish()).unwrap();
     }
 
-    #[test ]
+    #[test]
     fn test_pktdec_props() {
         let daturu = &mut [11; 11];
         // this just checks memory safety for property access
         // usage can be found in the integration tests
-        let mut p = PacketDecoder::new(
-            &ConfigBuilder::new(daturu).unwrap().finish()
-        ).unwrap();
+        let mut p = PacketDecoder::new(&ConfigBuilder::new(daturu).unwrap().finish()).unwrap();
         assert!(p.config().is_ok());
         assert!(p.offset().is_err());
         assert!(p.sync_offset().is_err());
@@ -54,6 +37,7 @@ mod test {
     }
 }
 
+#[derive(Debug)]
 pub struct PacketDecoder<'a, T>(&'a mut pt_packet_decoder, PhantomData<T>);
 impl<T> PacketDecoder<'_, T> {
     /// Allocate an Intel PT packet decoder.
@@ -67,8 +51,7 @@ impl<T> PacketDecoder<'_, T> {
     }
 
     pub fn config(&self) -> Result<Config<T>, PtError> {
-        deref_ptresult(unsafe { pt_pkt_get_config(self.0) })
-            .map(Config::from)
+        deref_ptresult(unsafe { pt_pkt_get_config(self.0) }).map(Config::from)
     }
 
     /// Get the current decoder position.
@@ -76,8 +59,7 @@ impl<T> PacketDecoder<'_, T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn offset(&self) -> Result<u64, PtError> {
         let mut off: u64 = 0;
-        ensure_ptok(unsafe { pt_pkt_get_offset(self.0, &mut off) })
-            .map(|_| off)
+        ensure_ptok(unsafe { pt_pkt_get_offset(self.0, &mut off) }).map(|_| off)
     }
 
     /// Get the position of the last synchronization point.
@@ -86,8 +68,7 @@ impl<T> PacketDecoder<'_, T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn sync_offset(&self) -> Result<u64, PtError> {
         let mut off: u64 = 0;
-        ensure_ptok(unsafe { pt_pkt_get_sync_offset(self.0, &mut off) })
-            .map(|_| off)
+        ensure_ptok(unsafe { pt_pkt_get_sync_offset(self.0, &mut off) }).map(|_| off)
     }
 
     /// Decode the next packet and advance the decoder.
@@ -100,11 +81,8 @@ impl<T> PacketDecoder<'_, T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn next(&mut self) -> Result<Packet<T>, PtError> {
         let mut pkt: pt_packet = unsafe { mem::zeroed() };
-        ensure_ptok(unsafe {
-            pt_pkt_next(self.0,
-                        &mut pkt,
-                        mem::size_of::<pt_packet>())
-        }).map(|_| pkt.into())
+        ensure_ptok(unsafe { pt_pkt_next(self.0, &mut pkt, mem::size_of::<pt_packet>()) })
+            .map(|_| pkt.into())
     }
 
     pub fn sync_backward(&mut self) -> Result<(), PtError> {
@@ -138,11 +116,13 @@ impl<T> Iterator for PacketDecoder<'_, T> {
         match self.next() {
             // eos to stop iterating
             Err(x) if x.code() == PtErrorCode::Eos => None,
-            x => Some(x)
+            x => Some(x),
         }
     }
 }
 
 impl<T> Drop for PacketDecoder<'_, T> {
-    fn drop(&mut self) { unsafe { pt_pkt_free_decoder(self.0) }}
+    fn drop(&mut self) {
+        unsafe { pt_pkt_free_decoder(self.0) }
+    }
 }
