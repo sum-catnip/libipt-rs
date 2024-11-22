@@ -1,10 +1,7 @@
-use libipt_sys::{
-    pt_cpu,
-    pt_cpu_vendor_pcv_intel,
-    pt_cpu_vendor_pcv_unknown,
-    pt_errata,
-    pt_cpu_errata,
-};
+// Certain casts are required only on Windows. Inform Clippy to ignore them.
+#![allow(clippy::unnecessary_cast)]
+
+use libipt_sys::{pt_cpu, pt_cpu_vendor_pcv_intel, pt_cpu_vendor_pcv_unknown, pt_errata, pt_cpu_errata, pt_cpu_vendor};
 
 use bitflags::bitflags;
 
@@ -43,8 +40,8 @@ mod test {
 bitflags! {
     /// i suppose this is relevant when/if amd finally gets intelpt support?
     pub struct CpuVendor: u32 {
-        const INTEL = pt_cpu_vendor_pcv_intel;
-        const UNKNOWN = pt_cpu_vendor_pcv_unknown;
+        const INTEL = pt_cpu_vendor_pcv_intel as u32;
+        const UNKNOWN = pt_cpu_vendor_pcv_unknown as u32;
     }
 }
 
@@ -53,7 +50,7 @@ bitflags! {
 pub struct Cpu (pub(super) pt_cpu);
 impl Cpu {
     pub fn new(vendor: CpuVendor, family: u16, model: u8, stepping: u8) -> Self {
-        Cpu(pt_cpu{ vendor: vendor.bits(), family, model, stepping })
+        Cpu(pt_cpu{ vendor: vendor.bits() as pt_cpu_vendor, family, model, stepping })
     }
 
     /// A shortcut for creating an intel Cpu instance

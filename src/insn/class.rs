@@ -1,3 +1,6 @@
+// Certain casts are required only on Windows. Inform Clippy to ignore them.
+#![allow(clippy::unnecessary_cast)]
+
 use num_enum::TryFromPrimitive;
 use libipt_sys::{
     pt_insn_class_ptic_call,
@@ -20,26 +23,26 @@ use libipt_sys::{
 #[repr(u32)]
 pub enum Class {
     /// The instruction is a near (function) call.
-    Call = pt_insn_class_ptic_call,
+    Call = pt_insn_class_ptic_call as u32,
     /// The instruction is a near conditional jump.
-    CondJump = pt_insn_class_ptic_cond_jump,
+    CondJump = pt_insn_class_ptic_cond_jump as u32,
     /// The instruction could not be classified.
-    Error = pt_insn_class_ptic_error,
+    Error = pt_insn_class_ptic_error as u32,
     /// The instruction is a call-like far transfer.
     /// E.g. SYSCALL, SYSENTER, or FAR CALL.
-    FarCall = pt_insn_class_ptic_far_call,
+    FarCall = pt_insn_class_ptic_far_call as u32,
     /// The instruction is a jump-like far transfer.
     /// E.g. FAR JMP.
-    FarJump = pt_insn_class_ptic_far_jump,
+    FarJump = pt_insn_class_ptic_far_jump as u32,
     /// The instruction is a return-like far transfer.
     /// E.g. SYSRET, SYSEXIT, IRET, or FAR RET.
-    FarReturn = pt_insn_class_ptic_far_return,
+    FarReturn = pt_insn_class_ptic_far_return as u32,
     /// The instruction is a near unconditional jump.
-    Jump = pt_insn_class_ptic_jump,
+    Jump = pt_insn_class_ptic_jump as u32,
     /// The instruction is something not listed below.
-    Other = pt_insn_class_ptic_other,
+    Other = pt_insn_class_ptic_other as u32,
     /// The instruction is a PTWRITE.
-    Ptwrite = pt_insn_class_ptic_ptwrite,
+    Ptwrite = pt_insn_class_ptic_ptwrite as u32,
     /// The instruction is a near (function) return.
-    Return = pt_insn_class_ptic_return
+    Return = pt_insn_class_ptic_return as u32,
 }

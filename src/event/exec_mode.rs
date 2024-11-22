@@ -1,3 +1,6 @@
+// Certain casts are required only on Windows. Inform Clippy to ignore them.
+#![allow(clippy::unnecessary_cast)]
+
 use std::convert::TryFrom;
 use libipt_sys::{
     pt_event__bindgen_ty_1__bindgen_ty_8,
@@ -39,10 +42,10 @@ mod test {
 #[derive(Clone, Copy, TryFromPrimitive, Debug, PartialEq)]
 #[repr(u32)]
 pub enum ExecModeType {
-    Bit16 = pt_exec_mode_ptem_16bit,
-    Bit32 = pt_exec_mode_ptem_32bit,
-    Bit64 = pt_exec_mode_ptem_64bit,
-    Unknown = pt_exec_mode_ptem_unknown
+    Bit16 = pt_exec_mode_ptem_16bit as u32,
+    Bit32 = pt_exec_mode_ptem_32bit as u32,
+    Bit64 = pt_exec_mode_ptem_64bit as u32,
+    Unknown = pt_exec_mode_ptem_unknown as u32
 }
 
 /// An execution mode change
@@ -52,5 +55,5 @@ impl ExecMode {
     /// The address at which the event is effective
     pub fn ip(self) -> u64 { self.0.ip }
     /// The execution mode
-    pub fn mode(self) -> ExecModeType { ExecModeType::try_from(self.0.mode).unwrap() }
+    pub fn mode(self) -> ExecModeType { ExecModeType::try_from(self.0.mode as u32).unwrap() }
 }

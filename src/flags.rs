@@ -1,3 +1,6 @@
+// Certain casts are required only on Windows. Inform Clippy to ignore them.
+#![allow(clippy::unnecessary_cast)]
+
 use libipt_sys::{
     pt_status_flag_pts_eos,
     pt_status_flag_pts_event_pending,
@@ -9,11 +12,11 @@ bitflags! {
     /// Status flags for various IntelPT actions
     pub struct Status: u32 {
         /// There is no more trace data available.
-        const EOS = pt_status_flag_pts_eos;
+        const EOS = pt_status_flag_pts_eos as u32;
         /// There is an event pending.
-        const EVENT_PENDING = pt_status_flag_pts_event_pending;
+        const EVENT_PENDING = pt_status_flag_pts_event_pending as u32;
         /// The address has been suppressed.
-        const IP_SUPRESSED  = pt_status_flag_pts_ip_suppressed;
+        const IP_SUPRESSED  = pt_status_flag_pts_ip_suppressed as u32;
     }
 }
 

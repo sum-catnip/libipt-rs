@@ -92,7 +92,7 @@ impl Block {
 
     /// The execution mode for all instructions in this block.
     pub fn mode(&self) -> ExecModeType {
-        ExecModeType::try_from(self.0.mode).unwrap()
+        ExecModeType::try_from(self.0.mode as u32).unwrap()
     }
 
     /// The instruction class for the last instruction in this block.
@@ -101,7 +101,7 @@ impl Block {
     /// class is not available. The block decoder may choose to not provide
     /// the instruction class in some cases for performance reasons.
     pub fn class(&self) -> Class {
-        Class::try_from(self.0.iclass).unwrap()
+        Class::try_from(self.0.iclass as u32).unwrap()
     }
 
     /// The number of instructions in this block.

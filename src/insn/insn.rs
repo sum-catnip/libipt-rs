@@ -1,3 +1,6 @@
+// Certain casts are required only on Windows. Inform Clippy to ignore them.
+#![allow(clippy::unnecessary_cast)]
+
 use crate::event::ExecModeType;
 use super::Class;
 
@@ -50,14 +53,14 @@ impl Insn {
 
     /// The execution mode.
     pub fn mode(self) -> ExecModeType {
-        ExecModeType::try_from(self.0.mode)
+        ExecModeType::try_from(self.0.mode as u32)
             .expect(concat!("unmatched ExecModeType enum value, ",
                 "this is a bug in either libipt or the bindings"))
     }
 
     /// A coarse classification.
     pub fn class(self) -> Class {
-        Class::try_from(self.0.iclass)
+        Class::try_from(self.0.iclass as u32)
             .expect(concat!("unmatched Class enum value, ",
                 "this is a bug in either libipt or the bindings"))
     }
