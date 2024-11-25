@@ -1,3 +1,6 @@
+// Certain casts are required only on Windows. Inform Clippy to ignore them.
+#![allow(clippy::unnecessary_cast)]
+
 use crate::event::ExecModeType;
 use crate::insn::Class;
 use libipt_sys::pt_block;
