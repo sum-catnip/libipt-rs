@@ -96,6 +96,10 @@ impl AddrRange {
 #[derive(Debug, Clone, Copy)]
 pub struct AddrFilter(pub(super) pt_conf_addr_filter);
 impl AddrFilter {
+    pub fn builder() -> AddrFilterBuilder {
+        AddrFilterBuilder::default()
+    }
+
     #[inline]
     pub fn addr0(&self) -> AddrRange {
         unsafe {
