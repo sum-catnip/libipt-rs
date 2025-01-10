@@ -1,6 +1,6 @@
 [package]
 name = "libipt"
-version = "0.2.1-beta.1"
+version = "0.3.0-beta1"
 authors = ["sum_catnip <catnip@catnip.fyi>", "Marcondiro"]
 edition = "2021"
 license = "MIT"
@@ -11,6 +11,6 @@ repository = "https://github.com/sum-catnip/libipt-rs"
 libipt_master = ["libipt-sys/libipt_master"]
 
 [dependencies]
-libipt-sys = "0.2.1-beta.1"
+libipt-sys = "0.2.1-beta.2"
 bitflags = "2.4.1"
 num_enum = "0.7.1"

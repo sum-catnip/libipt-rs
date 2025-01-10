@@ -158,6 +158,11 @@ pub(crate) fn deref_ptresult_mut<T>(res: *mut T) -> Result<&'static mut T, PtErr
         // null reference, no error info
         0 => Err(PtError::new(PtErrorCode::NoInfo, "No further information")),
         x if x < 0 => Err(PtError::from_code(x as i32)),
+        // fixme: `as_mut()` requires the pointer to be  convertible to a reference. This is not
+        // true in many cases: When creating a mutable reference, then while this reference exists,
+        // the memory it points to must not get accessed (read or written) through any other pointer
+        // or reference not derived from this reference.
+        // (Often) we cannot ensure that libipt doesnt use those pointer inside.
         _ => Ok(unsafe { res.as_mut().unwrap() }),
     }
 }

@@ -343,6 +343,7 @@ impl Image<'_> {
         isid: u32,
         asid: Asid,
     ) -> Result<(), PtError> {
+        // fixme: `iscache` could be dropped before this Image
         ensure_ptok(unsafe { pt_image_add_cached(self.inner, iscache.0, isid as i32, &asid.0) })
     }
 
@@ -388,6 +389,7 @@ impl Image<'_> {
     }
 }
 
+// fixme: this conversion doesn't account for the callback, should be ok but dangerous?
 impl<'a> From<&'a mut pt_image> for Image<'a> {
     fn from(img: &'a mut pt_image) -> Self {
         Image {
