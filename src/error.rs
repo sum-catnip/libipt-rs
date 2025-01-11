@@ -1,3 +1,6 @@
+// Certain casts are required only on Linux. Inform Clippy to ignore them.
+#![allow(clippy::unnecessary_cast)]
+
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 use std::error::Error;
