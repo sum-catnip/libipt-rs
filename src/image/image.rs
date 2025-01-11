@@ -1,14 +1,13 @@
 use super::SectionCache;
 use crate::asid::Asid;
-use crate::error::{
-    deref_ptresult, deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode,
-};
+use crate::error::{ensure_ptok, extract_pterr, PtError, PtErrorCode};
+use crate::utils::name_ptr_to_option_string;
 use libipt_sys::{
     pt_asid, pt_image, pt_image_add_cached, pt_image_add_file, pt_image_alloc, pt_image_copy,
     pt_image_free, pt_image_name, pt_image_remove_by_asid, pt_image_remove_by_filename,
     pt_image_set_callback,
 };
-use std::ffi::{c_void, CStr, CString};
+use std::ffi::{c_void, CString};
 use std::ptr;
 
 #[cfg(test)]
@@ -228,53 +227,60 @@ impl Drop for BoxedCallback {
 /// An Image defines the memory image that was traced as a collection
 /// of file sections and the virtual addresses at which those sections were loaded.
 #[derive(Debug)]
-pub struct Image<'a> {
+pub struct Image {
     // the wrapped inst
-    pub(crate) inner: &'a mut pt_image,
-    // do we need to free this instance on drop?
-    dealloc: bool,
+    pub(crate) inner: *mut pt_image,
+    // do we need to free this instance on drop? in other words, is inner owned?
+    inner_is_owned: bool,
     // Any read data callback set by this `Image` instance.
     callback: Option<BoxedCallback>,
 }
 
-impl Image<'_> {
-    /// Allocate a traced memory image.
+impl Image {
+    /// Creates a traced memory image.
     /// An optional @name may be given to the image.
-    /// The name string is copied.
     pub fn new(name: Option<&str>) -> Result<Self, PtError> {
-        deref_ptresult_mut(unsafe {
-            match name {
+        let cname = name.map(|n| {
+            CString::new(n).map_err(|_| {
+                PtError::new(
+                    PtErrorCode::Invalid,
+                    "invalid image @name: string contains null bytes",
+                )
+            })
+        });
+
+        // todo check for null
+        let inner = unsafe {
+            match cname {
                 None => pt_image_alloc(ptr::null()),
-                Some(n) => pt_image_alloc(
-                    CString::new(n)
-                        .map_err(|_| {
-                            PtError::new(
-                                PtErrorCode::Invalid,
-                                "invalid @name string: contains null bytes",
-                            )
-                        })?
-                        .as_ptr(),
-                ),
+                Some(n) => pt_image_alloc(n?.as_ptr()),
             }
-        })
-        .map(|i| Image {
-            inner: i,
-            dealloc: true,
+        };
+
+        Ok(Self {
+            inner,
+            inner_is_owned: true,
             callback: None,
         })
     }
 
-    /// Get the image name.
-    /// The name is optional.
-    pub fn name(&self) -> Option<&str> {
-        deref_ptresult(unsafe { pt_image_name(self.inner) })
-            .ok()
-            .map(|s| {
-                unsafe { CStr::from_ptr(s) }.to_str().expect(concat!(
-                    "failed to convert c into rust string. ",
-                    "this is a bug in either the bindings or libipt"
-                ))
-            })
+    // fixme: this conversion doesn't account for the callback, should be ok but dangerous?
+    /// `image` is considered as borrowed, the returned `Image` won't call pt_image_free on it.
+    ///
+    /// Safety:
+    /// The pointer `image` must be always valid during the entire returned `Image` lifetime
+    pub(crate) unsafe fn from_borrowed_raw(image: *mut pt_image) -> Self {
+        Self {
+            inner: image,
+            inner_is_owned: false,
+            callback: None,
+        }
+    }
+
+    /// Get the image name, as set by `Self::new`.
+    pub fn name(&self) -> Option<String> {
+        let name_ptr = unsafe { pt_image_name(self.inner) };
+        name_ptr_to_option_string(name_ptr)
     }
 
     /// Remove all sections loaded into an address space.
@@ -344,7 +350,7 @@ impl Image<'_> {
         asid: Asid,
     ) -> Result<(), PtError> {
         // fixme: `iscache` could be dropped before this Image
-        ensure_ptok(unsafe { pt_image_add_cached(self.inner, iscache.0, isid as i32, &asid.0) })
+        ensure_ptok(unsafe { pt_image_add_cached(self.inner, iscache.inner, isid as i32, &asid.0) })
     }
 
     /// Add a new file section to the traced memory image.
@@ -389,20 +395,9 @@ impl Image<'_> {
     }
 }
 
-// fixme: this conversion doesn't account for the callback, should be ok but dangerous?
-impl<'a> From<&'a mut pt_image> for Image<'a> {
-    fn from(img: &'a mut pt_image) -> Self {
-        Image {
-            inner: img,
-            dealloc: false,
-            callback: None,
-        }
-    }
-}
-
-impl Drop for Image<'_> {
+impl Drop for Image {
     fn drop(&mut self) {
-        if self.dealloc {
+        if self.inner_is_owned {
             unsafe { pt_image_free(self.inner) }
         }
     }

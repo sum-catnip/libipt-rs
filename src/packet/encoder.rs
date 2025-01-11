@@ -1,5 +1,4 @@
-use crate::config::Config;
-use crate::error::{deref_ptresult, deref_ptresult_mut, ensure_ptok, extract_pterr, PtError};
+use crate::error::{deref_ptresult_mut, ensure_ptok, extract_pterr, PtError};
 
 use std::marker::PhantomData;
 
@@ -46,9 +45,9 @@ impl<T> Encoder<'_, T> {
             .map(|x| Encoder::<T>(x, PhantomData))
     }
 
-    pub fn config(&self) -> Result<Config<T>, PtError> {
-        deref_ptresult(unsafe { pt_enc_get_config(self.0) }).map(Config::from)
-    }
+    // pub fn config(&self) -> Result<Config<T>, PtError> {
+    //     deref_ptresult(unsafe { pt_enc_get_config(self.0) }).map(Config::from)
+    // }
 
     /// Get the current packet encoder position.
     ///

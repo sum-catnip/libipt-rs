@@ -1,10 +1,9 @@
-use crate::error::{
-    deref_ptresult, deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode,
-};
+use crate::error::{deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode};
 
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 use std::ptr;
 
+use crate::utils::name_ptr_to_option_string;
 use libipt_sys::{
     pt_image_section_cache, pt_iscache_add_file, pt_iscache_alloc, pt_iscache_free,
     pt_iscache_name, pt_iscache_read, pt_iscache_set_limit,
@@ -71,8 +70,10 @@ mod test {
 
 /// A cache of traced image sections.
 #[derive(Debug)]
-pub struct SectionCache<'a>(pub(crate) &'a mut pt_image_section_cache);
-impl SectionCache<'_> {
+pub struct SectionCache {
+    pub(crate) inner: *mut pt_image_section_cache,
+}
+impl SectionCache {
     /// Allocate a traced memory image section cache.
     ///
     /// An optional @name may be given to the cache.
@@ -94,20 +95,14 @@ impl SectionCache<'_> {
                 ),
             }
         })
-        .map(SectionCache)
+        .map(|r| Self { inner: r })
     }
 
     /// Get the image section cache name.
     /// Name is optional
-    pub fn name(&self) -> Option<&str> {
-        deref_ptresult(unsafe { pt_iscache_name(self.0) })
-            .ok()
-            .map(|s| {
-                unsafe { CStr::from_ptr(s) }.to_str().expect(concat!(
-                    "failed converting name c-string.",
-                    "this is a bug in either libipt or the bindings"
-                ))
-            })
+    pub fn name(&self) -> Option<String> {
+        let name_ptr = unsafe { pt_iscache_name(self.inner) };
+        name_ptr_to_option_string(name_ptr)
     }
 
     /// Add a new file section to the traced memory image section cache.
@@ -132,7 +127,7 @@ impl SectionCache<'_> {
         })?;
 
         extract_pterr(unsafe {
-            pt_iscache_add_file(self.0, cfilename.as_ptr(), offset, size, vaddr)
+            pt_iscache_add_file(self.inner, cfilename.as_ptr(), offset, size, vaddr)
         })
     }
 
@@ -148,7 +143,7 @@ impl SectionCache<'_> {
     pub fn read(&mut self, buffer: &mut [u8], isid: u32, vaddr: u64) -> Result<u32, PtError> {
         extract_pterr(unsafe {
             pt_iscache_read(
-                self.0,
+                self.inner,
                 buffer.as_mut_ptr(),
                 buffer.len() as u64,
                 isid as i32,
@@ -163,12 +158,12 @@ impl SectionCache<'_> {
     /// A non-zero limit will keep the least recently used sections mapped until the limit is reached.
     /// A limit of zero disables caching.
     pub fn set_limit(&mut self, limit: u64) -> Result<(), PtError> {
-        ensure_ptok(unsafe { pt_iscache_set_limit(self.0, limit) })
+        ensure_ptok(unsafe { pt_iscache_set_limit(self.inner, limit) })
     }
 }
 
-impl Drop for SectionCache<'_> {
+impl Drop for SectionCache {
     fn drop(&mut self) {
-        unsafe { pt_iscache_free(self.0) }
+        unsafe { pt_iscache_free(self.inner) }
     }
 }

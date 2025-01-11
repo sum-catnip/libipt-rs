@@ -1,12 +1,6 @@
 // Certain casts are required only on Linux. Inform Clippy to ignore them.
 #![allow(clippy::unnecessary_cast)]
 
-use num_enum::TryFromPrimitive;
-use std::convert::TryFrom;
-use std::error::Error;
-use std::ffi::CStr;
-use std::fmt::{Display, Formatter};
-
 use libipt_sys::{pt_error_code, pt_errstr};
 use libipt_sys::{
     pt_error_code_pte_bad_config, pt_error_code_pte_bad_context, pt_error_code_pte_bad_cpu,
@@ -20,6 +14,12 @@ use libipt_sys::{
     pt_error_code_pte_nosync, pt_error_code_pte_not_supported, pt_error_code_pte_ok,
     pt_error_code_pte_overflow, pt_error_code_pte_retstack_empty,
 };
+use num_enum::TryFromPrimitive;
+use std::convert::TryFrom;
+use std::error::Error;
+use std::ffi::CStr;
+use std::fmt::{Display, Formatter};
+use std::ptr;
 
 #[derive(Clone, Copy, Debug, TryFromPrimitive, PartialEq)]
 #[repr(i32)]
@@ -139,16 +139,17 @@ impl Error for PtError {
     }
 }
 
-/// Dereferences a pointer returned by one of the libipt functions.
-/// Checks the pointer for NULL.
-/// Negative values will be translated into the appropriate error value.
+// todo: check usages, does this make sense???
+/// Checks a pointer returned by one of the libipt functions. And converts it in a `Result`.
+/// NULL and negative values will be translated into the appropriate `Err(PtError)` value.
+/// positive value are mapped into Ok(ptr::NonNull)
 #[inline]
-pub(crate) fn deref_ptresult<T>(res: *const T) -> Result<&'static T, PtError> {
+pub(crate) fn check_ptresult<T>(res: *const T) -> Result<*const T, PtError> {
     match res as isize {
         // null reference, no error info
         0 => Err(PtError::new(PtErrorCode::NoInfo, "No further information")),
         x if x < 0 => Err(PtError::from_code(x as i32)),
-        _ => Ok(unsafe { res.as_ref().unwrap() }),
+        _ => Ok(res),
     }
 }
 

@@ -1,8 +1,5 @@
 use super::Insn;
-use crate::config::Config;
-use crate::error::{
-    deref_ptresult, deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode,
-};
+use crate::error::{deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::Asid;
 use crate::Image;
@@ -98,17 +95,17 @@ impl<T> InsnDecoder<'_, T> {
             .map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
-    pub fn config(&self) -> Result<Config<T>, PtError> {
-        deref_ptresult(unsafe { pt_insn_get_config(self.0) }).map(Config::from)
-    }
+    // pub fn config(&self) -> Result<Config<T>, PtError> {
+    //     deref_ptresult(unsafe { pt_insn_get_config(self.0) }).map(Config::from)
+    // }
 
     /// Get the traced image.
     ///
     /// The returned image may be modified as long as no decoder that uses this image is running.
     /// Returns the traced image the decoder uses for reading memory.
-    pub fn image(&mut self) -> Result<Image, PtError> {
-        deref_ptresult_mut(unsafe { pt_insn_get_image(self.0) }).map(Image::from)
-    }
+    // pub fn image(&mut self) -> Result<Image, PtError> {
+    //     deref_ptresult_mut(unsafe { pt_insn_get_image(self.0) }).map(Image::from)
+    // }
 
     /// Get the current decoder position.
     ///

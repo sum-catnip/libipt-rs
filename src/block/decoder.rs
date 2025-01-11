@@ -1,9 +1,6 @@
 use super::Block;
 use crate::asid::Asid;
-use crate::config::Config;
-use crate::error::{
-    deref_ptresult, deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode,
-};
+use crate::error::{deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::flags::Status;
 use crate::image::Image;
@@ -67,8 +64,6 @@ impl<T> BlockDecoder<'_, T> {
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
-        // deref_ptresult(unsafe{ pt_blk_alloc_decoder(&cfg.0) })
-        //     .map(|x| BlockDecoder::<T>(*x, PhantomData))
         deref_ptresult_mut(unsafe { pt_blk_alloc_decoder(cfg.0.as_ref()) })
             .map(|x| BlockDecoder::<T>(x, PhantomData))
     }
@@ -102,17 +97,17 @@ impl<T> BlockDecoder<'_, T> {
             .map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
-    pub fn config(&self) -> Result<Config<T>, PtError> {
-        deref_ptresult(unsafe { pt_blk_get_config(self.0) }).map(Config::from)
-    }
+    // pub fn config(&self) -> Result<Config<T>, PtError> {
+    //     deref_ptresult(unsafe { pt_blk_get_config(self.0) }).map(Config::from)
+    // }
 
     /// Get the traced image.
     ///
     /// The returned image may be modified as long as @decoder is not running.
     /// Returns the traced image the decoder uses for reading memory.
-    pub fn image(&mut self) -> Result<Image, PtError> {
-        deref_ptresult_mut(unsafe { pt_blk_get_image(self.0) }).map(Image::from)
-    }
+    // pub fn image(&mut self) -> Result<Image, PtError> {
+    //     deref_ptresult_mut(unsafe { pt_blk_get_image(self.0) }).map(Image::from)
+    // }
 
     /// Get the current decoder position.
     ///

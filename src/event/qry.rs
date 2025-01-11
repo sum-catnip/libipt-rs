@@ -1,7 +1,4 @@
-use crate::config::Config;
-use crate::error::{
-    deref_ptresult, deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode,
-};
+use crate::error::{deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::Status;
 
@@ -115,9 +112,9 @@ impl<T> QueryDecoder<'_, T> {
             .map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
-    pub fn config(&self) -> Result<Config<T>, PtError> {
-        deref_ptresult(unsafe { pt_qry_get_config(self.0) }).map(Config::from)
-    }
+    // pub fn config(&self) -> Result<Config<T>, PtError> {
+    //     deref_ptresult(unsafe { pt_qry_get_config(self.0) }).map(Config::from)
+    // }
 
     /// Get the current decoder position.
     ///

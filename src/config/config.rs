@@ -207,10 +207,12 @@ where
     bytes as i32
 }
 
-/// A helper type to create the libipt Configuration instance
 #[derive(Debug)]
-pub struct ConfigBuilder<'a, T>(pt_config, PhantomData<&'a mut T>);
-impl<'a, T> ConfigBuilder<'a, T> {
+pub struct EncoderDecoderBuilder<T> {
+    config: pt_config,
+    target: PhantomData<T>
+}
+impl<T> EncoderDecoderBuilder<T> {
     // when theres a bug here, there might be on in `new` too.
     /// Initializes a Config instance with a buffer and decoder callback
     pub fn with_callback<F>(buf: &'a mut [u8], mut cb: F) -> Result<Self, PtError>
@@ -286,20 +288,24 @@ impl<'a> ConfigBuilder<'a, ()> {
     }
 }
 
-/// A libipt configuration
-#[derive(Debug)]
-pub struct Config<'a, C>(pub(crate) Cow<'a, pt_config>, PhantomData<&'a mut C>);
-impl<'a, C> Config<'a, C> {
-    /// Gets this configs buffer.
-    /// This operation is unsafe because an encoder might write into the buffer
-    /// at any time
-    pub unsafe fn buffer(&self) -> &'a [u8] {
-        std::slice::from_raw_parts(self.0.begin, self.0.end as usize - self.0.begin as usize)
-    }
-}
-
-impl<'a, C> From<&'a pt_config> for Config<'a, C> {
-    fn from(cfg: &'a pt_config) -> Self {
-        Config(Cow::Borrowed(cfg), PhantomData)
-    }
-}
+// // todo: remove this and just create some builders wrapping pt_config?
+// /// A libipt configuration
+// #[derive(Debug)]
+// pub struct Config<C> {
+//     pub(crate) inner: *const pt_config,
+//     parent: PhantomData<C>,
+// }
+// impl<C> Config<C> {
+//     /// Gets this configs buffer.
+//     /// This operation is unsafe because an encoder might write into the buffer
+//     /// at any time
+//     pub unsafe fn buffer(&self) -> &'a [u8] {
+//         std::slice::from_raw_parts(self.0.begin, self.0.end as usize - self.0.begin as usize)
+//     }
+// }
+//
+// impl<'a, C> From<&'a pt_config> for Config<'a, C> {
+//     fn from(cfg: &'a pt_config) -> Self {
+//         Config(Cow::Borrowed(cfg), PhantomData)
+//     }
+// }

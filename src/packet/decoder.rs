@@ -1,6 +1,5 @@
 use super::Packet;
-use crate::config::Config;
-use crate::error::{deref_ptresult, deref_ptresult_mut, ensure_ptok, PtError, PtErrorCode};
+use crate::error::{deref_ptresult_mut, ensure_ptok, PtError, PtErrorCode};
 
 use std::marker::PhantomData;
 use std::mem;
@@ -50,9 +49,11 @@ impl<T> PacketDecoder<'_, T> {
             .map(|d| PacketDecoder::<T>(d, PhantomData))
     }
 
-    pub fn config(&self) -> Result<Config<T>, PtError> {
-        deref_ptresult(unsafe { pt_pkt_get_config(self.0) }).map(Config::from)
-    }
+    // // todo: These functions return a pointer to their argument's configuration.
+    // // The returned configuration object must not be freed. It is valid as long as their argument is not freed.
+    // pub fn config(&self) -> Result<Config<T>, PtError> {
+    //     unsafe { pt_pkt_get_config(self.0) }
+    // }
 
     /// Get the current decoder position.
     ///
