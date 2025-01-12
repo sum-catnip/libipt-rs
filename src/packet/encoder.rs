@@ -2,6 +2,7 @@ use crate::error::{deref_ptresult_mut, ensure_ptok, extract_pterr, PtError};
 
 use std::marker::PhantomData;
 
+use crate::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
     pt_alloc_encoder, pt_enc_get_config, pt_enc_get_offset, pt_enc_next, pt_enc_sync_set,
     pt_encoder, pt_free_encoder, pt_packet,
@@ -35,16 +36,19 @@ mod tests {
 
 #[derive(Debug)]
 pub struct Encoder<'a, T>(&'a mut pt_encoder, PhantomData<T>);
-impl<T> Encoder<'_, T> {
+
+impl<T> PtEncoderDecoder for Encoder<'_, T> {
     /// Allocate an Intel PT packet encoder.
     ///
     /// The encoder will work on the buffer defined in @config, it shall contain raw trace data and remain valid for the lifetime of the encoder.
     /// The encoder starts at the beginning of the trace buffer.
-    pub fn new(cfg: &mut Config<T>) -> Result<Self, PtError> {
-        deref_ptresult_mut(unsafe { pt_alloc_encoder(cfg.0.to_mut()) })
+    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+        deref_ptresult_mut(unsafe { pt_alloc_encoder(&raw const builder.config) })
             .map(|x| Encoder::<T>(x, PhantomData))
     }
+}
 
+impl<T> Encoder<'_, T> {
     // pub fn config(&self) -> Result<Config<T>, PtError> {
     //     deref_ptresult(unsafe { pt_enc_get_config(self.0) }).map(Config::from)
     // }

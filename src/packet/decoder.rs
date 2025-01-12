@@ -4,6 +4,7 @@ use crate::error::{deref_ptresult_mut, ensure_ptok, PtError, PtErrorCode};
 use std::marker::PhantomData;
 use std::mem;
 
+use crate::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
     pt_packet, pt_packet_decoder, pt_pkt_alloc_decoder, pt_pkt_free_decoder, pt_pkt_get_config,
     pt_pkt_get_offset, pt_pkt_get_sync_offset, pt_pkt_next, pt_pkt_sync_backward,
@@ -38,17 +39,20 @@ mod test {
 
 #[derive(Debug)]
 pub struct PacketDecoder<'a, T>(&'a mut pt_packet_decoder, PhantomData<T>);
-impl<T> PacketDecoder<'_, T> {
+
+impl<T> PtEncoderDecoder for PacketDecoder<'_, T> {
     /// Allocate an Intel PT packet decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
-        deref_ptresult_mut(unsafe { pt_pkt_alloc_decoder(cfg.0.as_ref()) })
+    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+        deref_ptresult_mut(unsafe { pt_pkt_alloc_decoder(&raw const builder.config) })
             .map(|d| PacketDecoder::<T>(d, PhantomData))
     }
+}
 
+impl<T> PacketDecoder<'_, T> {
     // // todo: These functions return a pointer to their argument's configuration.
     // // The returned configuration object must not be freed. It is valid as long as their argument is not freed.
     // pub fn config(&self) -> Result<Config<T>, PtError> {

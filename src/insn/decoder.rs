@@ -1,9 +1,9 @@
 use super::Insn;
 use crate::error::{deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode};
 use crate::event::Event;
-use crate::Asid;
 use crate::Image;
 use crate::Status;
+use crate::{Asid, EncoderDecoderBuilder, PtEncoderDecoder};
 
 use std::marker::PhantomData;
 use std::mem;
@@ -57,17 +57,20 @@ mod test {
 /// The decoder needs to be synchronized before it can be used.
 #[derive(Debug)]
 pub struct InsnDecoder<'a, T>(&'a mut pt_insn_decoder, PhantomData<T>);
-impl<T> InsnDecoder<'_, T> {
+
+impl<T> PtEncoderDecoder for InsnDecoder<'_, T> {
     /// Allocate an Intel PT instruction flow decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
-        deref_ptresult_mut(unsafe { pt_insn_alloc_decoder(cfg.0.as_ref()) })
+    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+        deref_ptresult_mut(unsafe { pt_insn_alloc_decoder(&raw const builder.config) })
             .map(|d| InsnDecoder::<T>(d, PhantomData))
     }
+}
 
+impl<T> InsnDecoder<'_, T> {
     /// Return the current address space identifier.
     pub fn asid(&self) -> Result<Asid, PtError> {
         let mut asid: pt_asid = unsafe { mem::zeroed() };

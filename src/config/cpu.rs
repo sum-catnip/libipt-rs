@@ -76,6 +76,7 @@ impl Cpu {
         };
         // we dont care about errors here since
         // itll just return an empty errata
+        // fixme: maybe a result or option is more rusty here?
         unsafe {
             pt_cpu_errata(&mut errata, &self.0);
         }

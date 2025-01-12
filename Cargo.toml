@@ -6,6 +6,7 @@ edition = "2021"
 license = "MIT"
 description = "The Intel Processor Trace (Intel PT) Decoder Library is Intel's reference implementation for decoding Intel PT."
 repository = "https://github.com/sum-catnip/libipt-rs"
+rust-version = "1.82.0"
 
 [features]
 libipt_master = ["libipt-sys/libipt_master"]

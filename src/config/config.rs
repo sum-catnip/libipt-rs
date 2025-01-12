@@ -4,13 +4,13 @@ use super::freqency::Frequency;
 use crate::error::{PtError, PtErrorCode};
 use crate::packet::Unknown;
 
+use libipt_sys::{pt_conf_flags, pt_config, pt_packet_unknown};
 use std::borrow::Cow;
 use std::ffi::c_void;
+use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::mem;
 use std::os::raw::c_int;
-
-use libipt_sys::{pt_conf_flags, pt_config, pt_packet_unknown};
+use std::{mem, ptr};
 
 #[cfg(test)]
 mod test {
@@ -183,108 +183,134 @@ mod test {
     }
 }
 
-unsafe extern "C" fn decode_callback<'a, F, C>(
-    ukn: *mut pt_packet_unknown,
-    cfg: *const pt_config,
-    pos: *const u8,
-    ctx: *mut c_void,
-) -> c_int
-where
-    F: FnMut(&Config<C>, &[u8]) -> (Unknown<C>, u32),
-{
-    let sz = (*cfg).end as usize - pos as usize;
-    let pos = std::slice::from_raw_parts(pos, sz);
+// unsafe extern "C" fn decode_callback<'a, F, C>(
+//     ukn: *mut pt_packet_unknown,
+//     cfg: *const pt_config,
+//     pos: *const u8,
+//     ctx: *mut c_void,
+// ) -> c_int
+// where
+//     F: FnMut(&Config<C>, &[u8]) -> (Unknown<C>, u32),
+// {
+//     let sz = (*cfg).end as usize - pos as usize;
+//     let pos = std::slice::from_raw_parts(pos, sz);
+//
+//     let c = ctx as *mut F;
+//     let c = &mut *c;
+//
+//     let (res, bytes) = c(&(&*cfg).into(), pos);
+//     (*ukn).priv_ = match res.0 {
+//         Some(r) => Box::into_raw(r) as *mut _,
+//         None => std::ptr::null_mut(),
+//     };
+//
+//     bytes as i32
+// }
 
-    let c = ctx as *mut F;
-    let c = &mut *c;
+pub trait PtEncoderDecoder {
+    fn builder() -> EncoderDecoderBuilder<Self>
+    where
+        Self: Sized,
+    {
+        EncoderDecoderBuilder::new()
+    }
 
-    let (res, bytes) = c(&(&*cfg).into(), pos);
-    (*ukn).priv_ = match res.0 {
-        Some(r) => Box::into_raw(r) as *mut _,
-        None => std::ptr::null_mut(),
-    };
-
-    bytes as i32
+    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError>
+    where
+        Self: Sized;
 }
 
 #[derive(Debug)]
 pub struct EncoderDecoderBuilder<T> {
-    config: pt_config,
-    target: PhantomData<T>
+    pub(crate) config: pt_config,
+    target: PhantomData<T>,
 }
-impl<T> EncoderDecoderBuilder<T> {
-    // when theres a bug here, there might be on in `new` too.
-    /// Initializes a Config instance with a buffer and decoder callback
-    pub fn with_callback<F>(buf: &'a mut [u8], mut cb: F) -> Result<Self, PtError>
-    where
-        F: FnMut(&Config<T>, &[u8]) -> (Unknown<T>, u32),
-        F: 'a,
-    {
-        // yeah.. libipt doesnt handle this -_-
-        if buf.is_empty() {
-            return Err(PtError::new(PtErrorCode::Invalid, "buffer cant be empty!"));
+impl<T> EncoderDecoderBuilder<T>
+where
+    T: PtEncoderDecoder,
+{
+    /// Initializes an EncoderDecoderBuilder instance
+    pub fn new() -> Self {
+        let mut config: pt_config = unsafe { mem::zeroed() };
+        config.size = size_of::<pt_config>();
+        Self {
+            config,
+            target: Default::default(),
         }
-        let mut cfg: pt_config = unsafe { mem::zeroed() };
-        cfg.size = mem::size_of::<pt_config>();
-        cfg.begin = buf.as_mut_ptr();
-        cfg.end = unsafe { buf.as_mut_ptr().add(buf.len()) };
-        cfg.decode.callback = Some(decode_callback::<F, T>);
-        cfg.decode.context = &mut cb as *mut _ as *mut c_void;
-        Ok(ConfigBuilder::<T>(cfg, PhantomData))
     }
+
+    /// Set the encoder/decoder buffer from a raw pointer and length.
+    /// The buffer is not copied.
+    ///
+    /// # Safety
+    /// The buffer pointer `buf_ptr` must be valid for the entire encoder/decoder lifetime.
+    pub unsafe fn buffer_from_raw(&mut self, buf_ptr: *mut u8, buf_len: usize) -> &mut Self {
+        self.config.begin = buf_ptr;
+        self.config.end = unsafe { buf_ptr.add(buf_len) };
+
+        self
+    }
+
+    // TODO
+    // /// Set a decoder callback.
+    // pub fn callback<F>(&mut self, mut cb: F) -> Result<&mut Self, PtError>
+    // where
+    //     F: FnMut(&Config<T>, &[u8]) -> (Unknown<T>, u32),
+    //     F: 'a,
+    // {
+    //     let mut cfg: pt_config = unsafe { mem::zeroed() };
+    //     cfg.size = mem::size_of::<pt_config>();
+    //     cfg.begin = buf.as_mut_ptr();
+    //     cfg.end = unsafe { buf.as_mut_ptr().add(buf.len()) };
+    //     cfg.decode.callback = Some(decode_callback::<F, T>);
+    //     cfg.decode.context = &mut cb as *mut _ as *mut c_void;
+    //     Ok(ConfigBuilder::<T>(cfg, PhantomData))
+    // }
 
     /// The cpu used for capturing the data.
     /// It's highly recommended to provide this information.
     /// Processor specific workarounds will be identified this way.
     pub fn cpu(&mut self, cpu: Cpu) -> &mut Self {
-        self.0.cpu = cpu.0;
-        self.0.errata = cpu.determine_errata();
+        self.config.cpu = cpu.0;
+        self.config.errata = cpu.determine_errata();
 
         self
     }
 
     /// Frequency values used for timing packets (mtc)
     pub fn freq(&mut self, freq: Frequency) -> &mut Self {
-        self.0.mtc_freq = freq.mtc;
-        self.0.nom_freq = freq.nom;
-        self.0.cpuid_0x15_eax = freq.tsc;
-        self.0.cpuid_0x15_ebx = freq.ctc;
+        self.config.mtc_freq = freq.mtc;
+        self.config.nom_freq = freq.nom;
+        self.config.cpuid_0x15_eax = freq.tsc;
+        self.config.cpuid_0x15_ebx = freq.ctc;
 
         self
     }
 
     /// Decoder specific flags
     pub fn flags(&mut self, flags: impl Into<pt_conf_flags>) -> &mut Self {
-        self.0.flags = flags.into();
+        self.config.flags = flags.into();
         self
     }
 
     /// Address filter configuration
     pub fn filter(&mut self, filter: AddrFilter) -> &mut Self {
-        self.0.addr_filter = filter.0;
+        self.config.addr_filter = filter.0;
         self
     }
 
-    /// turn itself into a new `Config`
-    pub fn finish(&self) -> Config<'a, T> {
-        Config(Cow::Owned(self.0), self.1)
-    }
-}
-
-impl<'a> ConfigBuilder<'a, ()> {
-    /// Initializes a Config instance with only a buffer.
-    /// If you want to use a decoder callback,
-    /// use the `with_callback` function
-    /// returns `Invalid` when buf is empty
-    pub fn new(buf: &'a mut [u8]) -> Result<ConfigBuilder<'a, ()>, PtError> {
-        if buf.is_empty() {
-            return Err(PtError::new(PtErrorCode::Invalid, "buffer cant be empty!"));
+    /// Turn itself into a PT encoder/decoder
+    ///
+    /// Returns `Err` if the buffer is not set.
+    pub fn build(self) -> Result<T, PtError> {
+        if self.config.begin == ptr::null_mut() && self.config.end == ptr::null_mut() {
+            Err(PtError::new(
+                PtErrorCode::BadConfig,
+                "To build an encoder/decoder, a buffer must be set",
+            ))
+        } else {
+            T::new_from_builder(self)
         }
-        let mut cfg: pt_config = unsafe { mem::zeroed() };
-        cfg.size = mem::size_of::<pt_config>();
-        cfg.begin = buf.as_mut_ptr();
-        cfg.end = unsafe { buf.as_mut_ptr().add(buf.len()) };
-        Ok(ConfigBuilder::<()>(cfg, PhantomData))
     }
 }
 

@@ -9,6 +9,7 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
 
+use crate::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
     pt_asid, pt_blk_alloc_decoder, pt_blk_asid, pt_blk_core_bus_ratio, pt_blk_event,
     pt_blk_free_decoder, pt_blk_get_config, pt_blk_get_image, pt_blk_get_offset,
@@ -57,17 +58,21 @@ mod test {
 /// * `T` - The Callback Closure Type in the Config
 #[derive(Debug)]
 pub struct BlockDecoder<'a, T>(&'a mut pt_block_decoder, PhantomData<T>);
-impl<T> BlockDecoder<'_, T> {
+
+impl<T> PtEncoderDecoder for BlockDecoder<'_, T> {
     /// Allocate an Intel PT block decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    pub fn new(cfg: &Config<T>) -> Result<Self, PtError> {
-        deref_ptresult_mut(unsafe { pt_blk_alloc_decoder(cfg.0.as_ref()) })
+    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+        // todo: remove deref ecc
+        deref_ptresult_mut(unsafe { pt_blk_alloc_decoder(&raw const builder.config) })
             .map(|x| BlockDecoder::<T>(x, PhantomData))
     }
+}
 
+impl<T> BlockDecoder<'_, T> {
     /// Return the current address space identifier.
     ///
     /// On success, provides the current address space identifier in @asid.
