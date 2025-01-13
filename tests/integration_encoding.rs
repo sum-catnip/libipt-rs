@@ -5,10 +5,10 @@ use libipt::{Cpu, PtEncoderDecoder};
 fn test_encoder_all_packets() {
     let mut inp = [0u8; 132];
 
-    let mut builder = Encoder::<'_, ()>::builder().cpu(Cpu::intel(1, 2, 3));
+    let mut builder = Encoder::<()>::builder().cpu(Cpu::intel(1, 2, 3));
     builder = unsafe { builder.buffer_from_raw(inp.as_mut_ptr(), inp.len()) };
 
-    let mut enc: Encoder<'_, ()> = builder.build().unwrap();
+    let mut enc: Encoder<()> = builder.build().unwrap();
 
     let mut size: u32 = 0;
 
