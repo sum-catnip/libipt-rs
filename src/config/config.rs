@@ -12,12 +12,11 @@ use std::mem;
 mod test {
     use super::*;
     use crate::config::*;
-    use crate::packet::Unknown;
 
     struct FooDecoder {}
 
     impl PtEncoderDecoder for FooDecoder {
-        fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+        fn new_from_builder(_: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
             Ok(Self {})
         }
     }

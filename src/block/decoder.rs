@@ -1,21 +1,21 @@
 use super::Block;
 use crate::asid::Asid;
-use crate::error::{deref_ptresult_mut, ensure_ptok, extract_pterr, PtError, PtErrorCode};
+use crate::error::{ensure_ptok, extract_pterr, libipt_ptr_check_null, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::flags::Status;
 use crate::image::Image;
 
-use std::marker::PhantomData;
-use std::mem;
-use std::ptr;
-
 use crate::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
     pt_asid, pt_blk_alloc_decoder, pt_blk_asid, pt_blk_core_bus_ratio, pt_blk_event,
-    pt_blk_free_decoder, pt_blk_get_offset, pt_blk_get_sync_offset, pt_blk_next, pt_blk_set_image,
-    pt_blk_sync_backward, pt_blk_sync_forward, pt_blk_sync_set, pt_blk_time, pt_block,
-    pt_block_decoder, pt_event,
+    pt_blk_free_decoder, pt_blk_get_image, pt_blk_get_offset, pt_blk_get_sync_offset, pt_blk_next,
+    pt_blk_set_image, pt_blk_sync_backward, pt_blk_sync_forward, pt_blk_sync_set, pt_blk_time,
+    pt_block, pt_block_decoder, pt_event,
 };
+use std::marker::PhantomData;
+use std::mem;
+use std::ptr;
+use std::ptr::NonNull;
 
 #[cfg(test)]
 mod test {
@@ -44,7 +44,7 @@ mod test {
         assert!(b.core_bus_ratio().is_ok());
         assert!(b.event().is_err());
         //assert!(b.config().is_ok());
-        //assert!(b.image().unwrap().name().is_none());
+        assert!(b.image().name().is_none());
         assert!(b.offset().is_err());
         assert!(b.sync_offset().is_err());
         assert!(b.next().is_err());
@@ -61,30 +61,52 @@ mod test {
 ///
 /// * `T` - The Callback Closure Type in the Config
 #[derive(Debug)]
-pub struct BlockDecoder<'a, T = ()>(&'a mut pt_block_decoder, PhantomData<T>);
+pub struct BlockDecoder<T = ()> {
+    inner: NonNull<pt_block_decoder>,
+    image: Image,
+    phantom: PhantomData<T>,
+}
 
-impl PtEncoderDecoder for BlockDecoder<'_> {
+impl PtEncoderDecoder for BlockDecoder {
     /// Allocate an Intel PT block decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
-        // todo: remove deref ecc
-        deref_ptresult_mut(unsafe { pt_blk_alloc_decoder(&raw const builder.config) })
-            .map(|x| BlockDecoder::<()>(x, PhantomData))
+        let inner = libipt_ptr_check_null(
+            unsafe { pt_blk_alloc_decoder(&raw const builder.config) },
+            PtError::new(PtErrorCode::Internal, "Failed to allocate pt_block_decoder"),
+        )?;
+        let image = unsafe { Image::from_borrowed_raw(pt_blk_get_image(inner.as_ptr())) };
+        // According to libipt docs: The returned pointer is NULL if the decoder argument is NULL.
+        // so this should never happen.
+        debug_assert!(!image.inner.is_null(), "Block decoder has a NULL image");
+
+        Ok(Self {
+            inner,
+            image,
+            phantom: PhantomData,
+        })
     }
 }
 
 // todo: understand what to do with this generic
-impl<T> BlockDecoder<'_, T> {
+impl<T> BlockDecoder<T> {
     /// Return the current address space identifier.
     ///
     /// On success, provides the current address space identifier in @asid.
     /// Returns Asid on success, a PtError otherwise.
     pub fn asid(&self) -> Result<Asid, PtError> {
         let mut a: Asid = Default::default();
-        unsafe { ensure_ptok(pt_blk_asid(self.0, &mut a.0, mem::size_of::<pt_asid>())).map(|_| a) }
+        unsafe {
+            ensure_ptok(pt_blk_asid(
+                self.inner.as_ptr(),
+                &mut a.0,
+                mem::size_of::<pt_asid>(),
+            ))
+            .map(|_| a)
+        }
     }
 
     /// Return the current core bus ratio.
@@ -94,7 +116,7 @@ impl<T> BlockDecoder<'_, T> {
     /// Returns NoCbr if there has not been a CBR packet.
     pub fn core_bus_ratio(&mut self) -> Result<u32, PtError> {
         let mut cbr: u32 = 0;
-        unsafe { extract_pterr(pt_blk_core_bus_ratio(self.0, &mut cbr)) }
+        unsafe { extract_pterr(pt_blk_core_bus_ratio(self.inner.as_ptr(), &mut cbr)) }
     }
 
     /// Get the next pending event.
@@ -103,21 +125,23 @@ impl<T> BlockDecoder<'_, T> {
     /// Returns BadQuery if there is no event.
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
         let mut evt: pt_event = unsafe { mem::zeroed() };
-        extract_pterr(unsafe { pt_blk_event(self.0, &mut evt, mem::size_of::<pt_event>()) })
-            .map(|s| (Event(evt), Status::from_bits(s).unwrap()))
+        extract_pterr(unsafe {
+            pt_blk_event(self.inner.as_ptr(), &mut evt, mem::size_of::<pt_event>())
+        })
+        .map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
     // pub fn config(&self) -> Result<Config<T>, PtError> {
-    //     deref_ptresult(unsafe { pt_blk_get_config(self.0) }).map(Config::from)
+    //     deref_ptresult(unsafe { pt_blk_get_config(self.inner) }).map(Config::from)
     // }
 
     /// Get the traced image.
     ///
     /// The returned image may be modified as long as @decoder is not running.
     /// Returns the traced image the decoder uses for reading memory.
-    // pub fn image(&mut self) -> Result<Image, PtError> {
-    //     deref_ptresult_mut(unsafe { pt_blk_get_image(self.0) }).map(Image::from)
-    // }
+    pub fn image(&mut self) -> &mut Image {
+        &mut self.image
+    }
 
     /// Get the current decoder position.
     ///
@@ -125,7 +149,7 @@ impl<T> BlockDecoder<'_, T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn offset(&self) -> Result<u64, PtError> {
         let mut off: u64 = 0;
-        ensure_ptok(unsafe { pt_blk_get_offset(self.0, &mut off) }).map(|_| off)
+        ensure_ptok(unsafe { pt_blk_get_offset(self.inner.as_ptr(), &mut off) }).map(|_| off)
     }
 
     /// Get the position of the last synchronization point.
@@ -133,7 +157,7 @@ impl<T> BlockDecoder<'_, T> {
     /// Returns Nosync if the decoder is out of sync.
     pub fn sync_offset(&self) -> Result<u64, PtError> {
         let mut off: u64 = 0;
-        ensure_ptok(unsafe { pt_blk_get_sync_offset(self.0, &mut off) }).map(|_| off)
+        ensure_ptok(unsafe { pt_blk_get_sync_offset(self.inner.as_ptr(), &mut off) }).map(|_| off)
     }
 
     /// Determine the next block of instructions.
@@ -151,8 +175,10 @@ impl<T> BlockDecoder<'_, T> {
     /// Returns Nosync if the decoder is out of sync.
     pub fn next(&mut self) -> Result<(Block, Status), PtError> {
         let mut blk: pt_block = unsafe { mem::zeroed() };
-        extract_pterr(unsafe { pt_blk_next(self.0, &mut blk, mem::size_of::<pt_block>()) })
-            .map(|s| (Block(blk), Status::from_bits(s).unwrap()))
+        extract_pterr(unsafe {
+            pt_blk_next(self.inner.as_ptr(), &mut blk, mem::size_of::<pt_block>())
+        })
+        .map(|s| (Block(blk), Status::from_bits(s).unwrap()))
     }
 
     /// Set the traced image.
@@ -160,20 +186,28 @@ impl<T> BlockDecoder<'_, T> {
     /// Sets the image that the decoder uses for reading memory to image.
     /// If image is None, sets the image to the decoder's default image.
     /// Only one image can be active at any time.
-    pub fn set_image(&mut self, img: Option<&mut Image>) -> Result<(), PtError> {
-        ensure_ptok(unsafe {
-            pt_blk_set_image(
-                self.0,
-                match img {
-                    None => ptr::null_mut(),
-                    Some(i) => i.inner,
-                },
-            )
-        })
+    pub fn set_image(&mut self, img: Option<Image>) -> Result<(), PtError> {
+        let img_ptr = match img {
+            None => ptr::null_mut(),
+            Some(i) => i.inner,
+        };
+        ensure_ptok(unsafe { pt_blk_set_image(self.inner.as_ptr(), img_ptr) })?;
+        self.image = unsafe { Image::from_borrowed_raw(pt_blk_get_image(self.inner.as_ptr())) };
+        // According to libipt docs: The returned pointer is NULL if the decoder argument is NULL.
+        // so this should never happen.
+        debug_assert!(
+            !self.image.inner.is_null(),
+            "Block decoder has a NULL image"
+        );
+        if !img_ptr.is_null() {
+            debug_assert!(img_ptr == self.image.inner)
+        }
+
+        Ok(())
     }
 
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
-        extract_pterr(unsafe { pt_blk_sync_backward(self.0) })
+        extract_pterr(unsafe { pt_blk_sync_backward(self.inner.as_ptr()) })
             .map(|s| Status::from_bits(s).unwrap())
     }
 
@@ -186,7 +220,8 @@ impl<T> BlockDecoder<'_, T> {
     /// Returns BadPacket if an unknown packet payload is encountered.
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_forward(&mut self) -> Result<Status, PtError> {
-        extract_pterr(unsafe { pt_blk_sync_forward(self.0) }).map(|s| Status::from_bits(s).unwrap())
+        extract_pterr(unsafe { pt_blk_sync_forward(self.inner.as_ptr()) })
+            .map(|s| Status::from_bits(s).unwrap())
     }
 
     /// Manually synchronize an Intel PT block decoder.
@@ -198,7 +233,7 @@ impl<T> BlockDecoder<'_, T> {
     /// Returns Eos if the decoder reaches the end of its trace buffer.
     /// Returns Nosync if there is no syncpoint at @offset.
     pub fn set_sync(&mut self, offset: u64) -> Result<(), PtError> {
-        ensure_ptok(unsafe { pt_blk_sync_set(self.0, offset) })
+        ensure_ptok(unsafe { pt_blk_sync_set(self.inner.as_ptr(), offset) })
     }
 
     /// Return the current time.
@@ -218,12 +253,14 @@ impl<T> BlockDecoder<'_, T> {
         let mut time: u64 = 0;
         let mut lost_mtc: u32 = 0;
         let mut lost_cyc: u32 = 0;
-        ensure_ptok(unsafe { pt_blk_time(self.0, &mut time, &mut lost_mtc, &mut lost_cyc) })
-            .map(|_| (time, lost_mtc, lost_cyc))
+        ensure_ptok(unsafe {
+            pt_blk_time(self.inner.as_ptr(), &mut time, &mut lost_mtc, &mut lost_cyc)
+        })
+        .map(|_| (time, lost_mtc, lost_cyc))
     }
 }
 
-impl<T> Iterator for BlockDecoder<'_, T> {
+impl<T> Iterator for BlockDecoder<T> {
     type Item = Result<(Block, Status), PtError>;
 
     fn next(&mut self) -> Option<Result<(Block, Status), PtError>> {
@@ -235,8 +272,8 @@ impl<T> Iterator for BlockDecoder<'_, T> {
     }
 }
 
-impl<T> Drop for BlockDecoder<'_, T> {
+impl<T> Drop for BlockDecoder<T> {
     fn drop(&mut self) {
-        unsafe { pt_blk_free_decoder(self.0) }
+        unsafe { pt_blk_free_decoder(self.inner.as_ptr()) }
     }
 }
