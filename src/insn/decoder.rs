@@ -23,6 +23,7 @@ use std::ptr::NonNull;
 pub struct InsnDecoder<T> {
     inner: NonNull<pt_insn_decoder>,
     image: Image,
+    builder: EncoderDecoderBuilder<Self>,
     phantom: PhantomData<T>,
 }
 
@@ -42,6 +43,7 @@ impl<T> PtEncoderDecoder for InsnDecoder<T> {
         Ok(Self {
             inner,
             image,
+            builder,
             phantom: PhantomData,
         })
     }
@@ -79,9 +81,9 @@ impl<T> InsnDecoder<T> {
         .map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
-    // pub fn config(&self) -> Result<Config<T>, PtError> {
-    //     deref_ptresult(unsafe { pt_insn_get_config(self.inner.as_ptr()) }).map(Config::from)
-    // }
+    pub fn used_builder(&self) -> &EncoderDecoderBuilder<Self> {
+        &self.builder
+    }
 
     /// Get the traced image.
     ///
@@ -221,6 +223,7 @@ impl<T> Drop for InsnDecoder<T> {
 
 #[cfg(test)]
 mod test {
+    use libipt_sys::{pt_config, pt_insn_get_config};
     use super::*;
 
     #[test]
@@ -247,7 +250,18 @@ mod test {
         assert!(b.event().is_err());
         assert!(b.core_bus_ratio().is_err());
         assert!(b.event().is_err());
-        // assert!(b.config().is_ok());
+
+        let used_builder = b.used_builder();
+        unsafe {
+            let inner_config = pt_insn_get_config(b.inner.as_ptr());
+            let saved_config = &raw const used_builder.config;
+            let size = size_of::<pt_config>();
+            debug_assert_eq!(
+                std::slice::from_raw_parts(inner_config.cast::<u8>(), size),
+                std::slice::from_raw_parts(saved_config.cast::<u8>(), size),
+                "Rust builder not coherent with libipt C config!"
+            )
+        }
         assert!(b.image().name().is_none());
         assert!(b.offset().is_err());
         assert!(b.sync_offset().is_err());

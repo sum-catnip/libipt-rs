@@ -8,9 +8,9 @@ use crate::image::Image;
 use crate::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
     pt_asid, pt_blk_alloc_decoder, pt_blk_asid, pt_blk_core_bus_ratio, pt_blk_event,
-    pt_blk_free_decoder, pt_blk_get_image, pt_blk_get_offset, pt_blk_get_sync_offset, pt_blk_next,
-    pt_blk_set_image, pt_blk_sync_backward, pt_blk_sync_forward, pt_blk_sync_set, pt_blk_time,
-    pt_block, pt_block_decoder, pt_event,
+    pt_blk_free_decoder, pt_blk_get_image, pt_blk_get_offset,
+    pt_blk_get_sync_offset, pt_blk_next, pt_blk_set_image, pt_blk_sync_backward,
+    pt_blk_sync_forward, pt_blk_sync_set, pt_blk_time, pt_block, pt_block_decoder, pt_event,
 };
 use std::marker::PhantomData;
 use std::mem;
@@ -27,6 +27,7 @@ use std::ptr::NonNull;
 pub struct BlockDecoder<T = ()> {
     inner: NonNull<pt_block_decoder>,
     image: Image,
+    builder: EncoderDecoderBuilder<Self>,
     phantom: PhantomData<T>,
 }
 
@@ -46,6 +47,7 @@ impl PtEncoderDecoder for BlockDecoder {
         Ok(Self {
             inner,
             image,
+            builder,
             phantom: PhantomData,
         })
     }
@@ -91,9 +93,9 @@ impl<T> BlockDecoder<T> {
         .map(|s| (Event(evt), Status::from_bits(s).unwrap()))
     }
 
-    // pub fn config(&self) -> Result<Config<T>, PtError> {
-    //     deref_ptresult(unsafe { pt_blk_get_config(self.inner) }).map(Config::from)
-    // }
+    pub fn used_builder(&self) -> &EncoderDecoderBuilder<Self> {
+        &self.builder
+    }
 
     /// Get the traced image.
     ///
@@ -235,6 +237,7 @@ impl<T> Drop for BlockDecoder<T> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use libipt_sys::{pt_config, pt_blk_get_config};
 
     #[test]
     fn test_blkdec_alloc() {
@@ -258,7 +261,18 @@ mod test {
         assert!(a.vmcs().is_none());
         assert!(b.core_bus_ratio().is_ok());
         assert!(b.event().is_err());
-        //assert!(b.config().is_ok());
+        let used_builder = b.used_builder();
+        unsafe {
+            let inner_config = pt_blk_get_config(b.inner.as_ptr());
+            let saved_config = &raw const used_builder.config;
+            let size = size_of::<pt_config>();
+            debug_assert_eq!(
+                std::slice::from_raw_parts(inner_config.cast::<u8>(), size),
+                std::slice::from_raw_parts(saved_config.cast::<u8>(), size),
+                "Rust builder not coherent with libipt C config!"
+            )
+        }
+
         assert!(b.image().name().is_none());
         assert!(b.offset().is_err());
         assert!(b.sync_offset().is_err());
