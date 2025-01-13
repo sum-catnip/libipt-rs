@@ -10,140 +10,6 @@ use libipt_sys::{
 use std::ffi::{c_void, CString};
 use std::ptr;
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use std::path::PathBuf;
-
-    // not much to test for in the unit tests
-    // the integration tests should have way more stuffs
-
-    #[test]
-    fn test_box_func_and_call() {
-        fn func(buf: &mut [u8], size: u64, asid: Asid) -> i32 {
-            assert_eq!(buf, &[10u8, 20u8, 30u8, 40u8]);
-            assert_eq!(size, 50);
-            assert!(asid.cr3().is_none());
-            assert!(asid.vmcs().is_none());
-            42
-        }
-
-        let boxed = BoxedCallback::box_callback(func);
-
-        let mut buf = vec![10u8, 20u8, 30u8, 40u8];
-        let ret = unsafe { BoxedCallback::call(boxed.0, &mut buf, 50, Asid::new(None, None)) };
-        assert_eq!(ret, 42);
-    }
-
-    #[test]
-    fn test_box_no_capture_closure_and_call() {
-        let boxed = BoxedCallback::box_callback(|buf, size, asid| {
-            assert_eq!(buf, &[10u8, 20u8, 30u8, 40u8]);
-            assert_eq!(size, 50);
-            assert!(asid.cr3().is_none());
-            assert!(asid.vmcs().is_none());
-            42
-        });
-
-        let mut buf = vec![10u8, 20u8, 30u8, 40u8];
-        let ret = unsafe { BoxedCallback::call(boxed.0, &mut buf, 50, Asid::new(None, None)) };
-        assert_eq!(ret, 42);
-    }
-
-    #[test]
-    fn test_box_capture_closure_and_call() {
-        let data = 60;
-
-        let boxed = BoxedCallback::box_callback(move |buf, size, asid| {
-            assert_eq!(buf, &[10u8, 20u8, 30u8, 40u8]);
-            assert_eq!(size, 50);
-            assert_eq!(data, 60);
-            assert!(asid.cr3().is_none());
-            assert!(asid.vmcs().is_none());
-            42
-        });
-
-        let mut buf = vec![10u8, 20u8, 30u8, 40u8];
-        let ret = unsafe { BoxedCallback::call(boxed.0, &mut buf, 50, Asid::new(None, None)) };
-        assert_eq!(ret, 42);
-    }
-
-    #[test]
-    fn test_img_alloc() {
-        Image::new(None).unwrap();
-        Image::new(Some("yeet")).unwrap();
-    }
-
-    #[test]
-    fn test_img_name() {
-        let i = Image::new(Some("yeet")).unwrap();
-        assert_eq!(i.name().unwrap(), "yeet");
-        let i = Image::new(None).unwrap();
-        assert!(i.name().is_none());
-    }
-
-    fn img_with_file<'a>() -> Image {
-        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
-            .iter()
-            .collect();
-
-        let mut i = Image::new(None).unwrap();
-        let asid = Asid::new(Some(1), Some(2));
-        i.add_file(file.to_str().unwrap(), 3, 10, Some(asid), 0x123)
-            .unwrap();
-        i
-    }
-
-    #[test]
-    fn test_img_file() {
-        img_with_file();
-    }
-
-    #[test]
-    fn test_img_remove_filename() {
-        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
-            .iter()
-            .collect();
-
-        assert_eq!(
-            img_with_file()
-                .remove_by_filename(file.to_str().unwrap(), Asid::new(Some(1), Some(2)))
-                .unwrap(),
-            1
-        );
-    }
-
-    #[test]
-    fn test_img_remove_asid() {
-        assert_eq!(
-            img_with_file()
-                .remove_by_asid(Asid::new(Some(1), Some(2)))
-                .unwrap(),
-            1
-        );
-    }
-
-    #[test]
-    fn test_img_copy() {
-        assert_eq!(img_with_file().copy(&img_with_file()).unwrap(), 0)
-    }
-
-    #[test]
-    fn test_img_add_cached() {
-        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
-            .iter()
-            .collect();
-        println!("{:?}", file);
-
-        let mut c = SectionCache::new(None).unwrap();
-        let isid = c.add_file(file.to_str().unwrap(), 5, 15, 0x1337).unwrap();
-        let mut i = img_with_file();
-        i.add_cached(&mut c, isid, Asid::new(Some(3), Some(4)))
-            .unwrap();
-        assert_eq!(i.remove_by_asid(Asid::new(Some(3), Some(4))).unwrap(), 1);
-    }
-}
-
 unsafe extern "C" fn read_callback(
     buffer: *mut u8,
     size: usize,
@@ -400,5 +266,139 @@ impl Drop for Image {
         if self.inner_is_owned {
             unsafe { pt_image_free(self.inner) }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::path::PathBuf;
+
+    // not much to test for in the unit tests
+    // the integration tests should have way more stuffs
+
+    #[test]
+    fn test_box_func_and_call() {
+        fn func(buf: &mut [u8], size: u64, asid: Asid) -> i32 {
+            assert_eq!(buf, &[10u8, 20u8, 30u8, 40u8]);
+            assert_eq!(size, 50);
+            assert!(asid.cr3().is_none());
+            assert!(asid.vmcs().is_none());
+            42
+        }
+
+        let boxed = BoxedCallback::box_callback(func);
+
+        let mut buf = vec![10u8, 20u8, 30u8, 40u8];
+        let ret = unsafe { BoxedCallback::call(boxed.0, &mut buf, 50, Asid::new(None, None)) };
+        assert_eq!(ret, 42);
+    }
+
+    #[test]
+    fn test_box_no_capture_closure_and_call() {
+        let boxed = BoxedCallback::box_callback(|buf, size, asid| {
+            assert_eq!(buf, &[10u8, 20u8, 30u8, 40u8]);
+            assert_eq!(size, 50);
+            assert!(asid.cr3().is_none());
+            assert!(asid.vmcs().is_none());
+            42
+        });
+
+        let mut buf = vec![10u8, 20u8, 30u8, 40u8];
+        let ret = unsafe { BoxedCallback::call(boxed.0, &mut buf, 50, Asid::new(None, None)) };
+        assert_eq!(ret, 42);
+    }
+
+    #[test]
+    fn test_box_capture_closure_and_call() {
+        let data = 60;
+
+        let boxed = BoxedCallback::box_callback(move |buf, size, asid| {
+            assert_eq!(buf, &[10u8, 20u8, 30u8, 40u8]);
+            assert_eq!(size, 50);
+            assert_eq!(data, 60);
+            assert!(asid.cr3().is_none());
+            assert!(asid.vmcs().is_none());
+            42
+        });
+
+        let mut buf = vec![10u8, 20u8, 30u8, 40u8];
+        let ret = unsafe { BoxedCallback::call(boxed.0, &mut buf, 50, Asid::new(None, None)) };
+        assert_eq!(ret, 42);
+    }
+
+    #[test]
+    fn test_img_alloc() {
+        Image::new(None).unwrap();
+        Image::new(Some("yeet")).unwrap();
+    }
+
+    #[test]
+    fn test_img_name() {
+        let i = Image::new(Some("yeet")).unwrap();
+        assert_eq!(i.name().unwrap(), "yeet");
+        let i = Image::new(None).unwrap();
+        assert!(i.name().is_none());
+    }
+
+    fn img_with_file<'a>() -> Image {
+        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
+            .iter()
+            .collect();
+
+        let mut i = Image::new(None).unwrap();
+        let asid = Asid::new(Some(1), Some(2));
+        i.add_file(file.to_str().unwrap(), 3, 10, Some(asid), 0x123)
+            .unwrap();
+        i
+    }
+
+    #[test]
+    fn test_img_file() {
+        img_with_file();
+    }
+
+    #[test]
+    fn test_img_remove_filename() {
+        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
+            .iter()
+            .collect();
+
+        assert_eq!(
+            img_with_file()
+                .remove_by_filename(file.to_str().unwrap(), Asid::new(Some(1), Some(2)))
+                .unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn test_img_remove_asid() {
+        assert_eq!(
+            img_with_file()
+                .remove_by_asid(Asid::new(Some(1), Some(2)))
+                .unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn test_img_copy() {
+        assert_eq!(img_with_file().copy(&img_with_file()).unwrap(), 0)
+    }
+
+    #[test]
+    fn test_img_add_cached() {
+        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
+            .iter()
+            .collect();
+        println!("{:?}", file);
+
+        let mut c = SectionCache::new(None).unwrap();
+        let isid = c.add_file(file.to_str().unwrap(), 5, 15, 0x1337).unwrap();
+        let mut i = img_with_file();
+        i.add_cached(&mut c, isid, Asid::new(Some(3), Some(4)))
+            .unwrap();
+        assert_eq!(i.remove_by_asid(Asid::new(Some(3), Some(4))).unwrap(), 1);
     }
 }

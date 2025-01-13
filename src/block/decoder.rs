@@ -17,43 +17,6 @@ use std::mem;
 use std::ptr;
 use std::ptr::NonNull;
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_blkdec_alloc() {
-        let mut kek = [1u8; 2];
-        let builder = BlockDecoder::builder();
-        unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
-            .build()
-            .unwrap();
-    }
-
-    #[test]
-    fn test_blkdec_props() {
-        let kek = &mut [1u8; 2];
-        let mut builder = BlockDecoder::builder();
-        builder = unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) };
-        // todo: check mutability requirement of methods
-        let mut b = builder.build().unwrap();
-
-        let a = b.asid().unwrap();
-        assert!(a.cr3().is_none());
-        assert!(a.vmcs().is_none());
-        assert!(b.core_bus_ratio().is_ok());
-        assert!(b.event().is_err());
-        //assert!(b.config().is_ok());
-        assert!(b.image().name().is_none());
-        assert!(b.offset().is_err());
-        assert!(b.sync_offset().is_err());
-        assert!(b.next().is_err());
-        assert!(b.sync_backward().is_err());
-        assert!(b.sync_forward().is_err());
-        assert!(b.time().is_ok());
-    }
-}
-
 /// The decoder will work on the buffer defined in a Config, it shall contain
 /// raw trace data and remain valid for the lifetime of the decoder.
 ///
@@ -275,5 +238,42 @@ impl<T> Iterator for BlockDecoder<T> {
 impl<T> Drop for BlockDecoder<T> {
     fn drop(&mut self) {
         unsafe { pt_blk_free_decoder(self.inner.as_ptr()) }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_blkdec_alloc() {
+        let mut kek = [1u8; 2];
+        let builder = BlockDecoder::builder();
+        unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
+            .build()
+            .unwrap();
+    }
+
+    #[test]
+    fn test_blkdec_props() {
+        let kek = &mut [1u8; 2];
+        let mut builder = BlockDecoder::builder();
+        builder = unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) };
+        // todo: check mutability requirement of methods
+        let mut b = builder.build().unwrap();
+
+        let a = b.asid().unwrap();
+        assert!(a.cr3().is_none());
+        assert!(a.vmcs().is_none());
+        assert!(b.core_bus_ratio().is_ok());
+        assert!(b.event().is_err());
+        //assert!(b.config().is_ok());
+        assert!(b.image().name().is_none());
+        assert!(b.offset().is_err());
+        assert!(b.sync_offset().is_err());
+        assert!(b.next().is_err());
+        assert!(b.sync_backward().is_err());
+        assert!(b.sync_forward().is_err());
+        assert!(b.time().is_ok());
     }
 }
