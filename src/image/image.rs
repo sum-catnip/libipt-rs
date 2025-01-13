@@ -1,7 +1,6 @@
-use super::SectionCache;
+use super::{name_ptr_to_option_string, str_to_cstring_pterror, SectionCache};
 use crate::asid::Asid;
 use crate::error::{ensure_ptok, extract_pterr, PtError, PtErrorCode};
-use crate::utils::name_ptr_to_option_string;
 use libipt_sys::{
     pt_asid, pt_image, pt_image_add_cached, pt_image_add_file, pt_image_alloc, pt_image_copy,
     pt_image_free, pt_image_name, pt_image_remove_by_asid, pt_image_remove_by_filename,
@@ -9,6 +8,7 @@ use libipt_sys::{
 };
 use std::ffi::{c_void, CString};
 use std::ptr;
+use std::ptr::NonNull;
 
 unsafe extern "C" fn read_callback(
     buffer: *mut u8,
@@ -95,7 +95,7 @@ impl Drop for BoxedCallback {
 #[derive(Debug)]
 pub struct Image {
     // the wrapped inst
-    pub(crate) inner: *mut pt_image,
+    pub(crate) inner: NonNull<pt_image>,
     // do we need to free this instance on drop? in other words, is inner owned?
     inner_is_owned: bool,
     // Any read data callback set by this `Image` instance.
@@ -106,22 +106,20 @@ impl Image {
     /// Creates a traced memory image.
     /// An optional @name may be given to the image.
     pub fn new(name: Option<&str>) -> Result<Self, PtError> {
-        let cname = name.map(|n| {
-            CString::new(n).map_err(|_| {
-                PtError::new(
-                    PtErrorCode::Invalid,
-                    "invalid image @name: string contains null bytes",
-                )
-            })
-        });
-
-        // todo check for null
-        let inner = unsafe {
-            match cname {
+        let res = unsafe {
+            match name {
                 None => pt_image_alloc(ptr::null()),
-                Some(n) => pt_image_alloc(n?.as_ptr()),
+                Some(n) => {
+                    let name_ptr = str_to_cstring_pterror(n)?;
+                    pt_image_alloc(name_ptr.as_ptr())
+                }
             }
         };
+
+        let inner = NonNull::new(res).ok_or(PtError::new(
+            PtErrorCode::Internal,
+            "SectionCache allocation failed",
+        ))?;
 
         Ok(Self {
             inner,
@@ -133,19 +131,23 @@ impl Image {
     // fixme: this conversion doesn't account for the callback, should be ok but dangerous?
     /// `image` is considered as borrowed, the returned `Image` won't call pt_image_free on it.
     ///
-    /// Safety:
+    /// Returns `Err::<PtError>` if the image pointer is null
+    ///
+    /// # Safety:
     /// The pointer `image` must be always valid during the entire returned `Image` lifetime
-    pub(crate) unsafe fn from_borrowed_raw(image: *mut pt_image) -> Self {
-        Self {
-            inner: image,
+    pub(crate) unsafe fn from_borrowed_raw(image: *mut pt_image) -> Result<Self, PtError> {
+        let inner = NonNull::new(image)
+            .ok_or(PtError::new(PtErrorCode::Internal, "Image pointer is null"))?;
+        Ok(Self {
+            inner,
             inner_is_owned: false,
             callback: None,
-        }
+        })
     }
 
     /// Get the image name, as set by `Self::new`.
     pub fn name(&self) -> Option<String> {
-        let name_ptr = unsafe { pt_image_name(self.inner) };
+        let name_ptr = unsafe { pt_image_name(self.inner.as_ptr()) };
         name_ptr_to_option_string(name_ptr)
     }
 
@@ -155,7 +157,7 @@ impl Image {
     /// Specify the same @asid that was used for adding sections.
     /// Returns the number of removed sections on success.
     pub fn remove_by_asid(&mut self, asid: Asid) -> Result<u32, PtError> {
-        extract_pterr(unsafe { pt_image_remove_by_asid(self.inner, &asid.0) })
+        extract_pterr(unsafe { pt_image_remove_by_asid(self.inner.as_ptr(), &asid.0) })
     }
 
     /// Remove all sections loaded from a file.
@@ -172,7 +174,7 @@ impl Image {
         })?;
 
         extract_pterr(unsafe {
-            pt_image_remove_by_filename(self.inner, cfilename.as_ptr(), &asid.0)
+            pt_image_remove_by_filename(self.inner.as_ptr(), cfilename.as_ptr(), &asid.0)
         })
     }
 
@@ -189,8 +191,8 @@ impl Image {
         self.callback = callback.map(BoxedCallback::box_callback);
         ensure_ptok(unsafe {
             match &self.callback {
-                None => pt_image_set_callback(self.inner, None, ptr::null_mut()),
-                Some(cb) => pt_image_set_callback(self.inner, Some(read_callback), cb.0),
+                None => pt_image_set_callback(self.inner.as_ptr(), None, ptr::null_mut()),
+                Some(cb) => pt_image_set_callback(self.inner.as_ptr(), Some(read_callback), cb.0),
             }
         })
     }
@@ -201,7 +203,7 @@ impl Image {
     /// Sections that could not be added will be ignored.
     /// Returns the number of ignored sections on success.
     pub fn copy(&mut self, src: &Image) -> Result<u32, PtError> {
-        extract_pterr(unsafe { pt_image_copy(self.inner, src.inner) })
+        extract_pterr(unsafe { pt_image_copy(self.inner.as_ptr(), src.inner.as_ptr()) })
     }
 
     /// Add a section from an image section cache.
@@ -216,7 +218,14 @@ impl Image {
         asid: Asid,
     ) -> Result<(), PtError> {
         // fixme: `iscache` could be dropped before this Image
-        ensure_ptok(unsafe { pt_image_add_cached(self.inner, iscache.inner, isid as i32, &asid.0) })
+        ensure_ptok(unsafe {
+            pt_image_add_cached(
+                self.inner.as_ptr(),
+                iscache.inner.as_ptr(),
+                isid as i32,
+                &asid.0,
+            )
+        })
     }
 
     /// Add a new file section to the traced memory image.
@@ -247,7 +256,7 @@ impl Image {
 
         ensure_ptok(unsafe {
             pt_image_add_file(
-                self.inner,
+                self.inner.as_ptr(),
                 cfilename.as_ptr(),
                 offset,
                 size,
@@ -264,7 +273,7 @@ impl Image {
 impl Drop for Image {
     fn drop(&mut self) {
         if self.inner_is_owned {
-            unsafe { pt_image_free(self.inner) }
+            unsafe { pt_image_free(self.inner.as_ptr()) }
         }
     }
 }

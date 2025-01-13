@@ -19,7 +19,6 @@ use std::convert::TryFrom;
 use std::error::Error;
 use std::ffi::CStr;
 use std::fmt::{Display, Formatter};
-use std::ptr::NonNull;
 
 #[derive(Clone, Copy, Debug, TryFromPrimitive, PartialEq)]
 #[repr(i32)]
@@ -137,17 +136,6 @@ impl Error for PtError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         None
     }
-}
-
-/// Checks a pointer returned by one of the libipt functions. And converts it in a `Result`.
-/// NULL values will be translated into `Err(pt_err)` value.
-/// other values are mapped into Ok(NonNull(ptr))
-#[inline]
-pub(crate) fn libipt_ptr_check_null<T>(
-    ptr: *mut T,
-    pt_err: PtError,
-) -> Result<NonNull<T>, PtError> {
-    NonNull::new(ptr).ok_or(pt_err)
 }
 
 // todo: nuke deref_ptresult_mut in the entire crate

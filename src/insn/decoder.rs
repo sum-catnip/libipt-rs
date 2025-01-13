@@ -158,7 +158,7 @@ impl<T> InsnDecoder<'_, T> {
                 self.0,
                 match img {
                     None => ptr::null_mut(),
-                    Some(i) => i.inner,
+                    Some(i) => i.inner.as_ptr(),
                 },
             )
         })

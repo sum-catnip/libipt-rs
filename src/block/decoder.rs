@@ -1,6 +1,6 @@
 use super::Block;
 use crate::asid::Asid;
-use crate::error::{ensure_ptok, extract_pterr, libipt_ptr_check_null, PtError, PtErrorCode};
+use crate::error::{ensure_ptok, extract_pterr, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::flags::Status;
 use crate::image::Image;
@@ -37,14 +37,11 @@ impl PtEncoderDecoder for BlockDecoder {
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
-        let inner = libipt_ptr_check_null(
-            unsafe { pt_blk_alloc_decoder(&raw const builder.config) },
-            PtError::new(PtErrorCode::Internal, "Failed to allocate pt_block_decoder"),
-        )?;
-        let image = unsafe { Image::from_borrowed_raw(pt_blk_get_image(inner.as_ptr())) };
-        // According to libipt docs: The returned pointer is NULL if the decoder argument is NULL.
-        // so this should never happen.
-        debug_assert!(!image.inner.is_null(), "Block decoder has a NULL image");
+        let inner =
+            NonNull::new(unsafe { pt_blk_alloc_decoder(&raw const builder.config) }).ok_or(
+                PtError::new(PtErrorCode::Internal, "Failed to allocate pt_block_decoder"),
+            )?;
+        let image = unsafe { Image::from_borrowed_raw(pt_blk_get_image(inner.as_ptr())) }?;
 
         Ok(Self {
             inner,
@@ -152,18 +149,12 @@ impl<T> BlockDecoder<T> {
     pub fn set_image(&mut self, img: Option<Image>) -> Result<(), PtError> {
         let img_ptr = match img {
             None => ptr::null_mut(),
-            Some(i) => i.inner,
+            Some(i) => i.inner.as_ptr(),
         };
         ensure_ptok(unsafe { pt_blk_set_image(self.inner.as_ptr(), img_ptr) })?;
-        self.image = unsafe { Image::from_borrowed_raw(pt_blk_get_image(self.inner.as_ptr())) };
-        // According to libipt docs: The returned pointer is NULL if the decoder argument is NULL.
-        // so this should never happen.
-        debug_assert!(
-            !self.image.inner.is_null(),
-            "Block decoder has a NULL image"
-        );
-        if !img_ptr.is_null() {
-            debug_assert!(img_ptr == self.image.inner)
+        self.image = unsafe { Image::from_borrowed_raw(pt_blk_get_image(self.inner.as_ptr())) }?;
+        if let Some(img_nonnull_ptr) = NonNull::new(img_ptr) {
+            debug_assert!(img_nonnull_ptr == self.image.inner)
         }
 
         Ok(())
