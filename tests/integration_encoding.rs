@@ -1,15 +1,14 @@
 use libipt::packet::*;
-use libipt::{ConfigBuilder, Cpu};
+use libipt::{Cpu, PtEncoderDecoder};
 
 #[test]
 fn test_encoder_all_packets() {
-    let mut inp = [0; 132];
-    let mut cfg = ConfigBuilder::new(&mut inp)
-        .unwrap()
-        .cpu(Cpu::intel(1, 2, 3))
-        .finish();
+    let mut inp = [0u8; 132];
 
-    let mut enc = Encoder::new(&mut cfg).unwrap();
+    let mut builder = Encoder::<'_, ()>::builder().cpu(Cpu::intel(1, 2, 3));
+    builder = unsafe { builder.buffer_from_raw(inp.as_mut_ptr(), inp.len()) };
+
+    let mut enc: Encoder<'_, ()> = builder.build().unwrap();
 
     let mut size: u32 = 0;
 

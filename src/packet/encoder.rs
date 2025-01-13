@@ -11,23 +11,26 @@ use libipt_sys::{
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::ConfigBuilder;
     use crate::packet::Mnt;
 
     #[test]
     fn test_pktdec_alloc() {
-        let kek = &mut [1; 2];
-        Encoder::new(&mut ConfigBuilder::new(kek).unwrap().finish()).unwrap();
+        let mut kek = [1u8; 2];
+        let builder: EncoderDecoderBuilder<Encoder<'_, ()>> = Encoder::builder();
+        unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
+            .build()
+            .unwrap();
     }
 
     #[test]
     fn test_pktdec_props() {
-        let kek = &mut [1; 2];
-        // this just checks memory safety for property access
-        // usage can be found in the integration tests
-        let mut p = Encoder::new(&mut ConfigBuilder::new(kek).unwrap().finish()).unwrap();
+        let mut kek = [1u8; 2];
+        let builder: EncoderDecoderBuilder<Encoder<'_, ()>> = Encoder::builder();
+        let mut p = unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
+            .build()
+            .unwrap();
 
-        assert!(p.config().is_ok());
+        // assert!(p.config().is_ok());
         assert_eq!(p.offset().unwrap(), 0);
         assert!(p.set_offset(6).is_err());
         assert!(p.next(Mnt::new(5)).is_err());

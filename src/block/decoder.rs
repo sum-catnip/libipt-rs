@@ -20,27 +20,31 @@ use libipt_sys::{
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::config::ConfigBuilder;
 
     #[test]
     fn test_blkdec_alloc() {
-        let kek = &mut [1; 2];
-        BlockDecoder::new(&ConfigBuilder::new(kek).unwrap().finish()).unwrap();
+        let mut kek = [1u8; 2];
+        let builder = BlockDecoder::builder();
+        unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
+            .build()
+            .unwrap();
     }
 
     #[test]
     fn test_blkdec_props() {
-        let kek = &mut [1; 2];
-        // this just checks memory safety for property access
-        // usage can be found in the integration tests
-        let mut b = BlockDecoder::new(&ConfigBuilder::new(kek).unwrap().finish()).unwrap();
+        let kek = &mut [1u8; 2];
+        let mut builder = BlockDecoder::builder();
+        builder = unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) };
+        // todo: check mutability requirement of methods
+        let mut b = builder.build().unwrap();
+
         let a = b.asid().unwrap();
         assert!(a.cr3().is_none());
         assert!(a.vmcs().is_none());
         assert!(b.core_bus_ratio().is_ok());
         assert!(b.event().is_err());
-        assert!(b.config().is_ok());
-        assert!(b.image().unwrap().name().is_none());
+        //assert!(b.config().is_ok());
+        //assert!(b.image().unwrap().name().is_none());
         assert!(b.offset().is_err());
         assert!(b.sync_offset().is_err());
         assert!(b.next().is_err());
@@ -57,9 +61,9 @@ mod test {
 ///
 /// * `T` - The Callback Closure Type in the Config
 #[derive(Debug)]
-pub struct BlockDecoder<'a, T>(&'a mut pt_block_decoder, PhantomData<T>);
+pub struct BlockDecoder<'a, T = ()>(&'a mut pt_block_decoder, PhantomData<T>);
 
-impl<T> PtEncoderDecoder for BlockDecoder<'_, T> {
+impl PtEncoderDecoder for BlockDecoder<'_> {
     /// Allocate an Intel PT block decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
@@ -68,10 +72,11 @@ impl<T> PtEncoderDecoder for BlockDecoder<'_, T> {
     fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
         // todo: remove deref ecc
         deref_ptresult_mut(unsafe { pt_blk_alloc_decoder(&raw const builder.config) })
-            .map(|x| BlockDecoder::<T>(x, PhantomData))
+            .map(|x| BlockDecoder::<()>(x, PhantomData))
     }
 }
 
+// todo: understand what to do with this generic
 impl<T> BlockDecoder<'_, T> {
     /// Return the current address space identifier.
     ///

@@ -82,7 +82,7 @@ mod test {
         assert!(i.name().is_none());
     }
 
-    fn img_with_file<'a>() -> Image<'a> {
+    fn img_with_file<'a>() -> Image {
         let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
             .iter()
             .collect();
