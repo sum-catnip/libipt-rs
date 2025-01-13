@@ -19,7 +19,6 @@ use std::convert::TryFrom;
 use std::error::Error;
 use std::ffi::CStr;
 use std::fmt::{Display, Formatter};
-use std::ptr;
 
 #[derive(Clone, Copy, Debug, TryFromPrimitive, PartialEq)]
 #[repr(i32)]

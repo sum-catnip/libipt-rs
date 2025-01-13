@@ -2,15 +2,11 @@ use super::cpu::Cpu;
 use super::filter::AddrFilter;
 use super::freqency::Frequency;
 use crate::error::{PtError, PtErrorCode};
-use crate::packet::Unknown;
 
-use libipt_sys::{pt_conf_flags, pt_config, pt_packet_unknown};
-use std::borrow::Cow;
-use std::ffi::c_void;
+use libipt_sys::{pt_conf_flags, pt_config};
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::os::raw::c_int;
-use std::{mem, ptr};
+use std::mem;
 
 #[cfg(test)]
 mod test {
@@ -21,9 +17,8 @@ mod test {
     struct FooDecoder {}
 
     impl PtEncoderDecoder for FooDecoder {
-        fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError>
-        {
-            Ok(Self{})
+        fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+            Ok(Self {})
         }
     }
 
@@ -41,7 +36,7 @@ mod test {
         let mut data = [0u8; 16];
         let len = data.len();
         let mut c = EncoderDecoderBuilder::<FooDecoder>::new();
-        c = unsafe{c.buffer_from_raw(data.as_mut_ptr(), data.len())};
+        c = unsafe { c.buffer_from_raw(data.as_mut_ptr(), data.len()) };
         assert_eq!(c.config.end as usize - c.config.begin as usize, len);
     }
 
@@ -212,7 +207,7 @@ pub trait PtEncoderDecoder {
     where
         Self: Sized,
     {
-        EncoderDecoderBuilder::new()
+        EncoderDecoderBuilder::default()
     }
 
     fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError>
@@ -225,18 +220,25 @@ pub struct EncoderDecoderBuilder<T> {
     pub(crate) config: pt_config,
     target: PhantomData<T>,
 }
-impl<T> EncoderDecoderBuilder<T>
-where
-    T: PtEncoderDecoder,
-{
-    /// Initializes an EncoderDecoderBuilder instance
-    pub fn new() -> Self {
+
+impl<T> Default for EncoderDecoderBuilder<T> {
+    fn default() -> Self {
         let mut config: pt_config = unsafe { mem::zeroed() };
         config.size = size_of::<pt_config>();
         Self {
             config,
             target: Default::default(),
         }
+    }
+}
+
+impl<T> EncoderDecoderBuilder<T>
+where
+    T: PtEncoderDecoder,
+{
+    /// Initializes an EncoderDecoderBuilder instance
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Set the encoder/decoder buffer from a raw pointer and length.
@@ -303,7 +305,7 @@ where
     ///
     /// Returns `Err` if the buffer is not set.
     pub fn build(self) -> Result<T, PtError> {
-        if self.config.begin == ptr::null_mut() && self.config.end == ptr::null_mut() {
+        if self.config.begin.is_null() && self.config.end.is_null() {
             Err(PtError::new(
                 PtErrorCode::BadConfig,
                 "To build an encoder/decoder, a buffer must be set",

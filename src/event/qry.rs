@@ -8,9 +8,8 @@ use std::mem;
 
 use libipt_sys::{
     pt_event, pt_qry_alloc_decoder, pt_qry_cond_branch, pt_qry_core_bus_ratio, pt_qry_event,
-    pt_qry_free_decoder, pt_qry_get_config, pt_qry_get_offset, pt_qry_get_sync_offset,
-    pt_qry_indirect_branch, pt_qry_sync_backward, pt_qry_sync_forward, pt_qry_sync_set,
-    pt_qry_time, pt_query_decoder,
+    pt_qry_free_decoder, pt_qry_get_offset, pt_qry_get_sync_offset, pt_qry_indirect_branch,
+    pt_qry_sync_backward, pt_qry_sync_forward, pt_qry_sync_set, pt_qry_time, pt_query_decoder,
 };
 use num_enum::TryFromPrimitive;
 

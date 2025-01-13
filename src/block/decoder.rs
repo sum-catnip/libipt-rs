@@ -12,9 +12,9 @@ use std::ptr;
 use crate::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
     pt_asid, pt_blk_alloc_decoder, pt_blk_asid, pt_blk_core_bus_ratio, pt_blk_event,
-    pt_blk_free_decoder, pt_blk_get_config, pt_blk_get_image, pt_blk_get_offset,
-    pt_blk_get_sync_offset, pt_blk_next, pt_blk_set_image, pt_blk_sync_backward,
-    pt_blk_sync_forward, pt_blk_sync_set, pt_blk_time, pt_block, pt_block_decoder, pt_event,
+    pt_blk_free_decoder, pt_blk_get_offset, pt_blk_get_sync_offset, pt_blk_next, pt_blk_set_image,
+    pt_blk_sync_backward, pt_blk_sync_forward, pt_blk_sync_set, pt_blk_time, pt_block,
+    pt_block_decoder, pt_event,
 };
 
 #[cfg(test)]

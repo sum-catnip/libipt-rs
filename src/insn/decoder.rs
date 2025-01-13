@@ -11,9 +11,9 @@ use std::ptr;
 
 use libipt_sys::{
     pt_asid, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio,
-    pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_config, pt_insn_get_image,
-    pt_insn_get_offset, pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image,
-    pt_insn_sync_backward, pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time,
+    pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_offset,
+    pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image, pt_insn_sync_backward,
+    pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time,
 };
 
 #[cfg(test)]
