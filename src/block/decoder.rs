@@ -12,7 +12,6 @@ use libipt_sys::{
     pt_blk_set_image, pt_blk_sync_backward, pt_blk_sync_forward, pt_blk_sync_set, pt_blk_time,
     pt_block, pt_block_decoder, pt_event,
 };
-use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
 use std::ptr::NonNull;
@@ -21,17 +20,14 @@ use std::ptr::NonNull;
 /// raw trace data and remain valid for the lifetime of the decoder.
 ///
 /// The decoder needs to be synchronized before it can be used.
-///
-/// * `T` - The Callback Closure Type in the Config
 #[derive(Debug)]
-pub struct BlockDecoder<T> {
+pub struct BlockDecoder {
     inner: OwnedPtBlockDecoder,
     image: Image,
     builder: EncoderDecoderBuilder<Self>,
-    phantom: PhantomData<T>,
 }
 
-impl<T> PtEncoderDecoder for BlockDecoder<T> {
+impl PtEncoderDecoder for BlockDecoder {
     /// Allocate an Intel PT block decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
@@ -45,13 +41,12 @@ impl<T> PtEncoderDecoder for BlockDecoder<T> {
             inner,
             image,
             builder,
-            phantom: PhantomData,
         })
     }
 }
 
 // todo: understand what to do with this generic
-impl<T> BlockDecoder<T> {
+impl BlockDecoder {
     /// Return the current address space identifier.
     ///
     /// On success, provides the current address space identifier in @asid.
@@ -222,7 +217,7 @@ impl<T> BlockDecoder<T> {
     }
 }
 
-impl<T> Iterator for BlockDecoder<T> {
+impl Iterator for BlockDecoder {
     type Item = Result<(Block, Status), PtError>;
 
     fn next(&mut self) -> Option<Result<(Block, Status), PtError>> {
@@ -242,7 +237,7 @@ struct OwnedPtBlockDecoder {
 }
 
 impl OwnedPtBlockDecoder {
-    fn new<T>(builder: &EncoderDecoderBuilder<BlockDecoder<T>>) -> Result<Self, PtError> {
+    fn new(builder: &EncoderDecoderBuilder<BlockDecoder>) -> Result<Self, PtError> {
         NonNull::new(unsafe { pt_blk_alloc_decoder(&raw const builder.config) })
             .ok_or(PtError::new(
                 PtErrorCode::Internal,
@@ -270,7 +265,7 @@ mod test {
     #[test]
     fn test_blkdec_alloc() {
         let mut kek = [1u8; 2];
-        let builder = BlockDecoder::<()>::builder();
+        let builder = BlockDecoder::builder();
         unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
             .build()
             .unwrap();
@@ -279,7 +274,7 @@ mod test {
     #[test]
     fn test_blkdec_props() {
         let kek = &mut [1u8; 2];
-        let mut builder = BlockDecoder::<()>::builder();
+        let mut builder = BlockDecoder::builder();
         builder = unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) };
         // todo: check mutability requirement of methods
         let mut b = builder.build().unwrap();

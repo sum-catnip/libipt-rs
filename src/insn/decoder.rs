@@ -5,8 +5,12 @@ use crate::Image;
 use crate::Status;
 use crate::{Asid, EncoderDecoderBuilder, PtEncoderDecoder};
 
-use libipt_sys::{pt_asid, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio, pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_image, pt_insn_get_offset, pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image, pt_insn_sync_backward, pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time};
-use std::marker::PhantomData;
+use libipt_sys::{
+    pt_asid, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio,
+    pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_image, pt_insn_get_offset,
+    pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image, pt_insn_sync_backward,
+    pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time,
+};
 use std::mem;
 use std::ptr;
 use std::ptr::NonNull;
@@ -15,14 +19,13 @@ use std::ptr::NonNull;
 /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
 /// The decoder needs to be synchronized before it can be used.
 #[derive(Debug)]
-pub struct InsnDecoder<T> {
+pub struct InsnDecoder {
     inner: OwnedPtInsnDecoder,
     image: Image,
     builder: EncoderDecoderBuilder<Self>,
-    phantom: PhantomData<T>,
 }
 
-impl<T> PtEncoderDecoder for InsnDecoder<T> {
+impl PtEncoderDecoder for InsnDecoder {
     /// Allocate an Intel PT instruction flow decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
@@ -36,12 +39,11 @@ impl<T> PtEncoderDecoder for InsnDecoder<T> {
             inner,
             image,
             builder,
-            phantom: PhantomData,
         })
     }
 }
 
-impl<T> InsnDecoder<T> {
+impl InsnDecoder {
     /// Return the current address space identifier.
     pub fn asid(&self) -> Result<Asid, PtError> {
         let mut a: Asid = Default::default();
@@ -210,7 +212,7 @@ impl<T> InsnDecoder<T> {
     }
 }
 
-impl<T> Iterator for InsnDecoder<T> {
+impl Iterator for InsnDecoder {
     type Item = Result<(Insn, Status), PtError>;
 
     fn next(&mut self) -> Option<Result<(Insn, Status), PtError>> {
@@ -230,7 +232,7 @@ struct OwnedPtInsnDecoder {
 }
 
 impl OwnedPtInsnDecoder {
-    fn new<T>(builder: &EncoderDecoderBuilder<InsnDecoder<T>>) -> Result<Self, PtError> {
+    fn new(builder: &EncoderDecoderBuilder<InsnDecoder>) -> Result<Self, PtError> {
         NonNull::new(unsafe { pt_insn_alloc_decoder(&raw const builder.config) })
             .ok_or(PtError::new(
                 PtErrorCode::Internal,
@@ -258,7 +260,7 @@ mod test {
     #[test]
     fn test_insndec_alloc() {
         let mut kek = [1u8; 2];
-        let builder = InsnDecoder::<()>::builder();
+        let builder = InsnDecoder::builder();
         unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
             .build()
             .unwrap();
@@ -267,7 +269,7 @@ mod test {
     #[test]
     fn test_insndec_props() {
         let mut kek = [1u8; 2];
-        let builder = InsnDecoder::<()>::builder();
+        let builder = InsnDecoder::builder();
         let mut b = unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
             .build()
             .unwrap();
