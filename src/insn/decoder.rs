@@ -52,11 +52,15 @@ impl<T> PtEncoderDecoder for InsnDecoder<T> {
 impl<T> InsnDecoder<T> {
     /// Return the current address space identifier.
     pub fn asid(&self) -> Result<Asid, PtError> {
-        let mut asid: pt_asid = unsafe { mem::zeroed() };
-        ensure_ptok(unsafe {
-            pt_insn_asid(self.inner.as_ptr(), &mut asid, mem::size_of::<pt_asid>())
-        })
-        .map(|_| Asid(asid))
+        let mut a: Asid = Default::default();
+        unsafe {
+            ensure_ptok(pt_insn_asid(
+                self.inner.as_ptr(),
+                &mut a.0,
+                size_of::<pt_asid>(),
+            ))?;
+        }
+        Ok(a)
     }
 
     /// Return the current core bus ratio.
@@ -135,6 +139,7 @@ impl<T> InsnDecoder<T> {
     /// If @image is None, sets the image to decoder's default image.
     /// Only one image can be active at any time.
     pub fn set_image(&mut self, img: Option<&mut Image>) -> Result<(), PtError> {
+        // TODO!
         ensure_ptok(unsafe {
             pt_insn_set_image(
                 self.inner.as_ptr(),

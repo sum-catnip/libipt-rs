@@ -104,7 +104,9 @@ where
     /// Processor specific workarounds will be identified this way.
     pub fn cpu(mut self, cpu: Cpu) -> Self {
         self.config.cpu = cpu.0;
-        self.config.errata = cpu.determine_errata();
+        if let Ok(errata) = cpu.errata() {
+            self.config.errata = errata;
+        }
 
         self
     }

@@ -65,10 +65,10 @@ impl<T> BlockDecoder<T> {
             ensure_ptok(pt_blk_asid(
                 self.inner.as_ptr(),
                 &mut a.0,
-                mem::size_of::<pt_asid>(),
-            ))
-            .map(|_| a)
+                size_of::<pt_asid>(),
+            ))?;
         }
+        Ok(a)
     }
 
     /// Return the current core bus ratio.
@@ -149,12 +149,16 @@ impl<T> BlockDecoder<T> {
     /// If image is None, sets the image to the decoder's default image.
     /// Only one image can be active at any time.
     pub fn set_image(&mut self, img: Option<Image>) -> Result<(), PtError> {
-        let img_ptr = match img {
+        let img_ptr = match &img {
             None => ptr::null_mut(),
             Some(i) => i.inner.as_ptr(),
         };
         ensure_ptok(unsafe { pt_blk_set_image(self.inner.as_ptr(), img_ptr) })?;
-        self.image = unsafe { Image::from_borrowed_raw(pt_blk_get_image(self.inner.as_ptr())) }?;
+
+        self.image = match img {
+            None => unsafe { Image::from_borrowed_raw(pt_blk_get_image(self.inner.as_ptr())) }?,
+            Some(i) => i,
+        };
         if let Some(img_nonnull_ptr) = NonNull::new(img_ptr) {
             debug_assert!(img_nonnull_ptr == self.image.inner)
         }
