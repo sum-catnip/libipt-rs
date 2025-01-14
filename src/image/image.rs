@@ -9,6 +9,7 @@ use libipt_sys::{
 use std::ffi::{c_void, CString};
 use std::ptr;
 use std::ptr::NonNull;
+use std::rc::Rc;
 
 unsafe extern "C" fn read_callback(
     buffer: *mut u8,
@@ -100,6 +101,7 @@ pub struct Image {
     inner_is_owned: bool,
     // Any read data callback set by this `Image` instance.
     callback: Option<BoxedCallback>,
+    caches: Vec<Rc<SectionCache>>,
 }
 
 impl Image {
@@ -125,11 +127,15 @@ impl Image {
             inner,
             inner_is_owned: true,
             callback: None,
+            caches: Vec::new(),
         })
     }
 
-    // fixme: this conversion doesn't account for the callback, should be ok but dangerous?
     /// `image` is considered as borrowed, the returned `Image` won't call pt_image_free on it.
+    ///
+    /// Image created with from_borrowed_raw do not have the `callback` and `caches` set, the caller
+    /// must ensure that the underlying `pt_image` doesn't have a callback set and that no section
+    /// has been previously added with `pt_image_add_cached`.
     ///
     /// Returns `Err::<PtError>` if the image pointer is null
     ///
@@ -142,6 +148,7 @@ impl Image {
             inner,
             inner_is_owned: false,
             callback: None,
+            caches: Vec::new(),
         })
     }
 
@@ -156,8 +163,8 @@ impl Image {
     /// Removes all sections loaded into @asid.
     /// Specify the same @asid that was used for adding sections.
     /// Returns the number of removed sections on success.
-    pub fn remove_by_asid(&mut self, asid: Asid) -> Result<u32, PtError> {
-        extract_pterr(unsafe { pt_image_remove_by_asid(self.inner.as_ptr(), &asid.0) })
+    pub fn remove_by_asid(&mut self, asid: &Asid) -> Result<u32, PtError> {
+        extract_pterr(unsafe { pt_image_remove_by_asid(self.inner.as_ptr(), &raw const asid.0) })
     }
 
     /// Remove all sections loaded from a file.
@@ -184,26 +191,37 @@ impl Image {
     /// There can only be one callback at any time.
     /// A subsequent call will replace the previous callback.
     /// If @callback is None, the callback is removed.
-    pub fn set_callback<F>(&mut self, callback: Option<F>) -> Result<(), PtError>
+    pub fn set_callback<F>(&mut self, callback: Option<F>)
     where
         F: FnMut(&mut [u8], u64, Asid) -> i32,
     {
         self.callback = callback.map(BoxedCallback::box_callback);
-        ensure_ptok(unsafe {
+        let ret = unsafe {
             match &self.callback {
                 None => pt_image_set_callback(self.inner.as_ptr(), None, ptr::null_mut()),
                 Some(cb) => pt_image_set_callback(self.inner.as_ptr(), Some(read_callback), cb.0),
             }
-        })
+        };
+        // pt_image_set_callback returns -pte_invalid if @image is NULL, since self.inner is NonNull
+        // this should never happen.
+        debug_assert_eq!(ret, 0, "pt_image_set_callback returned an error.");
     }
 
-    /// Copy an image.
+    /// Extend this image by adding all sections from @src.
     ///
-    /// Adds all sections from @src.
     /// Sections that could not be added will be ignored.
     /// Returns the number of ignored sections on success.
-    pub fn copy(&mut self, src: &Image) -> Result<u32, PtError> {
+    pub fn extend(&mut self, src: &Image) -> Result<u32, PtError> {
         extract_pterr(unsafe { pt_image_copy(self.inner.as_ptr(), src.inner.as_ptr()) })
+            .inspect_err(|e| {
+                // pt_image_copy returns -pte_invalid if @image or @src is NULL, since self.inner is
+                // NonNull this should never happen.
+                debug_assert_ne!(
+                    e.code(),
+                    PtErrorCode::Invalid,
+                    "pt_image_copy returned -pte_invalid"
+                )
+            })
     }
 
     /// Add a section from an image section cache.
@@ -211,21 +229,41 @@ impl Image {
     /// Add the section from @iscache identified by @isid in address space @asid.
     /// Existing sections that would overlap with the new section will be shrunk or split.
     /// Returns BadImage if @iscache does not contain @isid.
+    ///
+    /// @iscache must be wrapped by an `Rc`. This ensures that the cache will outlive this image.
     pub fn add_cached(
         &mut self,
-        iscache: &mut SectionCache,
+        iscache: Rc<SectionCache>,
         isid: u32,
-        asid: Asid,
+        asid: Option<&Asid>,
     ) -> Result<(), PtError> {
-        // fixme: `iscache` could be dropped before this Image
-        ensure_ptok(unsafe {
+        let asid_ptr = match asid {
+            None => ptr::null(),
+            Some(a) => &raw const a.0,
+        };
+        let res = ensure_ptok(unsafe {
             pt_image_add_cached(
                 self.inner.as_ptr(),
                 iscache.inner.as_ptr(),
                 isid as i32,
-                &asid.0,
+                asid_ptr,
             )
         })
+        .inspect_err(|e| {
+            // pt_image_add_cached returns -pte_invalid if @image or @iscache is NULL, since both
+            // inner are NonNull this should never happen.
+            debug_assert_ne!(
+                e.code(),
+                PtErrorCode::Invalid,
+                "pt_image_copy returned -pte_invalid"
+            )
+        });
+
+        if res.is_ok() {
+            self.caches.push(iscache);
+        }
+
+        res
     }
 
     /// Add a new file section to the traced memory image.
@@ -385,7 +423,7 @@ mod test {
     fn test_img_remove_asid() {
         assert_eq!(
             img_with_file()
-                .remove_by_asid(Asid::new(Some(1), Some(2)))
+                .remove_by_asid(&Asid::new(Some(1), Some(2)))
                 .unwrap(),
             1
         );
@@ -393,7 +431,7 @@ mod test {
 
     #[test]
     fn test_img_copy() {
-        assert_eq!(img_with_file().copy(&img_with_file()).unwrap(), 0)
+        assert_eq!(img_with_file().extend(&img_with_file()).unwrap(), 0)
     }
 
     #[test]
@@ -406,8 +444,8 @@ mod test {
         let mut c = SectionCache::new(None).unwrap();
         let isid = c.add_file(file.to_str().unwrap(), 5, 15, 0x1337).unwrap();
         let mut i = img_with_file();
-        i.add_cached(&mut c, isid, Asid::new(Some(3), Some(4)))
+        i.add_cached(Rc::new(c), isid, Some(&Asid::new(Some(3), Some(4))))
             .unwrap();
-        assert_eq!(i.remove_by_asid(Asid::new(Some(3), Some(4))).unwrap(), 1);
+        assert_eq!(i.remove_by_asid(&Asid::new(Some(3), Some(4))).unwrap(), 1);
     }
 }

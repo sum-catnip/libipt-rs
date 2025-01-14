@@ -223,8 +223,8 @@ impl<T> Drop for InsnDecoder<T> {
 
 #[cfg(test)]
 mod test {
-    use libipt_sys::{pt_config, pt_insn_get_config};
     use super::*;
+    use libipt_sys::{pt_config, pt_insn_get_config};
 
     #[test]
     fn test_insndec_alloc() {
