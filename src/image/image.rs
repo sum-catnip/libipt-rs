@@ -213,7 +213,7 @@ impl Image {
     /// Sections that could not be added will be ignored.
     /// Returns the number of ignored sections on success.
     pub fn extend(&mut self, src: &Image) -> Result<u32, PtError> {
-        extract_pterr(unsafe { pt_image_copy(self.inner.as_ptr(), src.inner.as_ptr()) })
+        let res = extract_pterr(unsafe { pt_image_copy(self.inner.as_ptr(), src.inner.as_ptr()) })
             .inspect_err(|e| {
                 // pt_image_copy returns -pte_invalid if @image or @src is NULL, since self.inner is
                 // NonNull this should never happen.
@@ -222,7 +222,10 @@ impl Image {
                     PtErrorCode::Invalid,
                     "pt_image_copy returned -pte_invalid"
                 )
-            })
+            })?;
+
+        self.caches.extend_from_slice(&src.caches);
+        Ok(res)
     }
 
     /// Add a section from an image section cache.

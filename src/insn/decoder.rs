@@ -5,12 +5,7 @@ use crate::Image;
 use crate::Status;
 use crate::{Asid, EncoderDecoderBuilder, PtEncoderDecoder};
 
-use libipt_sys::{
-    pt_asid, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio,
-    pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_image, pt_insn_get_offset,
-    pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image, pt_insn_sync_backward,
-    pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time,
-};
+use libipt_sys::{pt_asid, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio, pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_image, pt_insn_get_offset, pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image, pt_insn_sync_backward, pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time};
 use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
@@ -21,7 +16,7 @@ use std::ptr::NonNull;
 /// The decoder needs to be synchronized before it can be used.
 #[derive(Debug)]
 pub struct InsnDecoder<T> {
-    inner: NonNull<pt_insn_decoder>,
+    inner: OwnedPtInsnDecoder,
     image: Image,
     builder: EncoderDecoderBuilder<Self>,
     phantom: PhantomData<T>,
@@ -34,10 +29,7 @@ impl<T> PtEncoderDecoder for InsnDecoder<T> {
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
-        let inner =
-            NonNull::new(unsafe { pt_insn_alloc_decoder(&raw const builder.config) }).ok_or(
-                PtError::new(PtErrorCode::Internal, "Failed to allocate pt_insn_decoder"),
-            )?;
+        let inner = OwnedPtInsnDecoder::new(&builder)?;
         let image = unsafe { Image::from_borrowed_raw(pt_insn_get_image(inner.as_ptr())) }?;
 
         Ok(Self {
@@ -138,17 +130,27 @@ impl<T> InsnDecoder<T> {
     /// Sets the image that the decoder uses for reading memory to @image.
     /// If @image is None, sets the image to decoder's default image.
     /// Only one image can be active at any time.
-    pub fn set_image(&mut self, img: Option<&mut Image>) -> Result<(), PtError> {
-        // TODO!
-        ensure_ptok(unsafe {
-            pt_insn_set_image(
-                self.inner.as_ptr(),
-                match img {
-                    None => ptr::null_mut(),
-                    Some(i) => i.inner.as_ptr(),
-                },
-            )
-        })
+    pub fn set_image(&mut self, img: Option<Image>) -> Result<(), PtError> {
+        let img_ptr = match &img {
+            None => ptr::null_mut(),
+            Some(i) => i.inner.as_ptr(),
+        };
+        ensure_ptok(unsafe { pt_insn_set_image(self.inner.as_ptr(), img_ptr) })?;
+
+        self.image = match img {
+            None => unsafe { Image::from_borrowed_raw(pt_insn_get_image(self.inner.as_ptr())) }?,
+            Some(i) => i,
+        };
+        if let Some(img_nonnull_ptr) = NonNull::new(img_ptr) {
+            debug_assert!(img_nonnull_ptr == self.image.inner)
+        }
+
+        Ok(())
+    }
+
+    /// Return (move) the image and drop the decoder
+    pub fn to_owned_image(self) -> Image {
+        self.image
     }
 
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
@@ -220,7 +222,29 @@ impl<T> Iterator for InsnDecoder<T> {
     }
 }
 
-impl<T> Drop for InsnDecoder<T> {
+/// This struct allow us to not implement Drop for InsnDecoder and therefore move out Image with
+/// to_owned_image
+#[derive(Debug)]
+struct OwnedPtInsnDecoder {
+    inner: NonNull<pt_insn_decoder>,
+}
+
+impl OwnedPtInsnDecoder {
+    fn new<T>(builder: &EncoderDecoderBuilder<InsnDecoder<T>>) -> Result<Self, PtError> {
+        NonNull::new(unsafe { pt_insn_alloc_decoder(&raw const builder.config) })
+            .ok_or(PtError::new(
+                PtErrorCode::Internal,
+                "Failed to allocate pt_block_decoder",
+            ))
+            .map(|inner| Self { inner })
+    }
+
+    fn as_ptr(&self) -> *mut pt_insn_decoder {
+        self.inner.as_ptr()
+    }
+}
+
+impl Drop for OwnedPtInsnDecoder {
     fn drop(&mut self) {
         unsafe { pt_insn_free_decoder(self.inner.as_ptr()) }
     }

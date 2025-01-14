@@ -24,24 +24,21 @@ use std::ptr::NonNull;
 ///
 /// * `T` - The Callback Closure Type in the Config
 #[derive(Debug)]
-pub struct BlockDecoder<T = ()> {
-    inner: NonNull<pt_block_decoder>,
+pub struct BlockDecoder<T> {
+    inner: OwnedPtBlockDecoder,
     image: Image,
     builder: EncoderDecoderBuilder<Self>,
     phantom: PhantomData<T>,
 }
 
-impl PtEncoderDecoder for BlockDecoder {
+impl<T> PtEncoderDecoder for BlockDecoder<T> {
     /// Allocate an Intel PT block decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
-        let inner =
-            NonNull::new(unsafe { pt_blk_alloc_decoder(&raw const builder.config) }).ok_or(
-                PtError::new(PtErrorCode::Internal, "Failed to allocate pt_block_decoder"),
-            )?;
+        let inner = OwnedPtBlockDecoder::new(&builder)?;
         let image = unsafe { Image::from_borrowed_raw(pt_blk_get_image(inner.as_ptr())) }?;
 
         Ok(Self {
@@ -166,6 +163,11 @@ impl<T> BlockDecoder<T> {
         Ok(())
     }
 
+    /// Return (move) the image and drop the decoder
+    pub fn to_owned_image(self) -> Image {
+        self.image
+    }
+
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
         extract_pterr(unsafe { pt_blk_sync_backward(self.inner.as_ptr()) })
             .map(|s| Status::from_bits(s).unwrap())
@@ -232,7 +234,29 @@ impl<T> Iterator for BlockDecoder<T> {
     }
 }
 
-impl<T> Drop for BlockDecoder<T> {
+/// This struct allow us to not implement Drop for BlockDecoder and therefore move out Image with
+/// to_owned_image
+#[derive(Debug)]
+struct OwnedPtBlockDecoder {
+    inner: NonNull<pt_block_decoder>,
+}
+
+impl OwnedPtBlockDecoder {
+    fn new<T>(builder: &EncoderDecoderBuilder<BlockDecoder<T>>) -> Result<Self, PtError> {
+        NonNull::new(unsafe { pt_blk_alloc_decoder(&raw const builder.config) })
+            .ok_or(PtError::new(
+                PtErrorCode::Internal,
+                "Failed to allocate pt_block_decoder",
+            ))
+            .map(|inner| Self { inner })
+    }
+
+    fn as_ptr(&self) -> *mut pt_block_decoder {
+        self.inner.as_ptr()
+    }
+}
+
+impl Drop for OwnedPtBlockDecoder {
     fn drop(&mut self) {
         unsafe { pt_blk_free_decoder(self.inner.as_ptr()) }
     }
@@ -246,7 +270,7 @@ mod test {
     #[test]
     fn test_blkdec_alloc() {
         let mut kek = [1u8; 2];
-        let builder = BlockDecoder::builder();
+        let builder = BlockDecoder::<()>::builder();
         unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
             .build()
             .unwrap();
@@ -255,7 +279,7 @@ mod test {
     #[test]
     fn test_blkdec_props() {
         let kek = &mut [1u8; 2];
-        let mut builder = BlockDecoder::builder();
+        let mut builder = BlockDecoder::<()>::builder();
         builder = unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) };
         // todo: check mutability requirement of methods
         let mut b = builder.build().unwrap();

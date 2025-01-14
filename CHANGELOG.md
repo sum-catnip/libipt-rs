@@ -8,6 +8,7 @@ _This changelog documents only changes relevant to users, internal changes might
 
 - This [CHANGELOG](./CHANGELOG.md) 🎉
 - Explicit [MSRV](Cargo.toml)
+- Block/Insn decoder `to_owned_image(self) -> Image`
 
 ### Changed
 
