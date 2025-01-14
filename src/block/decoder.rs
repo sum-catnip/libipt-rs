@@ -135,7 +135,7 @@ impl<T> BlockDecoder<T> {
     /// Returns Eos if decoding reached the end of the Intel PT buffer.
     /// Returns Nomap if the memory at the instruction address can't be read.
     /// Returns Nosync if the decoder is out of sync.
-    pub fn next(&mut self) -> Result<(Block, Status), PtError> {
+    pub fn decode_next(&mut self) -> Result<(Block, Status), PtError> {
         let mut blk: pt_block = unsafe { mem::zeroed() };
         extract_pterr(unsafe {
             pt_blk_next(self.inner.as_ptr(), &mut blk, mem::size_of::<pt_block>())
@@ -220,7 +220,7 @@ impl<T> Iterator for BlockDecoder<T> {
     type Item = Result<(Block, Status), PtError>;
 
     fn next(&mut self) -> Option<Result<(Block, Status), PtError>> {
-        match self.next() {
+        match self.decode_next() {
             // eos to stop iterating
             Err(x) if x.code() == PtErrorCode::Eos => None,
             x => Some(x),
@@ -276,7 +276,7 @@ mod test {
         assert!(b.image().name().is_none());
         assert!(b.offset().is_err());
         assert!(b.sync_offset().is_err());
-        assert!(b.next().is_err());
+        assert!(b.decode_next().is_err());
         assert!(b.sync_backward().is_err());
         assert!(b.sync_forward().is_err());
         assert!(b.time().is_ok());

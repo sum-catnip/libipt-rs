@@ -5,8 +5,8 @@ use std::ffi::CStr;
 #[derive(Clone, Copy, Debug)]
 pub struct Version(pt_version);
 impl Version {
-    /// Return the library version.
-    pub fn version() -> Self {
+    /// Return the libipt library version.
+    pub fn current() -> Self {
         Version(unsafe { pt_library_version() })
     }
 
@@ -47,7 +47,7 @@ mod test {
 
     #[test]
     fn test_get_version() {
-        let v = Version::version();
+        let v = Version::current();
         assert_ne!(v.major(), 0);
     }
 }

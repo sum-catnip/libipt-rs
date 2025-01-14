@@ -15,10 +15,10 @@ macro_rules! wrap2raw {
 
 macro_rules! raw2wrap {
     ($target:ty, $target_fac:expr, $origin:ty) => {
-        impl Into<$target> for $origin {
+        impl From<$origin> for $target {
             #[inline]
-            fn into(self) -> $target {
-                $target_fac(self)
+            fn from(origin: $origin) -> Self {
+                $target_fac(origin)
             }
         }
     };

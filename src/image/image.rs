@@ -58,6 +58,7 @@ impl BoxedCallback {
     {
         // The callback can be an arbitrary Rust closure. So move it onto the heap
         // (the allocation only takes place when the closure captures).
+        #[expect(clippy::type_complexity)]
         let boxed_dyn_callback: Box<dyn FnMut(&mut [u8], u64, Asid) -> i32> = Box::new(callback);
 
         // `boxed_dyn_callback` is itself a fat pointer and we cannot just return it.

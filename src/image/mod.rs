@@ -1,3 +1,4 @@
+#[expect(clippy::module_inception)]
 mod image;
 mod iscache;
 

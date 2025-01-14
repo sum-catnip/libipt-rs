@@ -3,9 +3,9 @@ mod filter;
 mod flags;
 mod freqency;
 
-mod config;
+mod enc_dec_builder;
 
-pub use config::*;
+pub use enc_dec_builder::*;
 pub use cpu::*;
 pub use filter::*;
 pub use flags::*;

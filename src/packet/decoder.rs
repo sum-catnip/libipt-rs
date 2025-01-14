@@ -68,7 +68,7 @@ impl<T> PacketDecoder<T> {
     /// Returns BadPacket if an unknown packet payload is encountered.
     /// Returns Eos if decoder reached the end of the Intel PT buffer.
     /// Returns Nosync if decoder is out of sync.
-    pub fn next(&mut self) -> Result<Packet<T>, PtError> {
+    pub fn decode_next(&mut self) -> Result<Packet<T>, PtError> {
         let mut pkt: pt_packet = unsafe { mem::zeroed() };
         ensure_ptok(unsafe {
             pt_pkt_next(self.inner.as_ptr(), &mut pkt, mem::size_of::<pt_packet>())
@@ -104,7 +104,7 @@ impl<T> Iterator for PacketDecoder<T> {
     type Item = Result<Packet<T>, PtError>;
 
     fn next(&mut self) -> Option<Result<Packet<T>, PtError>> {
-        match self.next() {
+        match self.decode_next() {
             // eos to stop iterating
             Err(x) if x.code() == PtErrorCode::Eos => None,
             x => Some(x),
@@ -142,7 +142,7 @@ mod test {
         // assert!(p.config().is_ok());
         assert!(p.offset().is_err());
         assert!(p.sync_offset().is_err());
-        assert!(p.next().is_err());
+        assert!(p.decode_next().is_err());
         assert!(p.sync_backward().is_err());
         assert!(p.sync_forward().is_err());
     }
