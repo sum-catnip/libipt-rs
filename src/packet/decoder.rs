@@ -14,6 +14,7 @@ use std::ptr::NonNull;
 #[derive(Debug)]
 pub struct PacketDecoder<T> {
     inner: NonNull<pt_packet_decoder>,
+    builder: EncoderDecoderBuilder<Self>,
     phantom: PhantomData<T>,
 }
 
@@ -31,17 +32,16 @@ impl<T> PtEncoderDecoder for PacketDecoder<T> {
 
         Ok(Self {
             inner,
+            builder,
             phantom: PhantomData,
         })
     }
 }
 
 impl<T> PacketDecoder<T> {
-    // // todo: These functions return a pointer to their argument's configuration.
-    // // The returned configuration object must not be freed. It is valid as long as their argument is not freed.
-    // pub fn config(&self) -> Result<Config<T>, PtError> {
-    //     unsafe { pt_pkt_get_config(self.inner.as_ptr()) }
-    // }
+    pub fn used_builder(&self) -> &EncoderDecoderBuilder<Self> {
+        &self.builder
+    }
 
     /// Get the current decoder position.
     ///
@@ -121,6 +121,7 @@ impl<T> Drop for PacketDecoder<T> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use libipt_sys::{pt_config, pt_pkt_get_config};
 
     #[test]
     fn test_pktdec_alloc() {
@@ -139,7 +140,17 @@ mod test {
             .build()
             .unwrap();
 
-        // assert!(p.config().is_ok());
+        let used_builder = p.used_builder();
+        unsafe {
+            let inner_config = pt_pkt_get_config(p.inner.as_ptr());
+            let saved_config = &raw const used_builder.config;
+            let size = size_of::<pt_config>();
+            debug_assert_eq!(
+                std::slice::from_raw_parts(inner_config.cast::<u8>(), size),
+                std::slice::from_raw_parts(saved_config.cast::<u8>(), size),
+                "Rust builder not coherent with libipt C config!"
+            )
+        }
         assert!(p.offset().is_err());
         assert!(p.sync_offset().is_err());
         assert!(p.decode_next().is_err());

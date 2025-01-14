@@ -45,7 +45,6 @@ impl PtEncoderDecoder for BlockDecoder {
     }
 }
 
-// todo: understand what to do with this generic
 impl BlockDecoder {
     /// Return the current address space identifier.
     ///

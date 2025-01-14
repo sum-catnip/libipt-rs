@@ -83,7 +83,6 @@ where
         self
     }
 
-    // TODO
     // /// Set a decoder callback.
     // pub fn callback<F>(&mut self, mut cb: F) -> Result<&mut Self, PtError>
     // where
@@ -287,7 +286,6 @@ mod test {
     //     }
     // }
 
-    // // FIXME
     // #[ignore]
     // #[test]
     // #[should_panic]
