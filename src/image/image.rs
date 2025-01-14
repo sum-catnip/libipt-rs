@@ -6,7 +6,7 @@ use libipt_sys::{
     pt_image_free, pt_image_name, pt_image_remove_by_asid, pt_image_remove_by_filename,
     pt_image_set_callback,
 };
-use std::ffi::{c_void, CString};
+use std::ffi::c_void;
 use std::ptr;
 use std::ptr::NonNull;
 use std::rc::Rc;
@@ -174,12 +174,7 @@ impl Image {
     /// Specify the same @asid that was used for adding sections from @filename.
     /// Returns the number of removed sections on success
     pub fn remove_by_filename(&mut self, filename: &str, asid: Asid) -> Result<u32, PtError> {
-        let cfilename = CString::new(filename).map_err(|_| {
-            PtError::new(
-                PtErrorCode::Invalid,
-                "Error converting filename to Cstring as it contains null bytes",
-            )
-        })?;
+        let cfilename = str_to_cstring_pterror(filename)?;
 
         extract_pterr(unsafe {
             pt_image_remove_by_filename(self.inner.as_ptr(), cfilename.as_ptr(), &asid.0)
@@ -289,12 +284,7 @@ impl Image {
         asid: Option<Asid>,
         vaddr: u64,
     ) -> Result<(), PtError> {
-        let cfilename = CString::new(filename).map_err(|_| {
-            PtError::new(
-                PtErrorCode::Invalid,
-                "Error converting filename to Cstring as it contains null bytes",
-            )
-        })?;
+        let cfilename = str_to_cstring_pterror(filename)?;
 
         ensure_ptok(unsafe {
             pt_image_add_file(
