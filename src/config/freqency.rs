@@ -1,27 +1,3 @@
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_freq_props() {
-        let mut freq = Frequency::new(1, 2, 3, 4);
-        assert_eq!(freq.mtc(), 1);
-        assert_eq!(freq.nom(), 2);
-        assert_eq!(freq.ctc(), 3);
-        assert_eq!(freq.tsc(), 4);
-
-        freq.set_mtc(5);
-        freq.set_nom(6);
-        freq.set_ctc(7);
-        freq.set_tsc(8);
-
-        assert_eq!(freq.mtc(), 5);
-        assert_eq!(freq.nom(), 6);
-        assert_eq!(freq.ctc(), 7);
-        assert_eq!(freq.tsc(), 8);
-    }
-}
-
 /// Frequency values used for timing packets
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Frequency {
@@ -141,5 +117,29 @@ impl Frequency {
     #[inline]
     pub fn set_tsc(&mut self, tsc: u32) {
         self.tsc = tsc
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_freq_props() {
+        let mut freq = Frequency::new(1, 2, 3, 4);
+        assert_eq!(freq.mtc(), 1);
+        assert_eq!(freq.nom(), 2);
+        assert_eq!(freq.ctc(), 3);
+        assert_eq!(freq.tsc(), 4);
+
+        freq.set_mtc(5);
+        freq.set_nom(6);
+        freq.set_ctc(7);
+        freq.set_tsc(8);
+
+        assert_eq!(freq.mtc(), 5);
+        assert_eq!(freq.nom(), 6);
+        assert_eq!(freq.ctc(), 7);
+        assert_eq!(freq.tsc(), 8);
     }
 }

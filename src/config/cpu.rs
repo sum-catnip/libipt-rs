@@ -8,38 +8,6 @@ use libipt_sys::{
 
 use bitflags::bitflags;
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_cpu_intel_shortcut() {
-        let cpu1 = Cpu::intel(66, 12, 255);
-        let cpu2 = Cpu::new(CpuVendor::INTEL, 66, 12, 255);
-        assert_eq!(cpu1.0.vendor, cpu2.0.vendor);
-        assert_eq!(cpu1.0.family, cpu2.0.family);
-        assert_eq!(cpu1.0.model, cpu2.0.model);
-        assert_eq!(cpu1.0.stepping, cpu2.0.stepping);
-    }
-
-    #[test]
-    fn test_cpu_errata() {
-        let cpu = Cpu::intel(0x6, 0x56, 11);
-        let e = cpu.determine_errata();
-        assert_eq!(e.bdm70(), 1);
-        assert_eq!(e.bdm64(), 1);
-        assert_eq!(e.skd007(), 0);
-        assert_eq!(e.skd022(), 0);
-
-        let cpu = Cpu::intel(0x6, 0x9e, 11);
-        let e = cpu.determine_errata();
-        assert_eq!(e.bdm64(), 0);
-        assert_eq!(e.bdm70(), 1);
-        assert_eq!(e.skd007(), 1);
-        assert_eq!(e.skd022(), 1);
-    }
-}
-
 bitflags! {
     /// i suppose this is relevant when/if amd finally gets intelpt support?
     #[derive(Debug)]
@@ -81,5 +49,37 @@ impl Cpu {
             pt_cpu_errata(&mut errata, &self.0);
         }
         errata
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_cpu_intel_shortcut() {
+        let cpu1 = Cpu::intel(66, 12, 255);
+        let cpu2 = Cpu::new(CpuVendor::INTEL, 66, 12, 255);
+        assert_eq!(cpu1.0.vendor, cpu2.0.vendor);
+        assert_eq!(cpu1.0.family, cpu2.0.family);
+        assert_eq!(cpu1.0.model, cpu2.0.model);
+        assert_eq!(cpu1.0.stepping, cpu2.0.stepping);
+    }
+
+    #[test]
+    fn test_cpu_errata() {
+        let cpu = Cpu::intel(0x6, 0x56, 11);
+        let e = cpu.determine_errata();
+        assert_eq!(e.bdm70(), 1);
+        assert_eq!(e.bdm64(), 1);
+        assert_eq!(e.skd007(), 0);
+        assert_eq!(e.skd022(), 0);
+
+        let cpu = Cpu::intel(0x6, 0x9e, 11);
+        let e = cpu.determine_errata();
+        assert_eq!(e.bdm64(), 0);
+        assert_eq!(e.bdm70(), 1);
+        assert_eq!(e.skd007(), 1);
+        assert_eq!(e.skd022(), 1);
     }
 }

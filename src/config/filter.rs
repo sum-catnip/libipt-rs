@@ -3,37 +3,6 @@ use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 use std::mem;
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_addrfilter() {
-        let filter = AddrFilterBuilder::new()
-            .addr0(AddrRange::new(1, 2, AddrConfig::DISABLED))
-            .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
-            .addr2(AddrRange::new(5, 6, AddrConfig::STOP))
-            .addr3(AddrRange::new(7, 8, AddrConfig::DISABLED))
-            .finish();
-
-        assert_eq!(filter.addr0().a(), 1);
-        assert_eq!(filter.addr0().b(), 2);
-        assert_eq!(filter.addr0().cfg(), AddrConfig::DISABLED);
-
-        assert_eq!(filter.addr1().a(), 3);
-        assert_eq!(filter.addr1().b(), 4);
-        assert_eq!(filter.addr1().cfg(), AddrConfig::FILTER);
-
-        assert_eq!(filter.addr2().a(), 5);
-        assert_eq!(filter.addr2().b(), 6);
-        assert_eq!(filter.addr2().cfg(), AddrConfig::STOP);
-
-        assert_eq!(filter.addr3().a(), 7);
-        assert_eq!(filter.addr3().b(), 8);
-        assert_eq!(filter.addr3().cfg(), AddrConfig::DISABLED);
-    }
-}
-
 #[derive(Clone, Copy, TryFromPrimitive, PartialEq, Debug)]
 #[repr(u32)]
 pub enum AddrConfig {
@@ -196,5 +165,36 @@ impl AddrFilterBuilder {
 
     pub fn finish(&self) -> AddrFilter {
         AddrFilter(self.0)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_addrfilter() {
+        let filter = AddrFilterBuilder::new()
+            .addr0(AddrRange::new(1, 2, AddrConfig::DISABLED))
+            .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
+            .addr2(AddrRange::new(5, 6, AddrConfig::STOP))
+            .addr3(AddrRange::new(7, 8, AddrConfig::DISABLED))
+            .finish();
+
+        assert_eq!(filter.addr0().a(), 1);
+        assert_eq!(filter.addr0().b(), 2);
+        assert_eq!(filter.addr0().cfg(), AddrConfig::DISABLED);
+
+        assert_eq!(filter.addr1().a(), 3);
+        assert_eq!(filter.addr1().b(), 4);
+        assert_eq!(filter.addr1().cfg(), AddrConfig::FILTER);
+
+        assert_eq!(filter.addr2().a(), 5);
+        assert_eq!(filter.addr2().b(), 6);
+        assert_eq!(filter.addr2().cfg(), AddrConfig::STOP);
+
+        assert_eq!(filter.addr3().a(), 7);
+        assert_eq!(filter.addr3().b(), 8);
+        assert_eq!(filter.addr3().cfg(), AddrConfig::DISABLED);
     }
 }

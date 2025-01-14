@@ -6,73 +6,6 @@ use libipt_sys::{
 
 use bitflags::bitflags;
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_block_flags() {
-        let blk: BlockFlags = BlockFlags::END_ON_CALL | BlockFlags::END_ON_JUMP;
-        let raw: pt_conf_flags = blk.into();
-
-        unsafe {
-            assert_eq!(raw.variant.block.end_on_call(), 1);
-            assert_eq!(raw.variant.block.enable_tick_events(), 0);
-            assert_eq!(raw.variant.block.end_on_jump(), 1);
-            assert_eq!(raw.variant.block.keep_tcal_on_ovf(), 0);
-        }
-
-        let blk: BlockFlags = BlockFlags::END_ON_CALL
-            | BlockFlags::END_ON_JUMP
-            | BlockFlags::ENABLE_TICK_EVENTS
-            | BlockFlags::KEEP_TCAL_ON_OVF;
-        let raw: pt_conf_flags = blk.into();
-
-        unsafe {
-            assert_eq!(raw.variant.block.end_on_call(), 1);
-            assert_eq!(raw.variant.block.enable_tick_events(), 1);
-            assert_eq!(raw.variant.block.end_on_jump(), 1);
-            assert_eq!(raw.variant.block.keep_tcal_on_ovf(), 1);
-        }
-    }
-
-    #[test]
-    fn test_insn_flags() {
-        let insn = InsnFlags::ENABLE_TICK_EVENTS;
-        let raw: pt_conf_flags = insn.into();
-
-        unsafe {
-            assert_eq!(raw.variant.insn.enable_tick_events(), 1);
-            assert_eq!(raw.variant.insn.keep_tcal_on_ovf(), 0);
-        }
-
-        let insn = InsnFlags::ENABLE_TICK_EVENTS | InsnFlags::KEEP_TCAL_ON_OVF;
-        let raw: pt_conf_flags = insn.into();
-
-        unsafe {
-            assert_eq!(raw.variant.insn.enable_tick_events(), 1);
-            assert_eq!(raw.variant.insn.keep_tcal_on_ovf(), 1);
-        }
-    }
-
-    #[test]
-    fn test_query_flags() {
-        let query = QueryFlags::empty();
-        let raw: pt_conf_flags = query.into();
-
-        unsafe {
-            assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 0);
-        }
-
-        let query: QueryFlags = QueryFlags::KEEP_TCAL_ON_OVF;
-        let raw: pt_conf_flags = query.into();
-
-        unsafe {
-            assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 1);
-        }
-    }
-}
-
 bitflags! {
     /// flags for the block decoder
     #[derive(Debug)]
@@ -146,6 +79,73 @@ impl From<QueryFlags> for pt_conf_flags {
                     __bindgen_padding_0: Default::default(),
                 },
             },
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_block_flags() {
+        let blk: BlockFlags = BlockFlags::END_ON_CALL | BlockFlags::END_ON_JUMP;
+        let raw: pt_conf_flags = blk.into();
+
+        unsafe {
+            assert_eq!(raw.variant.block.end_on_call(), 1);
+            assert_eq!(raw.variant.block.enable_tick_events(), 0);
+            assert_eq!(raw.variant.block.end_on_jump(), 1);
+            assert_eq!(raw.variant.block.keep_tcal_on_ovf(), 0);
+        }
+
+        let blk: BlockFlags = BlockFlags::END_ON_CALL
+            | BlockFlags::END_ON_JUMP
+            | BlockFlags::ENABLE_TICK_EVENTS
+            | BlockFlags::KEEP_TCAL_ON_OVF;
+        let raw: pt_conf_flags = blk.into();
+
+        unsafe {
+            assert_eq!(raw.variant.block.end_on_call(), 1);
+            assert_eq!(raw.variant.block.enable_tick_events(), 1);
+            assert_eq!(raw.variant.block.end_on_jump(), 1);
+            assert_eq!(raw.variant.block.keep_tcal_on_ovf(), 1);
+        }
+    }
+
+    #[test]
+    fn test_insn_flags() {
+        let insn = InsnFlags::ENABLE_TICK_EVENTS;
+        let raw: pt_conf_flags = insn.into();
+
+        unsafe {
+            assert_eq!(raw.variant.insn.enable_tick_events(), 1);
+            assert_eq!(raw.variant.insn.keep_tcal_on_ovf(), 0);
+        }
+
+        let insn = InsnFlags::ENABLE_TICK_EVENTS | InsnFlags::KEEP_TCAL_ON_OVF;
+        let raw: pt_conf_flags = insn.into();
+
+        unsafe {
+            assert_eq!(raw.variant.insn.enable_tick_events(), 1);
+            assert_eq!(raw.variant.insn.keep_tcal_on_ovf(), 1);
+        }
+    }
+
+    #[test]
+    fn test_query_flags() {
+        let query = QueryFlags::empty();
+        let raw: pt_conf_flags = query.into();
+
+        unsafe {
+            assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 0);
+        }
+
+        let query: QueryFlags = QueryFlags::KEEP_TCAL_ON_OVF;
+        let raw: pt_conf_flags = query.into();
+
+        unsafe {
+            assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 1);
         }
     }
 }

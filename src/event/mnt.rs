@@ -1,5 +1,15 @@
 use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_19;
 
+/// A maintenance event.
+#[derive(Clone, Copy, Debug)]
+pub struct Mnt(pub(super) pt_event__bindgen_ty_1__bindgen_ty_19);
+impl Mnt {
+    /// The raw payload.
+    pub fn payload(self) -> u64 {
+        self.0.payload
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::super::Payload;
@@ -20,15 +30,5 @@ mod test {
             }
             _ => unreachable!("oof"),
         }
-    }
-}
-
-/// A maintenance event.
-#[derive(Clone, Copy, Debug)]
-pub struct Mnt(pub(super) pt_event__bindgen_ty_1__bindgen_ty_19);
-impl Mnt {
-    /// The raw payload.
-    pub fn payload(self) -> u64 {
-        self.0.payload
     }
 }

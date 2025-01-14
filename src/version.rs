@@ -1,17 +1,6 @@
 use libipt_sys::{pt_library_version, pt_version};
 use std::ffi::CStr;
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_get_version() {
-        let v = Version::version();
-        assert_ne!(v.major(), 0);
-    }
-}
-
 /// The library version.
 #[derive(Clone, Copy, Debug)]
 pub struct Version(pt_version);
@@ -49,5 +38,16 @@ impl Version {
                 "failed to convert version ext to rust string. ",
                 "this is either a bug in libipt or the bindings"
             ))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_get_version() {
+        let v = Version::version();
+        assert_ne!(v.major(), 0);
     }
 }
