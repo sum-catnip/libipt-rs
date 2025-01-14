@@ -67,9 +67,9 @@ impl BlockDecoder {
     /// On success, provides the current core:bus ratio.
     /// The ratio is defined as core cycles per bus clock cycle.
     /// Returns NoCbr if there has not been a CBR packet.
-    pub fn core_bus_ratio(&mut self) -> Result<u32, PtError> {
+    pub fn core_bus_ratio(&self) -> Result<u32, PtError> {
         let mut cbr: u32 = 0;
-        unsafe { extract_pterr(pt_blk_core_bus_ratio(self.inner.as_ptr(), &mut cbr)) }
+        ensure_ptok(unsafe { pt_blk_core_bus_ratio(self.inner.as_ptr(), &mut cbr) }).map(|_| cbr)
     }
 
     /// Get the next pending event.
@@ -275,7 +275,6 @@ mod test {
         let kek = &mut [1u8; 2];
         let mut builder = BlockDecoder::builder();
         builder = unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) };
-        // todo: check mutability requirement of methods
         let mut b = builder.build().unwrap();
 
         let a = b.asid().unwrap();

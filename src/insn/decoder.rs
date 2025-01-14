@@ -62,7 +62,7 @@ impl InsnDecoder {
     /// On success, provides the current core:bus ratio
     /// The ratio is defined as core cycles per bus clock cycle.
     /// Returns NoCbr if there has not been a CBR packet.
-    pub fn core_bus_ratio(&mut self) -> Result<u32, PtError> {
+    pub fn core_bus_ratio(&self) -> Result<u32, PtError> {
         let mut cbr: u32 = 0;
         ensure_ptok(unsafe { pt_insn_core_bus_ratio(self.inner.as_ptr(), &mut cbr) }).map(|_| cbr)
     }
