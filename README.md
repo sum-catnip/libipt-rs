@@ -22,9 +22,6 @@ Contributions are also appreciated.
 I did my best to provide useful documentation for most of the library.
 If you see any missing or weird documentation feel free to open an issue or pull request.
 
-docs.rs is sadly unable to build the project because of a header file which needs to be copied out of the build dir.
-Ill need to get the sorted out somehow.
-
 # Unit Tests
 - block:   ✔️
 - config:  ✔️
