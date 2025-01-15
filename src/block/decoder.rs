@@ -22,7 +22,7 @@ use std::ptr::NonNull;
 /// The decoder needs to be synchronized before it can be used.
 #[derive(Debug)]
 pub struct BlockDecoder<'a> {
-    inner: OwnedPtBlockDecoder,
+    inner: NonNull<pt_block_decoder>,
     default_image: Image,
     custom_image: Option<&'a mut Image>,
     builder: EncoderDecoderBuilder<Self>,
@@ -35,7 +35,10 @@ impl PtEncoderDecoder for BlockDecoder<'_> {
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
-        let inner = OwnedPtBlockDecoder::new(&builder)?;
+        let inner =
+            NonNull::new(unsafe { pt_blk_alloc_decoder(&raw const builder.config) }).ok_or(
+                PtError::new(PtErrorCode::Internal, "Failed to allocate pt_block_decoder"),
+            )?;
         let default_image = unsafe { Image::from_borrowed_raw(pt_blk_get_image(inner.as_ptr())) }?;
 
         Ok(Self {
@@ -151,26 +154,21 @@ impl<'a> BlockDecoder<'a> {
             None => {
                 ensure_ptok(unsafe { pt_blk_set_image(self.inner.as_ptr(), ptr::null_mut()) })?;
                 self.custom_image = None;
-                self.default_image = unsafe { Image::from_borrowed_raw(pt_blk_get_image(self.inner.as_ptr())) }?;
-            },
+                self.default_image =
+                    unsafe { Image::from_borrowed_raw(pt_blk_get_image(self.inner.as_ptr())) }?;
+            }
             Some(i) => {
                 ensure_ptok(unsafe { pt_blk_set_image(self.inner.as_ptr(), i.inner.as_ptr()) })?;
                 self.custom_image = Some(i);
                 debug_assert_eq!(
-                    unsafe{pt_blk_get_image(self.inner.as_ptr())},
+                    unsafe { pt_blk_get_image(self.inner.as_ptr()) },
                     self.custom_image.as_ref().unwrap().inner.as_ptr()
                 );
-            },
+            }
         };
 
         Ok(())
     }
-
-    // /// Return (move) the image and drop the decoder
-    // #[must_use]
-    // pub fn into_owned_image(self) -> Image {
-    //     self.image
-    // }
 
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
         extract_pterr(unsafe { pt_blk_sync_backward(self.inner.as_ptr()) })
@@ -238,29 +236,7 @@ impl Iterator for BlockDecoder<'_> {
     }
 }
 
-/// This struct allow us to not implement Drop for `BlockDecoder` and therefore move out Image with
-/// `to_owned_image`
-#[derive(Debug)]
-struct OwnedPtBlockDecoder {
-    inner: NonNull<pt_block_decoder>,
-}
-
-impl OwnedPtBlockDecoder {
-    fn new(builder: &EncoderDecoderBuilder<BlockDecoder>) -> Result<Self, PtError> {
-        NonNull::new(unsafe { pt_blk_alloc_decoder(&raw const builder.config) })
-            .ok_or(PtError::new(
-                PtErrorCode::Internal,
-                "Failed to allocate pt_block_decoder",
-            ))
-            .map(|inner| Self { inner })
-    }
-
-    fn as_ptr(&self) -> *mut pt_block_decoder {
-        self.inner.as_ptr()
-    }
-}
-
-impl Drop for OwnedPtBlockDecoder {
+impl Drop for BlockDecoder<'_> {
     fn drop(&mut self) {
         unsafe { pt_blk_free_decoder(self.inner.as_ptr()) }
     }
