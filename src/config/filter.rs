@@ -24,7 +24,7 @@ pub struct AddrRange {
 
 impl AddrRange {
     #[inline]
-    pub fn new(a: u64, b: u64, cfg: AddrConfig) -> Self {
+    pub const fn new(a: u64, b: u64, cfg: AddrConfig) -> Self {
         AddrRange { a, b, cfg }
     }
 
@@ -46,17 +46,17 @@ impl AddrRange {
 
     /// This corresponds to the IA32_RTIT_ADDRn_A MSRs
     #[inline]
-    pub fn set_a(&mut self, a: u64) {
+    pub const fn set_a(&mut self, a: u64) {
         self.a = a;
     }
     /// This corresponds to the IA32_RTIT_ADDRn_B MSRs
     #[inline]
-    pub fn set_b(&mut self, b: u64) {
+    pub const fn set_b(&mut self, b: u64) {
         self.b = b;
     }
     /// this corresponds to the respective fields in IA32_RTIT_CTL MSR
     #[inline]
-    pub fn set_cfg(&mut self, cfg: AddrConfig) {
+    pub const fn set_cfg(&mut self, cfg: AddrConfig) {
         self.cfg = cfg
     }
 }
@@ -65,8 +65,8 @@ impl AddrRange {
 #[derive(Debug, Clone, Copy)]
 pub struct AddrFilter(pub(super) pt_conf_addr_filter);
 impl AddrFilter {
-    pub fn builder() -> AddrFilterBuilder {
-        AddrFilterBuilder::default()
+    pub const fn builder() -> AddrFilterBuilder {
+        AddrFilterBuilder::new()
     }
 
     #[inline]
@@ -123,7 +123,7 @@ impl Default for AddrFilterBuilder {
 }
 
 impl AddrFilterBuilder {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         unsafe { mem::zeroed() }
     }
 

@@ -48,8 +48,9 @@ impl Frequency {
     /// * `nom` - The nominal or max non-turbo frequency
     /// * `ctc` - The value of ebx on a cpuid call for leaf 0x15
     /// * `tsc` - The value of eax on a cpuid call for leaf 0x15
+    #[must_use]
     #[inline]
-    pub fn new(mtc: u8, nom: u8, ctc: u32, tsc: u32) -> Self {
+    pub const fn new(mtc: u8, nom: u8, ctc: u32, tsc: u32) -> Self {
         Frequency { mtc, nom, ctc, tsc }
     }
 

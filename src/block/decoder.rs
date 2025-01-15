@@ -2,8 +2,8 @@ use super::Block;
 use crate::asid::Asid;
 use crate::error::{ensure_ptok, extract_pterr, extract_status_or_pterr, PtError, PtErrorCode};
 use crate::event::Event;
-use crate::status::Status;
 use crate::image::Image;
+use crate::status::Status;
 
 use crate::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{

@@ -53,14 +53,12 @@ pub struct EncoderDecoderBuilder<T> {
     target: PhantomData<T>,
 }
 
-impl<T> Default for EncoderDecoderBuilder<T> {
+impl<T> Default for EncoderDecoderBuilder<T>
+where
+    T: PtEncoderDecoder,
+{
     fn default() -> Self {
-        let mut config: pt_config = unsafe { mem::zeroed() };
-        config.size = size_of::<pt_config>();
-        Self {
-            config,
-            target: PhantomData,
-        }
+        Self::new()
     }
 }
 
@@ -69,8 +67,13 @@ where
     T: PtEncoderDecoder,
 {
     /// Initializes an EncoderDecoderBuilder instance
-    pub fn new() -> Self {
-        Self::default()
+    pub const fn new() -> Self {
+        let mut config: pt_config = unsafe { mem::zeroed() };
+        config.size = size_of::<pt_config>();
+        Self {
+            config,
+            target: PhantomData,
+        }
     }
 
     /// Set the encoder/decoder buffer from a raw pointer and length.
@@ -113,7 +116,7 @@ where
     }
 
     /// Frequency values used for timing packets (mtc)
-    pub fn freq(mut self, freq: Frequency) -> Self {
+    pub const fn freq(mut self, freq: Frequency) -> Self {
         self.config.mtc_freq = freq.mtc;
         self.config.nom_freq = freq.nom;
         self.config.cpuid_0x15_eax = freq.tsc;
@@ -123,7 +126,7 @@ where
     }
 
     /// Address filter configuration
-    pub fn filter(mut self, filter: AddrFilter) -> Self {
+    pub const fn filter(mut self, filter: AddrFilter) -> Self {
         self.config.addr_filter = filter.0;
         self
     }
@@ -143,7 +146,7 @@ where
     }
 
     /// Creates a clone of `self` excluding the buffer pointer.
-    pub fn clone_without_buffer(&self) -> Self {
+    pub const fn clone_without_buffer(&self) -> Self {
         let mut config = self.config;
         config.begin = ptr::null_mut();
         config.end = ptr::null_mut();
@@ -161,7 +164,7 @@ impl EncoderDecoderBuilder<BlockDecoder<'_>> {
                 .flags
                 .variant
                 .block
-                .set_end_on_call(value.into())
+                .set_end_on_call(value.into());
         };
         self
     }
@@ -172,7 +175,7 @@ impl EncoderDecoderBuilder<BlockDecoder<'_>> {
                 .flags
                 .variant
                 .block
-                .set_enable_tick_events(value.into())
+                .set_enable_tick_events(value.into());
         };
         self
     }
@@ -183,7 +186,7 @@ impl EncoderDecoderBuilder<BlockDecoder<'_>> {
                 .flags
                 .variant
                 .block
-                .set_end_on_jump(value.into())
+                .set_end_on_jump(value.into());
         };
         self
     }
@@ -194,7 +197,7 @@ impl EncoderDecoderBuilder<BlockDecoder<'_>> {
                 .flags
                 .variant
                 .block
-                .set_keep_tcal_on_ovf(value.into())
+                .set_keep_tcal_on_ovf(value.into());
         };
         self
     }
@@ -205,7 +208,7 @@ impl EncoderDecoderBuilder<BlockDecoder<'_>> {
                 .flags
                 .variant
                 .block
-                .set_enable_iflags_events(value.into())
+                .set_enable_iflags_events(value.into());
         };
         self
     }
