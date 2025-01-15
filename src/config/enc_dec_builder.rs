@@ -3,11 +3,13 @@ use super::filter::AddrFilter;
 use super::freqency::Frequency;
 use crate::error::{PtError, PtErrorCode};
 
-use libipt_sys::{pt_conf_flags, pt_config};
+use crate::block::BlockDecoder;
+use crate::event::QueryDecoder;
+use crate::insn::InsnDecoder;
+use libipt_sys::pt_config;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::mem;
-
+use std::{mem, ptr};
 // unsafe extern "C" fn decode_callback<'a, F, C>(
 //     ukn: *mut pt_packet_unknown,
 //     cfg: *const pt_config,
@@ -120,12 +122,6 @@ where
         self
     }
 
-    /// Decoder specific flags
-    pub fn flags(mut self, flags: impl Into<pt_conf_flags>) -> Self {
-        self.config.flags = flags.into();
-        self
-    }
-
     /// Address filter configuration
     pub fn filter(mut self, filter: AddrFilter) -> Self {
         self.config.addr_filter = filter.0;
@@ -144,6 +140,132 @@ where
         } else {
             T::new_from_builder(self)
         }
+    }
+
+    /// Creates a clone of `self` excluding the buffer pointer.
+    pub fn clone_without_buffer(&self) -> Self {
+        let mut config = self.config;
+        config.begin = ptr::null_mut();
+        config.end = ptr::null_mut();
+        Self {
+            config,
+            target: PhantomData,
+        }
+    }
+}
+
+impl EncoderDecoderBuilder<BlockDecoder<'_>> {
+    pub fn set_end_on_call(mut self, value: bool) -> Self {
+        unsafe {
+            self.config
+                .flags
+                .variant
+                .block
+                .set_end_on_call(value.into())
+        };
+        self
+    }
+
+    pub fn set_enable_tick_events(mut self, value: bool) -> Self {
+        unsafe {
+            self.config
+                .flags
+                .variant
+                .block
+                .set_enable_tick_events(value.into())
+        };
+        self
+    }
+
+    pub fn set_end_on_jump(mut self, value: bool) -> Self {
+        unsafe {
+            self.config
+                .flags
+                .variant
+                .block
+                .set_end_on_jump(value.into())
+        };
+        self
+    }
+
+    pub fn set_keep_tcal_on_ovf(mut self, value: bool) -> Self {
+        unsafe {
+            self.config
+                .flags
+                .variant
+                .block
+                .set_keep_tcal_on_ovf(value.into())
+        };
+        self
+    }
+
+    pub fn set_enable_iflags_events(mut self, value: bool) -> Self {
+        unsafe {
+            self.config
+                .flags
+                .variant
+                .block
+                .set_enable_iflags_events(value.into())
+        };
+        self
+    }
+}
+
+impl EncoderDecoderBuilder<InsnDecoder<'_>> {
+    pub fn set_enable_tick_events(mut self, value: bool) -> Self {
+        unsafe {
+            self.config
+                .flags
+                .variant
+                .insn
+                .set_enable_tick_events(value.into());
+        }
+        self
+    }
+
+    pub fn set_keep_tcal_on_ovf(mut self, value: bool) -> Self {
+        unsafe {
+            self.config
+                .flags
+                .variant
+                .insn
+                .set_keep_tcal_on_ovf(value.into());
+        }
+        self
+    }
+
+    pub fn set_enable_iflags_events(mut self, value: bool) -> Self {
+        unsafe {
+            self.config
+                .flags
+                .variant
+                .insn
+                .set_enable_iflags_events(value.into());
+        }
+        self
+    }
+}
+
+impl<T> EncoderDecoderBuilder<QueryDecoder<T>> {
+    pub fn set_keep_tcal_on_ovf(mut self, value: bool) -> Self {
+        unsafe {
+            self.config
+                .flags
+                .variant
+                .query
+                .set_keep_tcal_on_ovf(value.into());
+        }
+        self
+    }
+    pub fn set_enable_iflags_events(mut self, value: bool) -> Self {
+        unsafe {
+            self.config
+                .flags
+                .variant
+                .query
+                .set_enable_iflags_events(value.into());
+        }
+        self
     }
 }
 
@@ -181,7 +303,7 @@ mod test {
     #[test]
     fn test_config_all() {
         let mut data = [18u8; 3];
-        let mut c = EncoderDecoderBuilder::<FooDecoder>::new()
+        let mut c = EncoderDecoderBuilder::<BlockDecoder>::new()
             .filter(
                 AddrFilterBuilder::new()
                     .addr0(AddrRange::new(1, 2, AddrConfig::STOP))
@@ -192,7 +314,8 @@ mod test {
             )
             .cpu(Cpu::intel(1, 2, 3))
             .freq(Frequency::new(1, 2, 3, 4))
-            .flags(BlockFlags::END_ON_CALL | BlockFlags::END_ON_JUMP);
+            .set_end_block_on_call(true)
+            .set_end_block_on_jump(true);
         c = unsafe { c.buffer_from_raw(data.as_mut_ptr(), data.len()) };
 
         assert_eq!(c.config.cpu.family, 1);
@@ -313,4 +436,66 @@ mod test {
     //         );
     //     }
     // }
+
+    #[test]
+    fn test_block_flags() {
+        let blk: BlockFlags = BlockFlags::END_ON_CALL | BlockFlags::END_ON_JUMP;
+        let raw: pt_conf_flags = blk.into();
+
+        unsafe {
+            assert_eq!(raw.variant.block.end_on_call(), 1);
+            assert_eq!(raw.variant.block.enable_tick_events(), 0);
+            assert_eq!(raw.variant.block.end_on_jump(), 1);
+            assert_eq!(raw.variant.block.keep_tcal_on_ovf(), 0);
+        }
+
+        let blk: BlockFlags = BlockFlags::END_ON_CALL
+            | BlockFlags::END_ON_JUMP
+            | BlockFlags::ENABLE_TICK_EVENTS
+            | BlockFlags::KEEP_TCAL_ON_OVF;
+        let raw: pt_conf_flags = blk.into();
+
+        unsafe {
+            assert_eq!(raw.variant.block.end_on_call(), 1);
+            assert_eq!(raw.variant.block.enable_tick_events(), 1);
+            assert_eq!(raw.variant.block.end_on_jump(), 1);
+            assert_eq!(raw.variant.block.keep_tcal_on_ovf(), 1);
+        }
+    }
+
+    #[test]
+    fn test_insn_flags() {
+        let insn = InsnFlags::ENABLE_TICK_EVENTS;
+        let raw: pt_conf_flags = insn.into();
+
+        unsafe {
+            assert_eq!(raw.variant.insn.enable_tick_events(), 1);
+            assert_eq!(raw.variant.insn.keep_tcal_on_ovf(), 0);
+        }
+
+        let insn = InsnFlags::ENABLE_TICK_EVENTS | InsnFlags::KEEP_TCAL_ON_OVF;
+        let raw: pt_conf_flags = insn.into();
+
+        unsafe {
+            assert_eq!(raw.variant.insn.enable_tick_events(), 1);
+            assert_eq!(raw.variant.insn.keep_tcal_on_ovf(), 1);
+        }
+    }
+
+    #[test]
+    fn test_query_flags() {
+        let query = QueryFlags::empty();
+        let raw: pt_conf_flags = query.into();
+
+        unsafe {
+            assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 0);
+        }
+
+        let query: QueryFlags = QueryFlags::KEEP_TCAL_ON_OVF;
+        let raw: pt_conf_flags = query.into();
+
+        unsafe {
+            assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 1);
+        }
+    }
 }

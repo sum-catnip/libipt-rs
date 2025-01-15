@@ -5,7 +5,12 @@ use crate::Image;
 use crate::Status;
 use crate::{Asid, EncoderDecoderBuilder, PtEncoderDecoder};
 
-use libipt_sys::{pt_asid, pt_blk_get_image, pt_blk_set_image, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio, pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_image, pt_insn_get_offset, pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image, pt_insn_sync_backward, pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time};
+use libipt_sys::{
+    pt_asid, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio,
+    pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_image, pt_insn_get_offset,
+    pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image, pt_insn_sync_backward,
+    pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time,
+};
 use std::mem;
 use std::ptr;
 use std::ptr::NonNull;
@@ -215,7 +220,7 @@ impl<'a> InsnDecoder<'a> {
     }
 }
 
-impl Iterator for InsnDecoder {
+impl Iterator for InsnDecoder<'_> {
     type Item = Result<(Insn, Status), PtError>;
 
     fn next(&mut self) -> Option<Result<(Insn, Status), PtError>> {
