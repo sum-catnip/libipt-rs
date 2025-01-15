@@ -153,7 +153,7 @@ impl InsnDecoder {
 
     /// Return (move) the image and drop the decoder
     #[must_use]
-    pub fn to_owned_image(self) -> Image {
+    pub fn into_owned_image(self) -> Image {
         self.image
     }
 
