@@ -43,5 +43,5 @@ mod image;
 pub use image::*;
 mod asid;
 pub use asid::Asid;
-mod flags;
-pub use flags::Status;
+mod status;
+pub use status::Status;
