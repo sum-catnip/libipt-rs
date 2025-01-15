@@ -8,7 +8,8 @@ impl Disabled {
     /// filtered area.
     ///
     /// This field is not valid if \@ip_suppressed is set.
-    pub fn ip(self) -> u64 {
+    #[must_use]
+    pub fn ip(&self) -> u64 {
         self.0.ip
     }
 }
@@ -18,12 +19,15 @@ impl Disabled {
 pub struct AsyncDisabled(pub(super) pt_event__bindgen_ty_1__bindgen_ty_3);
 impl AsyncDisabled {
     /// The source address of the asynchronous branch that disabled tracing
-    pub fn at(self) -> u64 {
+    #[must_use]
+    pub fn at(&self) -> u64 {
         self.0.at
     }
+
     /// The destination of the first branch inside a filtered area.
     /// This field is not valid if @ip_suppressed is set.
-    pub fn ip(self) -> u64 {
+    #[must_use]
+    pub fn ip(&self) -> u64 {
         self.0.ip
     }
 }

@@ -7,6 +7,7 @@ impl Exstop {
     /// The address at which execution has stopped. This is the last instruction that did not complete.
     ///
     /// This field is not valid, if @ip_suppressed is set.
+    #[must_use]
     pub fn ip(self) -> u64 {
         self.0.ip
     }

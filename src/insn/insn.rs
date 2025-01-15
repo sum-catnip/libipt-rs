@@ -13,6 +13,7 @@ use libipt_sys::pt_insn;
 pub struct Insn(pub(crate) pt_insn);
 impl Insn {
     /// The virtual address in its process.
+    #[must_use]
     pub fn ip(self) -> u64 {
         self.0.ip
     }
@@ -20,11 +21,13 @@ impl Insn {
     /// The image section identifier for the section containing this instruction.
     ///
     /// A value of zero means that the section did not have an identifier.
+    #[must_use]
     pub fn isid(self) -> i32 {
         self.0.isid
     }
 
     /// The execution mode.
+    #[must_use]
     pub fn mode(self) -> ExecModeType {
         ExecModeType::try_from(self.0.mode as u32).expect(concat!(
             "unmatched ExecModeType enum value, ",
@@ -41,6 +44,7 @@ impl Insn {
     }
 
     /// The size in bytes.
+    #[must_use]
     pub fn raw(&self) -> &[u8] {
         &self.0.raw[..self.0.size as usize]
     }
@@ -48,6 +52,7 @@ impl Insn {
     /// A collection of flags giving additional information:
     ///
     /// - the instruction was executed speculatively.
+    #[must_use]
     pub fn speculative(self) -> bool {
         self.0.speculative() > 0
     }
@@ -58,6 +63,7 @@ impl Insn {
     ///
     /// It starts in the image section identified by \@isid and continues
     /// in one or more other sections.
+    #[must_use]
     pub fn truncated(self) -> bool {
         self.0.truncated() > 0
     }

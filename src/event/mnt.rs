@@ -5,6 +5,7 @@ use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_19;
 pub struct Mnt(pub(super) pt_event__bindgen_ty_1__bindgen_ty_19);
 impl Mnt {
     /// The raw payload.
+    #[must_use]
     pub fn payload(self) -> u64 {
         self.0.payload
     }

@@ -7,6 +7,7 @@ impl Mwait {
     /// The address of the instruction causing the mwait.
     ///
     /// This field is not valid, if @ip_suppressed is set.
+    #[must_use]
     pub fn ip(self) -> u64 {
         self.0.ip
     }
@@ -14,6 +15,7 @@ impl Mwait {
     /// The mwait hints (eax).
     ///
     /// Reserved bits are undefined.
+    #[must_use]
     pub fn hints(self) -> u32 {
         self.0.hints
     }
@@ -21,6 +23,7 @@ impl Mwait {
     /// The mwait extensions (ecx).
     ///
     /// Reserved bits are undefined.
+    #[must_use]
     pub fn ext(self) -> u32 {
         self.0.ext
     }

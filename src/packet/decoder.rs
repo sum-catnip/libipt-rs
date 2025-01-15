@@ -39,6 +39,7 @@ impl<T> PtEncoderDecoder for PacketDecoder<T> {
 }
 
 impl<T> PacketDecoder<T> {
+    #[must_use]
     pub fn used_builder(&self) -> &EncoderDecoderBuilder<Self> {
         &self.builder
     }

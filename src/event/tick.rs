@@ -10,7 +10,8 @@ impl Tick {
     /// an instruction (e.g. to an indirect branch that
     /// receives CYC + TIP) and sometimes not (e.g. MTC).
     ///
-    /// This field is not valid, if \@ip_suppressed is set.
+    /// This field is not valid, if @ip_suppressed is set.
+    #[must_use]
     pub fn ip(self) -> u64 {
         self.0.ip
     }

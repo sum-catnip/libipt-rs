@@ -6,32 +6,35 @@ use libipt_sys::{pt_packet_mwait, pt_packet_type_ppt_mwait};
 pub struct Mwait(pt_packet_mwait);
 impl Mwait {
     #[inline]
+    #[must_use]
     pub fn new(ext: u32, hints: u32) -> Self {
         Mwait(pt_packet_mwait { ext, hints })
     }
 
     /// The MWAIT extensions (ECX)
     #[inline]
-    pub fn ext(self) -> u32 {
+    #[must_use]
+    pub fn ext(&self) -> u32 {
         self.0.ext
     }
 
     /// The MWAIT extensions (ECX)
     #[inline]
     pub fn set_ext(&mut self, ext: u32) {
-        self.0.ext = ext
+        self.0.ext = ext;
     }
 
     /// The MWAIT hints (EAX)
     #[inline]
-    pub fn hints(self) -> u32 {
+    #[must_use]
+    pub fn hints(&self) -> u32 {
         self.0.hints
     }
 
     /// The MWAIT hints (EAX)
     #[inline]
     pub fn set_hints(&mut self, hints: u32) {
-        self.0.hints = hints
+        self.0.hints = hints;
     }
 }
 

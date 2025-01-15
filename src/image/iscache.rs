@@ -36,7 +36,7 @@ impl SectionCache {
     }
 
     /// Get the image section cache name.
-    /// Name is optional
+    #[must_use]
     pub fn name(&self) -> Option<String> {
         let name_ptr = unsafe { pt_iscache_name(self.inner.as_ptr()) };
         name_ptr_to_option_string(name_ptr)
@@ -71,7 +71,7 @@ impl SectionCache {
     /// We support reading at least 4Kbyte in one chunk unless the read would cross a section boundary.
     /// Returns number of bytes read on success.
     /// Returns Nomap if @vaddr is not contained in section @isid.
-    /// Returns BadImage if @iscache does not contain @isid.
+    /// Returns `BadImage` if @iscache does not contain @isid.
     pub fn read(&self, buffer: &mut [u8], isid: u32, vaddr: u64) -> Result<u32, PtError> {
         extract_pterr(unsafe {
             pt_iscache_read(
@@ -90,7 +90,15 @@ impl SectionCache {
     /// A non-zero limit will keep the least recently used sections mapped until the limit is reached.
     /// A limit of zero disables caching.
     pub fn set_limit(&mut self, limit: u64) -> Result<(), PtError> {
-        ensure_ptok(unsafe { pt_iscache_set_limit(self.inner.as_ptr(), limit) })
+        ensure_ptok(unsafe { pt_iscache_set_limit(self.inner.as_ptr(), limit) }).inspect_err(|e| {
+            // pt_iscache_set_limit returns -pte_invalid if @iscache is NULL, since self.inner is
+            // NonNull this should never happen.
+            debug_assert_ne!(
+                e.code(),
+                PtErrorCode::Invalid,
+                "pt_iscache_set_limit returned -pte_invalid"
+            )
+        })
     }
 }
 

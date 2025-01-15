@@ -6,31 +6,37 @@ use std::ffi::CStr;
 pub struct Version(pt_version);
 impl Version {
     /// Return the libipt library version.
+    #[must_use]
     pub fn current() -> Self {
         Version(unsafe { pt_library_version() })
     }
 
     /// Major version number.
+    #[must_use]
     pub fn major(&self) -> u8 {
         self.0.major
     }
 
     /// Minor version number.
+    #[must_use]
     pub fn minor(&self) -> u8 {
         self.0.minor
     }
 
     /// Patch level.
+    #[must_use]
     pub fn patch(&self) -> u16 {
         self.0.patch
     }
 
     /// Build number.
+    #[must_use]
     pub fn build(&self) -> u32 {
         self.0.build
     }
 
     /// Version extension.
+    #[must_use]
     pub fn ext(&self) -> &str {
         unsafe { CStr::from_ptr(self.0.ext) }
             .to_str()

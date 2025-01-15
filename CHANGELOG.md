@@ -19,6 +19,7 @@ _This changelog documents only changes relevant to users, internal changes might
 - Block/Insn decoders `.set_image()` now takes `Option<Image>` instead of `Option<&mut Image>`
 - `Image.copy()` is now replaced by `Image.extend()`
 - `Image.add_cached()` takes a `Rc<SectionCache>` instead of `&mut SectionCache` to ensure that the cache outlive the Image. 
+- Many packet/event types methods now get a `&self` instead of consuming `self`
 
 ### Removed
 

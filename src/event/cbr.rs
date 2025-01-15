@@ -5,6 +5,7 @@ use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_18;
 pub struct Cbr(pub(super) pt_event__bindgen_ty_1__bindgen_ty_18);
 impl Cbr {
     /// The core:bus ratio.
+    #[must_use]
     pub fn ratio(self) -> u16 {
         self.0.ratio
     }

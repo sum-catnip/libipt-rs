@@ -1,4 +1,4 @@
-use crate::error::{ensure_ptok, extract_pterr, PtError, PtErrorCode};
+use crate::error::{ensure_ptok, extract_status_or_pterr, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::{EncoderDecoderBuilder, PtEncoderDecoder, Status};
 
@@ -59,12 +59,11 @@ impl<T> QueryDecoder<T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn cond_branch(&mut self) -> Result<(CondBranch, Status), PtError> {
         let mut taken: i32 = 0;
-        extract_pterr(unsafe { pt_qry_cond_branch(self.inner.as_ptr(), &mut taken) }).map(|s| {
-            (
-                CondBranch::try_from(taken).unwrap(),
-                Status::from_bits(s).unwrap(),
-            )
-        })
+        let status = extract_status_or_pterr(unsafe {
+            pt_qry_cond_branch(self.inner.as_ptr(), &mut taken)
+        })?;
+        let cond_branch = CondBranch::try_from(taken)?;
+        Ok((cond_branch, status))
     }
 
     /// Return the current core bus ratio.
@@ -87,10 +86,10 @@ impl<T> QueryDecoder<T> {
     /// Returns Nosync if decoder is out of sync.
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
         let mut evt: pt_event = unsafe { mem::zeroed() };
-        extract_pterr(unsafe {
+        let status = extract_status_or_pterr(unsafe {
             pt_qry_event(self.inner.as_ptr(), &mut evt, mem::size_of::<pt_event>())
-        })
-        .map(|s| (Event(evt), Status::from_bits(s).unwrap()))
+        })?;
+        Ok((Event(evt), status))
     }
 
     // pub fn config(&self) -> Result<Config<T>, PtError> {
@@ -119,15 +118,17 @@ impl<T> QueryDecoder<T> {
     /// On success, provides the linear destination address
     /// of the next indirect branch along with the status
     /// and updates the decoder.
-    /// Returns BadOpc if an unknown packet is encountered.
-    /// Returns BadPacket if an unknown packet payload is encountered.
-    /// Returns BadQuery if no indirect branch is found.
+    /// Returns `BadOpc` if an unknown packet is encountered.
+    /// Returns `BadPacket` if an unknown packet payload is encountered.
+    /// Returns `BadQuery` if no indirect branch is found.
     /// Returns Eos if decoding reached the end of the Intel PT buffer.
     /// Returns Nosync if decoder is out of sync.
     pub fn indirect_branch(&mut self) -> Result<(u64, Status), PtError> {
         let mut ip: u64 = 0;
-        extract_pterr(unsafe { pt_qry_indirect_branch(self.inner.as_ptr(), &mut ip) })
-            .map(|s| (ip, Status::from_bits(s).unwrap()))
+        let status = extract_status_or_pterr(unsafe {
+            pt_qry_indirect_branch(self.inner.as_ptr(), &mut ip)
+        })?;
+        Ok((ip, status))
     }
 
     /// Synchronize an Intel PT query decoder.
@@ -137,13 +138,14 @@ impl<T> QueryDecoder<T> {
     /// of the trace buffer in case of forward synchronization
     /// and at the end of the trace buffer in case of backward synchronization.
     /// Returns the last ip along with a non-negative Status on success
-    /// Returns BadOpc if an unknown packet is encountered.
-    /// Returns BadPacket if an unknown packet payload is encountered.
+    /// Returns `BadOpc` if an unknown packet is encountered.
+    /// Returns `BadPacket` if an unknown packet payload is encountered.
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_backward(&mut self) -> Result<(u64, Status), PtError> {
         let mut ip: u64 = 0;
-        extract_pterr(unsafe { pt_qry_sync_backward(self.inner.as_ptr(), &mut ip) })
-            .map(|s| (ip, Status::from_bits(s).unwrap()))
+        let status =
+            extract_status_or_pterr(unsafe { pt_qry_sync_backward(self.inner.as_ptr(), &mut ip) })?;
+        Ok((ip, status))
     }
 
     /// Synchronize an Intel PT query decoder.
@@ -153,13 +155,14 @@ impl<T> QueryDecoder<T> {
     /// of the trace buffer in case of forward synchronization
     /// and at the end of the trace buffer in case of backward synchronization.
     /// Returns the last ip along with a non-negative Status on success
-    /// Returns BadOpc if an unknown packet is encountered.
-    /// Returns BadPacket if an unknown packet payload is encountered.
+    /// Returns `BadOpc` if an unknown packet is encountered.
+    /// Returns `BadPacket` if an unknown packet payload is encountered.
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_forward(&mut self) -> Result<(u64, Status), PtError> {
         let mut ip: u64 = 0;
-        extract_pterr(unsafe { pt_qry_sync_forward(self.inner.as_ptr(), &mut ip) })
-            .map(|s| (ip, Status::from_bits(s).unwrap()))
+        let status =
+            extract_status_or_pterr(unsafe { pt_qry_sync_forward(self.inner.as_ptr(), &mut ip) })?;
+        Ok((ip, status))
     }
 
     /// Manually synchronize an Intel PT query decoder.
@@ -167,15 +170,17 @@ impl<T> QueryDecoder<T> {
     /// Synchronize decoder on the syncpoint at @offset.
     /// There must be a PSB packet at @offset.
     /// Returns last ip along with a status.
-    /// Returns BadOpc if an unknown packet is encountered.
-    /// Returns BadPacket if an unknown packet payload is encountered.
+    /// Returns `BadOpc` if an unknown packet is encountered.
+    /// Returns `BadPacket` if an unknown packet payload is encountered.
     /// Returns Eos if @offset lies outside of decoder's trace buffer.
     /// Returns Eos if decoder reaches the end of its trace buffer.
     /// Returns Nosync if there is no syncpoint at @offset.
     pub fn sync_set(&mut self, offset: u64) -> Result<(u64, Status), PtError> {
         let mut ip: u64 = 0;
-        extract_pterr(unsafe { pt_qry_sync_set(self.inner.as_ptr(), &mut ip, offset) })
-            .map(|s| (ip, Status::from_bits(s).unwrap()))
+        let status = extract_status_or_pterr(unsafe {
+            pt_qry_sync_set(self.inner.as_ptr(), &mut ip, offset)
+        })?;
+        Ok((ip, status))
     }
 
     /// Query the current time.
@@ -185,11 +190,11 @@ impl<T> QueryDecoder<T> {
     /// Depending on the configuration, the time may not be fully accurate.
     /// If TSC is not enabled, the time is relative to the last synchronization
     /// and can't be used to correlate with other TSC-based time sources.
-    /// In this case, NoTime is returned and the relative time is provided.
+    /// In this case, `NoTime` is returned and the relative time is provided.
     /// Some timing-related packets may need to be dropped (mostly due to missing calibration or incomplete configuration).
     /// To get an idea about the quality of the estimated time, we record the number of dropped MTC and CYC packets.
     /// Returns time, number of lost mtc packets and number of lost cyc packets.
-    /// Returns NoTime if there has not been a TSC packet.
+    /// Returns `NoTime` if there has not been a TSC packet.
     pub fn time(&mut self) -> Result<(u64, u32, u32), PtError> {
         let mut time: u64 = 0;
         let mut mtc: u32 = 0;

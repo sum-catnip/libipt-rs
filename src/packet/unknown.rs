@@ -11,6 +11,7 @@ impl<T> Unknown<T> {
     }
 
     // Create an empty Unknown, for when you dont want to return something
+    #[must_use]
     pub fn none() -> Self {
         Unknown(None)
     }
@@ -18,11 +19,12 @@ impl<T> Unknown<T> {
     pub(crate) fn from(pkt: pt_packet_unknown) -> Self {
         match pkt.priv_ {
             x if x.is_null() => Unknown(None),
-            x => unsafe { Unknown(Some(Box::from_raw(x as *mut T))) },
+            x => unsafe { Unknown(Some(Box::from_raw(x.cast::<T>()))) },
         }
     }
 
     /// The custom data you returned from the callback
+    #[must_use]
     pub fn data(self) -> Option<T> {
         self.0.map(|d| *d)
     }

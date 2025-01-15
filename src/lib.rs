@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::cargo)]
+
 /// The pt_config structure defines an Intel Processor Trace (Intel PT) encoder or decoder configuration.
 ///
 /// It is required for allocating a trace packet encoder (see pt_alloc_encoder(3)),

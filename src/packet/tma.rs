@@ -6,20 +6,22 @@ use libipt_sys::{pt_packet_tma, pt_packet_type_ppt_tma};
 pub struct Tma(pt_packet_tma);
 impl Tma {
     #[inline]
+    #[must_use]
     pub fn new(ctc: u16, fc: u16) -> Self {
         Tma(pt_packet_tma { ctc, fc })
     }
 
-    #[inline]
     /// The crystal clock tick counter value
-    pub fn ctc(self) -> u16 {
+    #[inline]
+    #[must_use]
+    pub fn ctc(&self) -> u16 {
         self.0.ctc
     }
 
     #[inline]
     /// The crystal clock tick counter value
     pub fn set_ctc(&mut self, ctc: u16) {
-        self.0.ctc = ctc
+        self.0.ctc = ctc;
     }
 
     #[inline]

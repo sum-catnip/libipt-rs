@@ -158,37 +158,50 @@ impl From<pt_event> for Payload {
 pub struct Event(pub(crate) pt_event);
 impl Event {
     /// A flag indicating that the event IP has been suppressed.
+    #[must_use]
     pub fn ip_suppressed(self) -> bool {
         self.0.ip_suppressed() > 0
     }
+
     /// A flag indicating that the event is for status update.
+    #[must_use]
     pub fn status_update(self) -> bool {
         self.0.status_update() > 0
     }
+
     /// A flag indicating that the event has timing information.
+    #[must_use]
     pub fn has_tsc(self) -> bool {
         self.0.has_tsc() > 0
     }
+
     /// The time stamp count of the event.
-    /// This field is only valid if \@has_tsc is set.
+    /// This field is only valid if @has_tsc is set.
+    #[must_use]
     pub fn tsc(self) -> u64 {
         self.0.tsc
     }
+
     /// The number of lost mtc packets.
     ///
     /// This gives an idea about the quality of the \@tsc.
     /// The more packets were dropped, the less precise timing is.
+    #[must_use]
     pub fn lost_mtc(self) -> u32 {
         self.0.lost_mtc
     }
+
     /// The number of lost cyc packets.
     ///
     /// This gives an idea about the quality of the \@tsc.
     /// The more packets were dropped, the less precise timing is.
+    #[must_use]
     pub fn lost_cyc(self) -> u32 {
         self.0.lost_cyc
     }
+
     /// Event specific data.
+    #[must_use]
     pub fn payload(self) -> Payload {
         self.0.into()
     }

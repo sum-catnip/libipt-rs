@@ -1,5 +1,5 @@
 use super::Insn;
-use crate::error::{ensure_ptok, extract_pterr, PtError, PtErrorCode};
+use crate::error::{ensure_ptok, extract_pterr, extract_status_or_pterr, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::Image;
 use crate::Status;
@@ -46,7 +46,7 @@ impl PtEncoderDecoder for InsnDecoder {
 impl InsnDecoder {
     /// Return the current address space identifier.
     pub fn asid(&self) -> Result<Asid, PtError> {
-        let mut a: Asid = Default::default();
+        let mut a: Asid = Asid::default();
         unsafe {
             ensure_ptok(pt_insn_asid(
                 self.inner.as_ptr(),
@@ -61,7 +61,7 @@ impl InsnDecoder {
     ///
     /// On success, provides the current core:bus ratio
     /// The ratio is defined as core cycles per bus clock cycle.
-    /// Returns NoCbr if there has not been a CBR packet.
+    /// Returns `NoCbr` if there has not been a CBR packet.
     pub fn core_bus_ratio(&self) -> Result<u32, PtError> {
         let mut cbr: u32 = 0;
         ensure_ptok(unsafe { pt_insn_core_bus_ratio(self.inner.as_ptr(), &mut cbr) }).map(|_| cbr)
@@ -69,16 +69,17 @@ impl InsnDecoder {
 
     /// Get the next pending event.
     ///
-    /// On success, provides the next event with StatusFlag and updates the decoder.
-    /// Returns BadQuery if there is no event.
+    /// On success, provides the next event with `StatusFlag` and updates the decoder.
+    /// Returns `BadQuery` if there is no event.
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
         let mut evt: pt_event = unsafe { mem::zeroed() };
-        extract_pterr(unsafe {
+        let status = extract_status_or_pterr(unsafe {
             pt_insn_event(self.inner.as_ptr(), &mut evt, mem::size_of::<pt_event>())
-        })
-        .map(|s| (Event(evt), Status::from_bits(s).unwrap()))
+        })?;
+        Ok((Event(evt), status))
     }
 
+    #[must_use]
     pub fn used_builder(&self) -> &EncoderDecoderBuilder<Self> {
         &self.builder
     }
@@ -109,22 +110,22 @@ impl InsnDecoder {
 
     /// Determine the next instruction.
     ///
-    /// On success, provides the next instruction in execution order along with StatusFlags.
+    /// On success, provides the next instruction in execution order along with `StatusFlags`.
     /// Returns Eos to indicate the end of the trace stream.
-    /// Subsequent calls to next() will continue to return Eos until trace is required to determine the next instruction.
-    /// Returns BadContext if the decoder encountered an unexpected packet.
-    /// Returns BadOpc if the decoder encountered unknown packets.
-    /// Returns BadPacket if the decoder encountered unknown packet payloads.
-    /// Returns BadQuery if the decoder got out of sync.
+    /// Subsequent calls to `next()` will continue to return Eos until trace is required to determine the next instruction.
+    /// Returns `BadContext` if the decoder encountered an unexpected packet.
+    /// Returns `BadOpc` if the decoder encountered unknown packets.
+    /// Returns `BadPacket` if the decoder encountered unknown packet payloads.
+    /// Returns `BadQuery` if the decoder got out of sync.
     /// Returns Eos if decoding reached the end of the Intel PT buffer.
     /// Returns Nomap if the memory at the instruction address can't be read.
     /// Returns Nosync if decoder is out of sync.
     pub fn decode_next(&mut self) -> Result<(Insn, Status), PtError> {
         let mut insn: pt_insn = unsafe { mem::zeroed() };
-        extract_pterr(unsafe {
-            pt_insn_next(self.inner.as_ptr(), &mut insn, mem::size_of::<pt_insn>())
-        })
-        .map(|s| (Insn(insn), Status::from_bits(s).unwrap()))
+        let status = extract_status_or_pterr(unsafe {
+            pt_insn_next(self.inner.as_ptr(), &mut insn, size_of::<pt_insn>())
+        })?;
+        Ok((Insn(insn), status))
     }
 
     /// Set the traced image.
@@ -144,20 +145,21 @@ impl InsnDecoder {
             Some(i) => i,
         };
         if let Some(img_nonnull_ptr) = NonNull::new(img_ptr) {
-            debug_assert!(img_nonnull_ptr == self.image.inner)
+            debug_assert!(img_nonnull_ptr == self.image.inner);
         }
 
         Ok(())
     }
 
     /// Return (move) the image and drop the decoder
+    #[must_use]
     pub fn to_owned_image(self) -> Image {
         self.image
     }
 
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
         extract_pterr(unsafe { pt_insn_sync_backward(self.inner.as_ptr()) })
-            .map(|s| Status::from_bits(s).unwrap())
+            .map(Status::from_bits_or_pterror)?
     }
 
     /// Synchronize an Intel PT instruction flow decoder.
@@ -167,20 +169,20 @@ impl InsnDecoder {
     /// the search is started at the beginning of the trace buffer
     /// in case of forward synchronization and at the end of the trace buffer
     /// in case of backward synchronization.
-    /// Returns BadOpc if an unknown packet is encountered.
-    /// Returns BadPacket if an unknown packet payload is encountered.
+    /// Returns `BadOpc` if an unknown packet is encountered.
+    /// Returns `BadPacket` if an unknown packet payload is encountered.
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_forward(&mut self) -> Result<Status, PtError> {
         extract_pterr(unsafe { pt_insn_sync_forward(self.inner.as_ptr()) })
-            .map(|s| Status::from_bits(s).unwrap())
+            .map(Status::from_bits_or_pterror)?
     }
 
     /// Manually synchronize an Intel PT instruction flow decoder.
     ///
     /// Synchronize @decoder on the syncpoint at @offset.
     /// There must be a PSB packet at @offset.
-    /// Returns BadOpc if an unknown packet is encountered.
-    /// Returns BadPacket if an unknown packet payload is encountered.
+    /// Returns `BadOpc` if an unknown packet is encountered.
+    /// Returns `BadPacket` if an unknown packet payload is encountered.
     /// Returns Eos if @offset lies outside of decoder's trace buffer.
     /// Returns Eos if decoder reaches the end of its trace buffer.
     /// Returns Nosync if there is no syncpoint at @offset.
@@ -197,10 +199,10 @@ impl InsnDecoder {
     /// The time is similar to what a rdtsc instruction would return.
     /// Depending on the configuration, the time may not be fully accurate.
     /// If TSC is not enabled, the time is relative to the last synchronization and can't be used to correlate with other TSC-based time sources.
-    /// In this case, NoTime is returned and the relative time is provided in @time.
+    /// In this case, `NoTime` is returned and the relative time is provided in @time.
     /// Some timing-related packets may need to be dropped (mostly due to missing calibration or incomplete configuration).
     /// To get an idea about the quality of the estimated time, we record the number of dropped MTC and CYC packets.
-    /// Returns NoTime if there has not been a TSC packet.
+    /// Returns `NoTime` if there has not been a TSC packet.
     pub fn time(&mut self) -> Result<(u64, u32, u32), PtError> {
         let mut time: u64 = 0;
         let mut lost_mtc: u32 = 0;
@@ -224,8 +226,8 @@ impl Iterator for InsnDecoder {
     }
 }
 
-/// This struct allow us to not implement Drop for InsnDecoder and therefore move out Image with
-/// to_owned_image
+/// This struct allow us to not implement Drop for `InsnDecoder` and therefore move out Image with
+/// `to_owned_image`
 #[derive(Debug)]
 struct OwnedPtInsnDecoder {
     inner: NonNull<pt_insn_decoder>,

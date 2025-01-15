@@ -1,5 +1,4 @@
 use libipt_sys::{pt_asid, pt_asid_no_cr3 as NO_CR3, pt_asid_no_vmcs as NO_VMCS};
-use std::mem;
 
 /// An Intel PT address space identifier.
 ///
@@ -9,9 +8,10 @@ use std::mem;
 pub struct Asid(pub(crate) pt_asid);
 impl Asid {
     #[inline]
+    #[must_use]
     pub fn new(cr3: Option<u64>, vmcs: Option<u64>) -> Self {
         Asid(pt_asid {
-            size: mem::size_of::<pt_asid>(),
+            size: size_of::<pt_asid>(),
             cr3: cr3.unwrap_or(NO_CR3),
             vmcs: vmcs.unwrap_or(NO_VMCS),
         })
@@ -19,6 +19,7 @@ impl Asid {
 
     /// The CR3 value.
     #[inline]
+    #[must_use]
     pub fn cr3(self) -> Option<u64> {
         match self.0.cr3 {
             NO_CR3 => None,
@@ -29,11 +30,12 @@ impl Asid {
     /// The CR3 value.
     #[inline]
     pub fn set_cr3(&mut self, cr3: u64) {
-        self.0.cr3 = cr3
+        self.0.cr3 = cr3;
     }
 
     /// The VMCS Base address.
     #[inline]
+    #[must_use]
     pub fn vmcs(self) -> Option<u64> {
         match self.0.vmcs {
             NO_VMCS => None,
@@ -44,7 +46,7 @@ impl Asid {
     /// The VMCS Base address.
     #[inline]
     pub fn set_vmcs(&mut self, vmcs: u64) {
-        self.0.vmcs = vmcs
+        self.0.vmcs = vmcs;
     }
 }
 

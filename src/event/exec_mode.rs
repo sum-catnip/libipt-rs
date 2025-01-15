@@ -23,11 +23,15 @@ pub enum ExecModeType {
 pub struct ExecMode(pub(super) pt_event__bindgen_ty_1__bindgen_ty_8);
 impl ExecMode {
     /// The address at which the event is effective
-    pub fn ip(self) -> u64 {
+    #[must_use]
+    pub fn ip(&self) -> u64 {
         self.0.ip
     }
+
     /// The execution mode
-    pub fn mode(self) -> ExecModeType {
+    #[must_use]
+    #[expect(clippy::missing_panics_doc)]
+    pub fn mode(&self) -> ExecModeType {
         ExecModeType::try_from(self.0.mode as u32).unwrap()
     }
 }

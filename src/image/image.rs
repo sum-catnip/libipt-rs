@@ -68,13 +68,13 @@ impl BoxedCallback {
         // Note that we convert `boxed_dyn_callback` into raw pointer as below. This is
         // because `Box<T: ?Sized>` is not guaranteed to be ABI-compliant with `*T`.
         let boxed_ptr = Box::new(Box::into_raw(boxed_dyn_callback));
-        let raw_ptr = Box::into_raw(boxed_ptr) as *mut c_void;
+        let raw_ptr = Box::into_raw(boxed_ptr).cast();
         Self(raw_ptr)
     }
 
     /// Invoke the callback behind the given opaque boxed callback pointer.
     unsafe fn call(opaque_cb: *mut c_void, buf: &mut [u8], size: u64, asid: Asid) -> i32 {
-        let raw_boxed_ptr = opaque_cb as *mut *mut dyn FnMut(&mut [u8], u64, Asid) -> i32;
+        let raw_boxed_ptr = opaque_cb.cast::<*mut dyn FnMut(&mut [u8], u64, Asid) -> i32>();
         let func = (*raw_boxed_ptr).as_mut().unwrap();
         func(buf, size, asid)
     }
@@ -82,7 +82,7 @@ impl BoxedCallback {
 
 impl Drop for BoxedCallback {
     fn drop(&mut self) {
-        let raw_boxed_ptr = self.0 as *mut *mut dyn FnMut(&mut [u8], u64, Asid) -> i32;
+        let raw_boxed_ptr = self.0.cast::<*mut dyn FnMut(&mut [u8], u64, Asid) -> i32>();
 
         unsafe {
             // Drop from inside to outside.
@@ -132,11 +132,11 @@ impl Image {
         })
     }
 
-    /// `image` is considered as borrowed, the returned `Image` won't call pt_image_free on it.
+    /// `image` is considered as borrowed, the returned `Image` won't call `pt_image_free` on it.
     ///
-    /// Image created with from_borrowed_raw do not have the `callback` and `caches` set, the caller
-    /// must ensure that the underlying `pt_image` doesn't have a callback set and that no section
-    /// has been previously added with `pt_image_add_cached`.
+    /// Image created with `from_borrowed_raw` do not have the `callback` and `caches` set, the
+    /// caller must ensure that the underlying `pt_image` doesn't have a callback set and that no
+    /// section has been previously added with `pt_image_add_cached`.
     ///
     /// Returns `Err::<PtError>` if the image pointer is null
     ///
@@ -154,6 +154,7 @@ impl Image {
     }
 
     /// Get the image name, as set by `Self::new`.
+    #[must_use]
     pub fn name(&self) -> Option<String> {
         let name_ptr = unsafe { pt_image_name(self.inner.as_ptr()) };
         name_ptr_to_option_string(name_ptr)
@@ -216,7 +217,7 @@ impl Image {
                     e.code(),
                     PtErrorCode::Invalid,
                     "pt_image_copy returned -pte_invalid"
-                )
+                );
             })?;
 
         self.caches.extend_from_slice(&src.caches);
@@ -227,7 +228,7 @@ impl Image {
     ///
     /// Add the section from @iscache identified by @isid in address space @asid.
     /// Existing sections that would overlap with the new section will be shrunk or split.
-    /// Returns BadImage if @iscache does not contain @isid.
+    /// Returns `BadImage` if @iscache does not contain @isid.
     ///
     /// @iscache must be wrapped by an `Rc`. This ensures that the cache will outlive this image.
     pub fn add_cached(
@@ -255,7 +256,7 @@ impl Image {
                 e.code(),
                 PtErrorCode::Invalid,
                 "pt_image_copy returned -pte_invalid"
-            )
+            );
         });
 
         if res.is_ok() {

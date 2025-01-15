@@ -6,20 +6,22 @@ use libipt_sys::{pt_packet_mtc, pt_packet_type_ppt_mtc};
 pub struct Mtc(pt_packet_mtc);
 impl Mtc {
     #[inline]
+    #[must_use]
     pub fn new(ctc: u8) -> Self {
         Mtc(pt_packet_mtc { ctc })
     }
 
-    #[inline]
     /// The crystal clock tick counter value
-    pub fn ctc(self) -> u8 {
+    #[inline]
+    #[must_use]
+    pub fn ctc(&self) -> u8 {
         self.0.ctc
     }
 
     #[inline]
     /// The crystal clock tick counter value
     pub fn set_ctc(&mut self, ctc: u8) {
-        self.0.ctc = ctc
+        self.0.ctc = ctc;
     }
 }
 

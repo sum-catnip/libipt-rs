@@ -9,7 +9,7 @@ use crate::{PtError, PtErrorCode};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-/// Helper function for pt_image/pt_iscache names
+/// Helper function for `pt_image`/`pt_iscache` names
 fn name_ptr_to_option_string(name_ptr: *const c_char) -> Option<String> {
     if name_ptr.is_null() {
         None

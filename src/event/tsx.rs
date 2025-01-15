@@ -7,17 +7,20 @@ impl Tsx {
     /// The address at which the event is effective.
     ///
     /// This field is not valid if @ip_suppressed is set.
-    pub fn ip(self) -> u64 {
+    #[must_use]
+    pub fn ip(&self) -> u64 {
         self.0.ip
     }
 
     /// A flag indicating speculative execution mode
-    pub fn speculative(self) -> bool {
+    #[must_use]
+    pub fn speculative(&self) -> bool {
         self.0.speculative() > 0
     }
 
     /// A flag indicating speculative execution aborts
-    pub fn aborted(self) -> bool {
+    #[must_use]
+    pub fn aborted(&self) -> bool {
         self.0.aborted() > 0
     }
 }

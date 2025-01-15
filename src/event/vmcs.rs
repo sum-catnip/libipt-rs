@@ -7,6 +7,7 @@ impl Vmcs {
     /// The VMCS base address.
     ///
     /// The address is zero-extended with the lower 12 bits all zero
+    #[must_use]
     pub fn base(self) -> u64 {
         self.0.base
     }
@@ -19,11 +20,13 @@ impl AsyncVmcs {
     /// The VMCS base address.
     ///
     /// The address is zero-extended with the lower 12 bits all zero
+    #[must_use]
     pub fn base(self) -> u64 {
         self.0.base
     }
 
     /// The address at which the event is effective.
+    #[must_use]
     pub fn ip(self) -> u64 {
         self.0.ip
     }
