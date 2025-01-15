@@ -79,7 +79,7 @@ impl<'a> InsnDecoder<'a> {
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
         let mut evt: pt_event = unsafe { mem::zeroed() };
         let status = extract_status_or_pterr(unsafe {
-            pt_insn_event(self.inner.as_ptr(), &mut evt, mem::size_of::<pt_event>())
+            pt_insn_event(self.inner.as_ptr(), &mut evt, size_of::<pt_event>())
         })?;
         Ok((Event(evt), status))
     }

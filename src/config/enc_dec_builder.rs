@@ -314,8 +314,8 @@ mod test {
             )
             .cpu(Cpu::intel(1, 2, 3))
             .freq(Frequency::new(1, 2, 3, 4))
-            .set_end_block_on_call(true)
-            .set_end_block_on_jump(true);
+            .set_end_on_call(true)
+            .set_end_on_jump(true);
         c = unsafe { c.buffer_from_raw(data.as_mut_ptr(), data.len()) };
 
         assert_eq!(c.config.cpu.family, 1);
@@ -439,8 +439,10 @@ mod test {
 
     #[test]
     fn test_block_flags() {
-        let blk: BlockFlags = BlockFlags::END_ON_CALL | BlockFlags::END_ON_JUMP;
-        let raw: pt_conf_flags = blk.into();
+        let builder = EncoderDecoderBuilder::<BlockDecoder>::new()
+            .set_end_on_call(true)
+            .set_end_on_jump(true);
+        let raw = builder.config.flags;
 
         unsafe {
             assert_eq!(raw.variant.block.end_on_call(), 1);
@@ -449,11 +451,12 @@ mod test {
             assert_eq!(raw.variant.block.keep_tcal_on_ovf(), 0);
         }
 
-        let blk: BlockFlags = BlockFlags::END_ON_CALL
-            | BlockFlags::END_ON_JUMP
-            | BlockFlags::ENABLE_TICK_EVENTS
-            | BlockFlags::KEEP_TCAL_ON_OVF;
-        let raw: pt_conf_flags = blk.into();
+        let builder = EncoderDecoderBuilder::<BlockDecoder>::new()
+            .set_end_on_call(true)
+            .set_end_on_jump(true)
+            .set_enable_tick_events(true)
+            .set_keep_tcal_on_ovf(true);
+        let raw = builder.config.flags;
 
         unsafe {
             assert_eq!(raw.variant.block.end_on_call(), 1);
@@ -465,16 +468,18 @@ mod test {
 
     #[test]
     fn test_insn_flags() {
-        let insn = InsnFlags::ENABLE_TICK_EVENTS;
-        let raw: pt_conf_flags = insn.into();
+        let builder = EncoderDecoderBuilder::<InsnDecoder>::new().set_enable_tick_events(true);
+        let raw = builder.config.flags;
 
         unsafe {
             assert_eq!(raw.variant.insn.enable_tick_events(), 1);
             assert_eq!(raw.variant.insn.keep_tcal_on_ovf(), 0);
         }
 
-        let insn = InsnFlags::ENABLE_TICK_EVENTS | InsnFlags::KEEP_TCAL_ON_OVF;
-        let raw: pt_conf_flags = insn.into();
+        let builder = EncoderDecoderBuilder::<InsnDecoder>::new()
+            .set_enable_tick_events(true)
+            .set_keep_tcal_on_ovf(true);
+        let raw = builder.config.flags;
 
         unsafe {
             assert_eq!(raw.variant.insn.enable_tick_events(), 1);
@@ -484,15 +489,15 @@ mod test {
 
     #[test]
     fn test_query_flags() {
-        let query = QueryFlags::empty();
-        let raw: pt_conf_flags = query.into();
+        let builder = EncoderDecoderBuilder::<QueryDecoder<()>>::new();
+        let raw = builder.config.flags;
 
         unsafe {
             assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 0);
         }
 
-        let query: QueryFlags = QueryFlags::KEEP_TCAL_ON_OVF;
-        let raw: pt_conf_flags = query.into();
+        let builder = EncoderDecoderBuilder::<QueryDecoder<()>>::new().set_keep_tcal_on_ovf(true);
+        let raw = builder.config.flags;
 
         unsafe {
             assert_eq!(raw.variant.query.keep_tcal_on_ovf(), 1);
