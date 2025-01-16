@@ -115,13 +115,13 @@ impl PtError {
 
     /// get the pt error code
     #[inline]
-    pub fn code(self) -> PtErrorCode {
+    pub const fn code(self) -> PtErrorCode {
         self.code
     }
 
     /// get a human readable error message
     #[inline]
-    pub fn msg(self) -> &'static str {
+    pub const fn msg(self) -> &'static str {
         self.msg
     }
 }

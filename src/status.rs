@@ -30,19 +30,19 @@ impl Status {
 
     /// There is no more trace data available.
     #[must_use]
-    pub fn eos(&self) -> bool {
+    pub const fn eos(&self) -> bool {
         self.contains(Status::EOS)
     }
 
     /// There is an event pending.
     #[must_use]
-    pub fn event_pending(&self) -> bool {
+    pub const fn event_pending(&self) -> bool {
         self.contains(Status::EVENT_PENDING)
     }
 
     /// The address has been suppressed.
     #[must_use]
-    pub fn ip_supressed(&self) -> bool {
+    pub const fn ip_supressed(&self) -> bool {
         self.contains(Status::IP_SUPRESSED)
     }
 }

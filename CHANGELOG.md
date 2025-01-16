@@ -2,7 +2,7 @@
 
 _This changelog documents only changes relevant to users, internal changes might be omitted._
 
-## [Unreleased]
+## [0.3.0] 2025/01
 
 ### Added
 

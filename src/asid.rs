@@ -20,7 +20,7 @@ impl Asid {
     /// The CR3 value.
     #[inline]
     #[must_use]
-    pub fn cr3(self) -> Option<u64> {
+    pub const fn cr3(self) -> Option<u64> {
         match self.0.cr3 {
             NO_CR3 => None,
             x => Some(x),
@@ -36,7 +36,7 @@ impl Asid {
     /// The VMCS Base address.
     #[inline]
     #[must_use]
-    pub fn vmcs(self) -> Option<u64> {
+    pub const fn vmcs(self) -> Option<u64> {
         match self.0.vmcs {
             NO_VMCS => None,
             x => Some(x),

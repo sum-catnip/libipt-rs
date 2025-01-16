@@ -13,25 +13,25 @@ impl Version {
 
     /// Major version number.
     #[must_use]
-    pub fn major(&self) -> u8 {
+    pub const fn major(&self) -> u8 {
         self.0.major
     }
 
     /// Minor version number.
     #[must_use]
-    pub fn minor(&self) -> u8 {
+    pub const fn minor(&self) -> u8 {
         self.0.minor
     }
 
     /// Patch level.
     #[must_use]
-    pub fn patch(&self) -> u16 {
+    pub const fn patch(&self) -> u16 {
         self.0.patch
     }
 
     /// Build number.
     #[must_use]
-    pub fn build(&self) -> u32 {
+    pub const fn build(&self) -> u32 {
         self.0.build
     }
 
