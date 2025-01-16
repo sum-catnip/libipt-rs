@@ -1,5 +1,23 @@
 use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_1;
 
+/// Tracing has been enabled
+#[derive(Clone, Copy, Debug)]
+pub struct Enabled(pub(super) pt_event__bindgen_ty_1__bindgen_ty_1);
+impl Enabled {
+    /// The address at which tracing resumes
+    #[must_use]
+    pub fn ip(&self) -> u64 {
+        self.0.ip
+    }
+
+    /// A flag indicating that tracing resumes from the IP
+    /// at which tracing had been disabled before.
+    #[must_use]
+    pub fn resumed(&self) -> bool {
+        self.0.resumed() > 0
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::super::Payload;
@@ -26,21 +44,5 @@ mod test {
             }
             _ => unreachable!("oof"),
         }
-    }
-}
-
-/// Tracing has been enabled
-#[derive(Clone, Copy, Debug)]
-pub struct Enabled(pub(super) pt_event__bindgen_ty_1__bindgen_ty_1);
-impl Enabled {
-    /// The address at which tracing resumes
-    pub fn ip(self) -> u64 {
-        self.0.ip
-    }
-
-    /// A flag indicating that tracing resumes from the IP
-    /// at which tracing had been disabled before.
-    pub fn resumed(self) -> bool {
-        self.0.resumed() > 0
     }
 }

@@ -1,54 +1,40 @@
-use crate::config::Config;
-use crate::error::{deref_ptresult, deref_ptresult_mut, ensure_ptok, extract_pterr, PtError};
+use crate::error::{ensure_ptok, extract_pterr, PtError};
 
-use std::marker::PhantomData;
-
+use crate::{EncoderDecoderBuilder, PtEncoderDecoder, PtErrorCode};
 use libipt_sys::{
-    pt_alloc_encoder, pt_enc_get_config, pt_enc_get_offset, pt_enc_next, pt_enc_sync_set,
-    pt_encoder, pt_free_encoder, pt_packet,
+    pt_alloc_encoder, pt_enc_get_offset, pt_enc_next, pt_enc_sync_set, pt_encoder, pt_free_encoder,
+    pt_packet,
 };
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::config::ConfigBuilder;
-    use crate::packet::Mnt;
-
-    #[test]
-    fn test_pktdec_alloc() {
-        let kek = &mut [1; 2];
-        Encoder::new(&mut ConfigBuilder::new(kek).unwrap().finish()).unwrap();
-    }
-
-    #[test]
-    fn test_pktdec_props() {
-        let kek = &mut [1; 2];
-        // this just checks memory safety for property access
-        // usage can be found in the integration tests
-        let mut p = Encoder::new(&mut ConfigBuilder::new(kek).unwrap().finish()).unwrap();
-
-        assert!(p.config().is_ok());
-        assert_eq!(p.offset().unwrap(), 0);
-        assert!(p.set_offset(6).is_err());
-        assert!(p.next(Mnt::new(5)).is_err());
-    }
-}
+use std::marker::PhantomData;
+use std::ptr::NonNull;
 
 #[derive(Debug)]
-pub struct Encoder<'a, T>(&'a mut pt_encoder, PhantomData<T>);
-impl<T> Encoder<'_, T> {
+pub struct Encoder<T> {
+    inner: NonNull<pt_encoder>,
+    phantom: PhantomData<T>,
+}
+
+impl<T> PtEncoderDecoder for Encoder<T> {
     /// Allocate an Intel PT packet encoder.
     ///
     /// The encoder will work on the buffer defined in @config, it shall contain raw trace data and remain valid for the lifetime of the encoder.
     /// The encoder starts at the beginning of the trace buffer.
-    pub fn new(cfg: &mut Config<T>) -> Result<Self, PtError> {
-        deref_ptresult_mut(unsafe { pt_alloc_encoder(cfg.0.to_mut()) })
-            .map(|x| Encoder::<T>(x, PhantomData))
-    }
+    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+        let inner = NonNull::new(unsafe { pt_alloc_encoder(&raw const builder.config) }).ok_or(
+            PtError::new(PtErrorCode::Internal, "Failed to allocate pt_encoder"),
+        )?;
 
-    pub fn config(&self) -> Result<Config<T>, PtError> {
-        deref_ptresult(unsafe { pt_enc_get_config(self.0) }).map(Config::from)
+        Ok(Self {
+            inner,
+            phantom: PhantomData,
+        })
     }
+}
+
+impl<T> Encoder<T> {
+    // pub fn config(&self) -> Result<Config<T>, PtError> {
+    //     deref_ptresult(unsafe { pt_enc_get_config(self.inner.as_ptr()) }).map(Config::from)
+    // }
 
     /// Get the current packet encoder position.
     ///
@@ -57,7 +43,7 @@ impl<T> Encoder<'_, T> {
     /// Returns Invalid if @offset is NULL.
     pub fn offset(&self) -> Result<u64, PtError> {
         let mut off = 0;
-        ensure_ptok(unsafe { pt_enc_get_offset(self.0, &mut off) }).map(|_| off)
+        ensure_ptok(unsafe { pt_enc_get_offset(self.inner.as_ptr(), &mut off) }).map(|_| off)
     }
 
     /// Encode an Intel PT packet.
@@ -69,7 +55,7 @@ impl<T> Encoder<'_, T> {
     /// Returns BadPacket if @packet's payload is invalid.
     /// Returns Eos if the encoder reached the end of the Intel PT buffer.
     pub fn next(&mut self, pck: impl Into<pt_packet>) -> Result<u32, PtError> {
-        extract_pterr(unsafe { pt_enc_next(self.0, &pck.into()) })
+        extract_pterr(unsafe { pt_enc_next(self.inner.as_ptr(), &pck.into()) })
     }
 
     /// Hard set synchronization point of an Intel PT packet encoder.
@@ -79,12 +65,41 @@ impl<T> Encoder<'_, T> {
     /// Returns Eos if the given offset is behind the end of the trace buffer.
     /// Returns Invalid if the encoder is NULL.
     pub fn set_offset(&mut self, offset: u64) -> Result<(), PtError> {
-        ensure_ptok(unsafe { pt_enc_sync_set(self.0, offset) })
+        ensure_ptok(unsafe { pt_enc_sync_set(self.inner.as_ptr(), offset) })
     }
 }
 
-impl<T> Drop for Encoder<'_, T> {
+impl<T> Drop for Encoder<T> {
     fn drop(&mut self) {
-        unsafe { pt_free_encoder(self.0) }
+        unsafe { pt_free_encoder(self.inner.as_ptr()) }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::packet::Mnt;
+
+    #[test]
+    fn test_pktdec_alloc() {
+        let mut kek = [1u8; 2];
+        let builder: EncoderDecoderBuilder<Encoder<()>> = Encoder::builder();
+        unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
+            .build()
+            .unwrap();
+    }
+
+    #[test]
+    fn test_pktdec_props() {
+        let mut kek = [1u8; 2];
+        let builder: EncoderDecoderBuilder<Encoder<()>> = Encoder::builder();
+        let mut p = unsafe { builder.buffer_from_raw(kek.as_mut_ptr(), kek.len()) }
+            .build()
+            .unwrap();
+
+        // assert!(p.config().is_ok());
+        assert_eq!(p.offset().unwrap(), 0);
+        assert!(p.set_offset(6).is_err());
+        assert!(p.next(Mnt::new(5)).is_err());
     }
 }

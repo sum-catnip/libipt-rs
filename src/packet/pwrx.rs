@@ -6,6 +6,7 @@ use libipt_sys::{pt_packet_pwrx, pt_packet_type_ppt_pwrx};
 pub struct Pwrx(pt_packet_pwrx);
 impl Pwrx {
     #[inline]
+    #[must_use]
     pub fn new(last: u8, deepest: u8, interrupt: bool, store: bool, autonomous: bool) -> Self {
         Pwrx(pt_packet_pwrx {
             last,
@@ -22,7 +23,8 @@ impl Pwrx {
 
     /// The core C-state at the time of the wake
     #[inline]
-    pub fn last(self) -> u8 {
+    #[must_use]
+    pub fn last(&self) -> u8 {
         self.0.last
     }
 
@@ -34,20 +36,22 @@ impl Pwrx {
 
     /// The deepest core C-state achieved during sleep
     #[inline]
-    pub fn deepest(self) -> u8 {
+    #[must_use]
+    pub fn deepest(&self) -> u8 {
         self.0.deepest
     }
 
     /// The deepest core C-state achieved during sleep
     #[inline]
     pub fn set_deepest(&mut self, deepest: u8) {
-        self.0.deepest = deepest
+        self.0.deepest = deepest;
     }
 
     /// The wake reason:
     /// due to external interrupt received.
     #[inline]
-    pub fn interrupt(self) -> bool {
+    #[must_use]
+    pub fn interrupt(&self) -> bool {
         self.0.interrupt() > 0
     }
 
@@ -55,7 +59,7 @@ impl Pwrx {
     /// due to external interrupt received.
     #[inline]
     pub fn set_interrupt(&mut self, interrupt: bool) {
-        self.0.set_interrupt(interrupt as u32)
+        self.0.set_interrupt(interrupt as u32);
     }
 
     /// The wake reason:
@@ -69,13 +73,14 @@ impl Pwrx {
     /// due to store to monitored address
     #[inline]
     pub fn set_store(&mut self, store: bool) {
-        self.0.set_store(store as u32)
+        self.0.set_store(store as u32);
     }
 
     /// The wake reason:
     /// due to h/w autonomous condition such as HDC
     #[inline]
-    pub fn autonomous(self) -> bool {
+    #[must_use]
+    pub fn autonomous(&self) -> bool {
         self.0.autonomous() > 0
     }
 
@@ -83,7 +88,7 @@ impl Pwrx {
     /// due to h/w autonomous condition such as HDC
     #[inline]
     pub fn set_autonomous(&mut self, autonomous: bool) {
-        self.0.set_autonomous(autonomous as u32)
+        self.0.set_autonomous(autonomous as u32);
     }
 }
 

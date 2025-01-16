@@ -6,20 +6,22 @@ use libipt_sys::{pt_packet_mnt, pt_packet_type_ppt_mnt};
 pub struct Mnt(pt_packet_mnt);
 impl Mnt {
     #[inline]
+    #[must_use]
     pub fn new(payload: u64) -> Self {
         Mnt(pt_packet_mnt { payload })
     }
 
-    #[inline]
     /// The raw payload
-    pub fn payload(self) -> u64 {
+    #[inline]
+    #[must_use]
+    pub fn payload(&self) -> u64 {
         self.0.payload
     }
 
     #[inline]
     /// The raw payload
     pub fn set_payload(&mut self, payload: u64) {
-        self.0.payload = payload
+        self.0.payload = payload;
     }
 }
 

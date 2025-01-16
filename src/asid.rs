@@ -1,5 +1,72 @@
 use libipt_sys::{pt_asid, pt_asid_no_cr3 as NO_CR3, pt_asid_no_vmcs as NO_VMCS};
-use std::mem;
+
+/// An Intel PT address space identifier.
+///
+/// This identifies a particular address space when adding file sections or
+/// when reading memory.
+#[derive(Clone, Copy, Debug)]
+pub struct Asid(pub(crate) pt_asid);
+impl Asid {
+    #[inline]
+    #[must_use]
+    pub fn new(cr3: Option<u64>, vmcs: Option<u64>) -> Self {
+        Asid(pt_asid {
+            size: size_of::<pt_asid>(),
+            cr3: cr3.unwrap_or(NO_CR3),
+            vmcs: vmcs.unwrap_or(NO_VMCS),
+        })
+    }
+
+    /// The CR3 value.
+    #[inline]
+    #[must_use]
+    pub const fn cr3(self) -> Option<u64> {
+        match self.0.cr3 {
+            NO_CR3 => None,
+            x => Some(x),
+        }
+    }
+
+    /// The CR3 value.
+    #[inline]
+    pub fn set_cr3(&mut self, cr3: u64) {
+        self.0.cr3 = cr3;
+    }
+
+    /// The VMCS Base address.
+    #[inline]
+    #[must_use]
+    pub const fn vmcs(self) -> Option<u64> {
+        match self.0.vmcs {
+            NO_VMCS => None,
+            x => Some(x),
+        }
+    }
+
+    /// The VMCS Base address.
+    #[inline]
+    pub fn set_vmcs(&mut self, vmcs: u64) {
+        self.0.vmcs = vmcs;
+    }
+}
+
+impl Default for Asid {
+    fn default() -> Self {
+        Asid::new(None, None)
+    }
+}
+
+impl From<pt_asid> for Asid {
+    fn from(asid: pt_asid) -> Self {
+        Asid(asid)
+    }
+}
+
+impl PartialEq for Asid {
+    fn eq(&self, other: &Self) -> bool {
+        self.cr3() == other.cr3() && self.vmcs() == other.vmcs()
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -65,70 +132,5 @@ mod test {
         assert_eq!(asid.cr3(), None);
         assert_eq!(asid2.cr3(), Some(666));
         assert_eq!(raw.cr3, NO_CR3);
-    }
-}
-
-/// An Intel PT address space identifier.
-///
-/// This identifies a particular address space when adding file sections or
-/// when reading memory.
-#[derive(Clone, Copy, Debug)]
-pub struct Asid(pub(crate) pt_asid);
-impl Asid {
-    #[inline]
-    pub fn new(cr3: Option<u64>, vmcs: Option<u64>) -> Self {
-        Asid(pt_asid {
-            size: mem::size_of::<pt_asid>(),
-            cr3: cr3.unwrap_or(NO_CR3),
-            vmcs: vmcs.unwrap_or(NO_VMCS),
-        })
-    }
-
-    /// The CR3 value.
-    #[inline]
-    pub fn cr3(self) -> Option<u64> {
-        match self.0.cr3 {
-            NO_CR3 => None,
-            x => Some(x),
-        }
-    }
-
-    /// The CR3 value.
-    #[inline]
-    pub fn set_cr3(&mut self, cr3: u64) {
-        self.0.cr3 = cr3
-    }
-
-    /// The VMCS Base address.
-    #[inline]
-    pub fn vmcs(self) -> Option<u64> {
-        match self.0.vmcs {
-            NO_VMCS => None,
-            x => Some(x),
-        }
-    }
-
-    /// The VMCS Base address.
-    #[inline]
-    pub fn set_vmcs(&mut self, vmcs: u64) {
-        self.0.vmcs = vmcs
-    }
-}
-
-impl Default for Asid {
-    fn default() -> Self {
-        Asid::new(None, None)
-    }
-}
-
-impl From<pt_asid> for Asid {
-    fn from(asid: pt_asid) -> Self {
-        Asid(asid)
-    }
-}
-
-impl PartialEq for Asid {
-    fn eq(&self, other: &Self) -> bool {
-        self.cr3() == other.cr3() && self.vmcs() == other.vmcs()
     }
 }

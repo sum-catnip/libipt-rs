@@ -40,6 +40,7 @@ pub enum Compression {
 pub struct Tip(pt_packet_ip);
 impl Tip {
     #[inline]
+    #[must_use]
     pub fn new(tip: u64, compression: Compression) -> Self {
         Tip(pt_packet_ip {
             ip: tip,
@@ -49,18 +50,21 @@ impl Tip {
 
     /// Zero-extended payload ip
     #[inline]
-    pub fn tip(self) -> u64 {
+    #[must_use]
+    pub fn tip(&self) -> u64 {
         self.0.ip
     }
     /// Zero-extended payload ip
     #[inline]
     pub fn set_tip(&mut self, ip: u64) {
-        self.0.ip = ip
+        self.0.ip = ip;
     }
 
     /// IP compression
     #[inline]
-    pub fn compression(self) -> Compression {
+    #[must_use]
+    #[expect(clippy::missing_panics_doc)]
+    pub fn compression(&self) -> Compression {
         // if this tryfrom panics, there is a bug
         // in either libipt or this crate.
         Compression::try_from(self.0.ipc as u32).unwrap()
@@ -69,7 +73,7 @@ impl Tip {
     /// IP compression
     #[inline]
     pub fn set_compression(&mut self, compression: Compression) {
-        self.0.ipc = u32::from(compression) as pt_ip_compression
+        self.0.ipc = u32::from(compression) as pt_ip_compression;
     }
 }
 
@@ -79,6 +83,7 @@ impl Tip {
 pub struct Fup(pt_packet_ip);
 impl Fup {
     #[inline]
+    #[must_use]
     pub fn new(fup: u64, compression: Compression) -> Self {
         Fup(pt_packet_ip {
             ip: fup,
@@ -88,18 +93,21 @@ impl Fup {
 
     /// Zero-extended payload ip
     #[inline]
-    pub fn fup(self) -> u64 {
+    #[must_use]
+    pub fn fup(&self) -> u64 {
         self.0.ip
     }
     /// Zero-extended payload ip
     #[inline]
     pub fn set_fup(&mut self, fup: u64) {
-        self.0.ip = fup
+        self.0.ip = fup;
     }
 
     /// IP compression
     #[inline]
-    pub fn compression(self) -> Compression {
+    #[must_use]
+    #[expect(clippy::missing_panics_doc)]
+    pub fn compression(&self) -> Compression {
         // if this tryfrom panics, there is a bug
         // in either libipt or this crate.
         Compression::try_from(self.0.ipc as u32).unwrap()
@@ -118,6 +126,7 @@ impl Fup {
 pub struct TipPge(pt_packet_ip);
 impl TipPge {
     #[inline]
+    #[must_use]
     pub fn new(tippge: u64, compression: Compression) -> Self {
         TipPge(pt_packet_ip {
             ip: tippge,
@@ -127,18 +136,21 @@ impl TipPge {
 
     /// Zero-extended payload ip
     #[inline]
-    pub fn tippge(self) -> u64 {
+    #[must_use]
+    pub fn tippge(&self) -> u64 {
         self.0.ip
     }
     /// Zero-extended payload ip
     #[inline]
     pub fn set_tippge(&mut self, tippge: u64) {
-        self.0.ip = tippge
+        self.0.ip = tippge;
     }
 
     /// IP compression
     #[inline]
-    pub fn compression(self) -> Compression {
+    #[must_use]
+    #[expect(clippy::missing_panics_doc)]
+    pub fn compression(&self) -> Compression {
         // if this tryfrom panics, there is a bug
         // in either libipt or this crate.
         Compression::try_from(self.0.ipc as u32).unwrap()
@@ -147,7 +159,7 @@ impl TipPge {
     /// IP compression
     #[inline]
     pub fn set_compression(&mut self, compression: Compression) {
-        self.0.ipc = u32::from(compression) as pt_ip_compression
+        self.0.ipc = u32::from(compression) as pt_ip_compression;
     }
 }
 
@@ -157,6 +169,7 @@ impl TipPge {
 pub struct TipPgd(pt_packet_ip);
 impl TipPgd {
     #[inline]
+    #[must_use]
     pub fn new(tippgd: u64, compression: Compression) -> Self {
         TipPgd(pt_packet_ip {
             ip: tippgd,
@@ -166,18 +179,21 @@ impl TipPgd {
 
     /// Zero-extended payload ip
     #[inline]
-    pub fn tippgd(self) -> u64 {
+    #[must_use]
+    pub fn tippgd(&self) -> u64 {
         self.0.ip
     }
     /// Zero-extended payload ip
     #[inline]
     pub fn set_tippgd(&mut self, tippgd: u64) {
-        self.0.ip = tippgd
+        self.0.ip = tippgd;
     }
 
     /// IP compression
     #[inline]
-    pub fn compression(self) -> Compression {
+    #[must_use]
+    #[expect(clippy::missing_panics_doc)]
+    pub fn compression(&self) -> Compression {
         // if this tryfrom panics, there is a bug
         // in either libipt or this crate.
         Compression::try_from(self.0.ipc as u32).unwrap()
@@ -186,7 +202,7 @@ impl TipPgd {
     /// IP compression
     #[inline]
     pub fn set_compression(&mut self, compression: Compression) {
-        self.0.ipc = u32::from(compression) as pt_ip_compression
+        self.0.ipc = u32::from(compression) as pt_ip_compression;
     }
 }
 

@@ -66,6 +66,7 @@ pub enum Payload {
 pub struct Mode(pt_packet_mode);
 impl Mode {
     #[inline]
+    #[must_use]
     pub fn new(payload: Payload) -> Self {
         // i know this looks a bit wonky but its the fastest way
         // to convert the bits enum into the union
@@ -84,7 +85,8 @@ impl Mode {
     /// Gets the payload of this packet as an enum.
     /// Intel calls this field `bits`
     #[inline]
-    pub fn payload(self) -> Payload {
+    #[must_use]
+    pub fn payload(&self) -> Payload {
         match self.0.leaf {
             PT_MODE_LEAF_PT_MOL_EXEC => Payload::Exec(
                 Exec::from_bits(unsafe { self.0.bits.exec._bitfield_1.get(0, 2) } as u32).unwrap(),

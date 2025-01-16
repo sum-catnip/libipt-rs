@@ -3,37 +3,6 @@ use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 use std::mem;
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_addrfilter() {
-        let filter = AddrFilterBuilder::new()
-            .addr0(AddrRange::new(1, 2, AddrConfig::DISABLED))
-            .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
-            .addr2(AddrRange::new(5, 6, AddrConfig::STOP))
-            .addr3(AddrRange::new(7, 8, AddrConfig::DISABLED))
-            .finish();
-
-        assert_eq!(filter.addr0().a(), 1);
-        assert_eq!(filter.addr0().b(), 2);
-        assert_eq!(filter.addr0().cfg(), AddrConfig::DISABLED);
-
-        assert_eq!(filter.addr1().a(), 3);
-        assert_eq!(filter.addr1().b(), 4);
-        assert_eq!(filter.addr1().cfg(), AddrConfig::FILTER);
-
-        assert_eq!(filter.addr2().a(), 5);
-        assert_eq!(filter.addr2().b(), 6);
-        assert_eq!(filter.addr2().cfg(), AddrConfig::STOP);
-
-        assert_eq!(filter.addr3().a(), 7);
-        assert_eq!(filter.addr3().b(), 8);
-        assert_eq!(filter.addr3().cfg(), AddrConfig::DISABLED);
-    }
-}
-
 #[derive(Clone, Copy, TryFromPrimitive, PartialEq, Debug)]
 #[repr(u32)]
 pub enum AddrConfig {
@@ -55,7 +24,7 @@ pub struct AddrRange {
 
 impl AddrRange {
     #[inline]
-    pub fn new(a: u64, b: u64, cfg: AddrConfig) -> Self {
+    pub const fn new(a: u64, b: u64, cfg: AddrConfig) -> Self {
         AddrRange { a, b, cfg }
     }
 
@@ -77,17 +46,17 @@ impl AddrRange {
 
     /// This corresponds to the IA32_RTIT_ADDRn_A MSRs
     #[inline]
-    pub fn set_a(&mut self, a: u64) {
+    pub const fn set_a(&mut self, a: u64) {
         self.a = a;
     }
     /// This corresponds to the IA32_RTIT_ADDRn_B MSRs
     #[inline]
-    pub fn set_b(&mut self, b: u64) {
+    pub const fn set_b(&mut self, b: u64) {
         self.b = b;
     }
     /// this corresponds to the respective fields in IA32_RTIT_CTL MSR
     #[inline]
-    pub fn set_cfg(&mut self, cfg: AddrConfig) {
+    pub const fn set_cfg(&mut self, cfg: AddrConfig) {
         self.cfg = cfg
     }
 }
@@ -96,6 +65,10 @@ impl AddrRange {
 #[derive(Debug, Clone, Copy)]
 pub struct AddrFilter(pub(super) pt_conf_addr_filter);
 impl AddrFilter {
+    pub const fn builder() -> AddrFilterBuilder {
+        AddrFilterBuilder::new()
+    }
+
     #[inline]
     pub fn addr0(&self) -> AddrRange {
         unsafe {
@@ -150,7 +123,7 @@ impl Default for AddrFilterBuilder {
 }
 
 impl AddrFilterBuilder {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         unsafe { mem::zeroed() }
     }
 
@@ -192,5 +165,36 @@ impl AddrFilterBuilder {
 
     pub fn finish(&self) -> AddrFilter {
         AddrFilter(self.0)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_addrfilter() {
+        let filter = AddrFilterBuilder::new()
+            .addr0(AddrRange::new(1, 2, AddrConfig::DISABLED))
+            .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
+            .addr2(AddrRange::new(5, 6, AddrConfig::STOP))
+            .addr3(AddrRange::new(7, 8, AddrConfig::DISABLED))
+            .finish();
+
+        assert_eq!(filter.addr0().a(), 1);
+        assert_eq!(filter.addr0().b(), 2);
+        assert_eq!(filter.addr0().cfg(), AddrConfig::DISABLED);
+
+        assert_eq!(filter.addr1().a(), 3);
+        assert_eq!(filter.addr1().b(), 4);
+        assert_eq!(filter.addr1().cfg(), AddrConfig::FILTER);
+
+        assert_eq!(filter.addr2().a(), 5);
+        assert_eq!(filter.addr2().b(), 6);
+        assert_eq!(filter.addr2().cfg(), AddrConfig::STOP);
+
+        assert_eq!(filter.addr3().a(), 7);
+        assert_eq!(filter.addr3().b(), 8);
+        assert_eq!(filter.addr3().cfg(), AddrConfig::DISABLED);
     }
 }

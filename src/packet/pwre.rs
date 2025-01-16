@@ -6,6 +6,7 @@ use libipt_sys::{__BindgenBitfieldUnit, pt_packet_pwre, pt_packet_type_ppt_pwre}
 pub struct Pwre(pt_packet_pwre);
 impl Pwre {
     #[inline]
+    #[must_use]
     pub fn new(state: u8, substate: u8, hw: bool) -> Self {
         Pwre(pt_packet_pwre {
             state,
@@ -18,38 +19,41 @@ impl Pwre {
 
     /// The resolved thread C-state
     #[inline]
-    pub fn state(self) -> u8 {
+    #[must_use]
+    pub fn state(&self) -> u8 {
         self.0.state
     }
 
     /// The resolved thread C-state
     #[inline]
     pub fn set_state(&mut self, state: u8) {
-        self.0.state = state
+        self.0.state = state;
     }
 
     /// The resolved thread sub C-state
     #[inline]
-    pub fn substate(self) -> u8 {
+    #[must_use]
+    pub fn substate(&self) -> u8 {
         self.0.sub_state
     }
 
     /// The resolved thread sub C-state
     #[inline]
     pub fn set_substate(&mut self, substate: u8) {
-        self.0.sub_state = substate
+        self.0.sub_state = substate;
     }
 
     /// A flag indicating whether the C-state entry was initiated by h/w
     #[inline]
-    pub fn hw(self) -> bool {
+    #[must_use]
+    pub fn hw(&self) -> bool {
         self.0.hw() > 0
     }
 
     /// A flag indicating whether the C-state entry was initiated by h/w
     #[inline]
     pub fn set_hw(&mut self, hw: bool) {
-        self.0.set_hw(hw as u32)
+        self.0.set_hw(hw as u32);
     }
 }
 

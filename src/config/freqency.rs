@@ -1,27 +1,3 @@
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_freq_props() {
-        let mut freq = Frequency::new(1, 2, 3, 4);
-        assert_eq!(freq.mtc(), 1);
-        assert_eq!(freq.nom(), 2);
-        assert_eq!(freq.ctc(), 3);
-        assert_eq!(freq.tsc(), 4);
-
-        freq.set_mtc(5);
-        freq.set_nom(6);
-        freq.set_ctc(7);
-        freq.set_tsc(8);
-
-        assert_eq!(freq.mtc(), 5);
-        assert_eq!(freq.nom(), 6);
-        assert_eq!(freq.ctc(), 7);
-        assert_eq!(freq.tsc(), 8);
-    }
-}
-
 /// Frequency values used for timing packets
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Frequency {
@@ -72,8 +48,9 @@ impl Frequency {
     /// * `nom` - The nominal or max non-turbo frequency
     /// * `ctc` - The value of ebx on a cpuid call for leaf 0x15
     /// * `tsc` - The value of eax on a cpuid call for leaf 0x15
+    #[must_use]
     #[inline]
-    pub fn new(mtc: u8, nom: u8, ctc: u32, tsc: u32) -> Self {
+    pub const fn new(mtc: u8, nom: u8, ctc: u32, tsc: u32) -> Self {
         Frequency { mtc, nom, ctc, tsc }
     }
 
@@ -141,5 +118,29 @@ impl Frequency {
     #[inline]
     pub fn set_tsc(&mut self, tsc: u32) {
         self.tsc = tsc
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_freq_props() {
+        let mut freq = Frequency::new(1, 2, 3, 4);
+        assert_eq!(freq.mtc(), 1);
+        assert_eq!(freq.nom(), 2);
+        assert_eq!(freq.ctc(), 3);
+        assert_eq!(freq.tsc(), 4);
+
+        freq.set_mtc(5);
+        freq.set_nom(6);
+        freq.set_ctc(7);
+        freq.set_tsc(8);
+
+        assert_eq!(freq.mtc(), 5);
+        assert_eq!(freq.nom(), 6);
+        assert_eq!(freq.ctc(), 7);
+        assert_eq!(freq.tsc(), 8);
     }
 }

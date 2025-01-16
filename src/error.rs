@@ -1,9 +1,7 @@
-use num_enum::TryFromPrimitive;
-use std::convert::TryFrom;
-use std::error::Error;
-use std::ffi::CStr;
-use std::fmt::{Display, Formatter};
+// Certain casts are required only on Linux. Inform Clippy to ignore them.
+#![allow(clippy::unnecessary_cast)]
 
+use crate::Status;
 use libipt_sys::{pt_error_code, pt_errstr};
 use libipt_sys::{
     pt_error_code_pte_bad_config, pt_error_code_pte_bad_context, pt_error_code_pte_bad_cpu,
@@ -17,6 +15,11 @@ use libipt_sys::{
     pt_error_code_pte_nosync, pt_error_code_pte_not_supported, pt_error_code_pte_ok,
     pt_error_code_pte_overflow, pt_error_code_pte_retstack_empty,
 };
+use num_enum::{TryFromPrimitive, TryFromPrimitiveError};
+use std::convert::TryFrom;
+use std::error::Error;
+use std::ffi::CStr;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Copy, Debug, TryFromPrimitive, PartialEq)]
 #[repr(i32)]
@@ -90,7 +93,7 @@ pub struct PtError {
 
 impl PtError {
     #[inline]
-    pub(crate) fn new(code: PtErrorCode, msg: &'static str) -> Self {
+    pub(crate) const fn new(code: PtErrorCode, msg: &'static str) -> Self {
         PtError { code, msg }
     }
 
@@ -112,13 +115,13 @@ impl PtError {
 
     /// get the pt error code
     #[inline]
-    pub fn code(self) -> PtErrorCode {
+    pub const fn code(self) -> PtErrorCode {
         self.code
     }
 
     /// get a human readable error message
     #[inline]
-    pub fn msg(self) -> &'static str {
+    pub const fn msg(self) -> &'static str {
         self.msg
     }
 }
@@ -136,45 +139,37 @@ impl Error for PtError {
     }
 }
 
-/// Dereferences a pointer returned by one of the libipt functions.
-/// Checks the pointer for NULL.
-/// Negative values will be translated into the appropriate error value.
-#[inline]
-pub(crate) fn deref_ptresult<T>(res: *const T) -> Result<&'static T, PtError> {
-    match res as isize {
-        // null reference, no error info
-        0 => Err(PtError::new(PtErrorCode::NoInfo, "No further information")),
-        x if x < 0 => Err(PtError::from_code(x as i32)),
-        _ => Ok(unsafe { res.as_ref().unwrap() }),
+impl<T> From<TryFromPrimitiveError<T>> for PtError
+where
+    T: TryFromPrimitive,
+{
+    fn from(_: TryFromPrimitiveError<T>) -> Self {
+        PtError::new(
+            PtErrorCode::Internal,
+            "Internal conversion from libipt raw value to enum failed.",
+        )
     }
 }
 
-/// Dereferences a pointer returned by one of the libipt functions.
-/// Checks the pointer for NULL.
-/// Negative values will be translated into the appropriate error value.
-#[inline]
-pub(crate) fn deref_ptresult_mut<T>(res: *mut T) -> Result<&'static mut T, PtError> {
-    match res as isize {
-        // null reference, no error info
-        0 => Err(PtError::new(PtErrorCode::NoInfo, "No further information")),
-        x if x < 0 => Err(PtError::from_code(x as i32)),
-        _ => Ok(unsafe { res.as_mut().unwrap() }),
-    }
-}
-
-// Translates a pt error code into a result enum.
-// Discards the error code
+/// Translates a pt error code into a result enum.
+/// Discards the error code
 #[inline]
 pub(crate) fn ensure_ptok(code: i32) -> Result<(), PtError> {
     extract_pterr(code).map(|_| ())
 }
 
-// Turns a negative code into a PtErr.
-// Returns the code as an unsigned int
+/// Turns a negative code into a PtErr.
+/// Returns the code as an unsigned int
 #[inline]
 pub(crate) fn extract_pterr(code: i32) -> Result<u32, PtError> {
     match code {
         x if x >= 0 => Ok(code as u32),
         _ => Err(PtError::from_code(code)),
     }
+}
+
+/// Turns a negative code into a PtErr and a positive code into a Status
+#[inline]
+pub(crate) fn extract_status_or_pterr(code: i32) -> Result<Status, PtError> {
+    extract_pterr(code).map(Status::from_bits_or_pterror)?
 }
