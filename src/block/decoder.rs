@@ -5,7 +5,7 @@ use crate::event::Event;
 use crate::image::Image;
 use crate::status::Status;
 
-use crate::{EncoderDecoderBuilder, PtEncoderDecoder};
+use crate::config::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
     pt_asid, pt_blk_alloc_decoder, pt_blk_asid, pt_blk_core_bus_ratio, pt_blk_event,
     pt_blk_free_decoder, pt_blk_get_image, pt_blk_get_offset, pt_blk_get_sync_offset, pt_blk_next,
@@ -50,7 +50,7 @@ impl PtEncoderDecoder for BlockDecoder<'_> {
     }
 }
 
-impl<'a> BlockDecoder<'a> {
+impl BlockDecoder<'_> {
     /// Return the current address space identifier.
     ///
     /// On success, provides the current address space identifier in @asid.
@@ -144,32 +144,6 @@ impl<'a> BlockDecoder<'a> {
         Ok((Block(blk), status))
     }
 
-    /// Set the traced image.
-    ///
-    /// Sets the image that the decoder uses for reading memory to image.
-    /// If image is None, sets the image to the decoder's default image.
-    /// Only one image can be active at any time.
-    pub fn set_image(&mut self, img: Option<&'a mut Image>) -> Result<(), PtError> {
-        match img {
-            None => {
-                ensure_ptok(unsafe { pt_blk_set_image(self.inner.as_ptr(), ptr::null_mut()) })?;
-                self.custom_image = None;
-                self.default_image =
-                    unsafe { Image::from_borrowed_raw(pt_blk_get_image(self.inner.as_ptr())) }?;
-            }
-            Some(i) => {
-                ensure_ptok(unsafe { pt_blk_set_image(self.inner.as_ptr(), i.inner.as_ptr()) })?;
-                self.custom_image = Some(i);
-                debug_assert_eq!(
-                    unsafe { pt_blk_get_image(self.inner.as_ptr()) },
-                    self.custom_image.as_ref().unwrap().inner.as_ptr()
-                );
-            }
-        };
-
-        Ok(())
-    }
-
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
         extract_pterr(unsafe { pt_blk_sync_backward(self.inner.as_ptr()) })
             .map(|s| Status::from_bits(s).unwrap())
@@ -221,6 +195,34 @@ impl<'a> BlockDecoder<'a> {
             pt_blk_time(self.inner.as_ptr(), &mut time, &mut lost_mtc, &mut lost_cyc)
         })
         .map(|_| (time, lost_mtc, lost_cyc))
+    }
+}
+
+impl<'a> BlockDecoder<'a> {
+    /// Set the traced image.
+    ///
+    /// Sets the image that the decoder uses for reading memory to image.
+    /// If image is None, sets the image to the decoder's default image.
+    /// Only one image can be active at any time.
+    pub fn set_image(&mut self, img: Option<&'a mut Image>) -> Result<(), PtError> {
+        match img {
+            None => {
+                ensure_ptok(unsafe { pt_blk_set_image(self.inner.as_ptr(), ptr::null_mut()) })?;
+                self.custom_image = None;
+                self.default_image =
+                    unsafe { Image::from_borrowed_raw(pt_blk_get_image(self.inner.as_ptr())) }?;
+            }
+            Some(i) => {
+                ensure_ptok(unsafe { pt_blk_set_image(self.inner.as_ptr(), i.inner.as_ptr()) })?;
+                self.custom_image = Some(i);
+                debug_assert_eq!(
+                    unsafe { pt_blk_get_image(self.inner.as_ptr()) },
+                    self.custom_image.as_ref().unwrap().inner.as_ptr()
+                );
+            }
+        };
+
+        Ok(())
     }
 }
 

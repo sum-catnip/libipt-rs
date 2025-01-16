@@ -1,9 +1,11 @@
 use super::Insn;
 use crate::error::{ensure_ptok, extract_pterr, extract_status_or_pterr, PtError, PtErrorCode};
 use crate::event::Event;
-use crate::Image;
-use crate::Status;
-use crate::{Asid, EncoderDecoderBuilder, PtEncoderDecoder};
+use crate::image::Image;
+use crate::status::Status;
+use crate::asid::Asid;
+use crate::config::EncoderDecoderBuilder;
+use crate::config::PtEncoderDecoder;
 
 use libipt_sys::{
     pt_asid, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio,

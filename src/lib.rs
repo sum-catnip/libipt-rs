@@ -7,15 +7,12 @@
 /// a query decoder (see pt_qry_alloc_decoder(3)),
 /// or an instruction flow decoder (see pt_insn_alloc_decoder(3)).
 pub mod config;
-pub use config::*;
 
 /// The library uses a single error enum for all layers.
 ///
 /// Not all errors may occur on every layer.
 /// Every API function specifies the errors it may return. (not accurate!)
 pub mod error;
-pub use error::PtError;
-pub use error::PtErrorCode;
 
 /// This layer deals with Intel PT packet encoding and decoding.
 ///
@@ -39,9 +36,9 @@ pub mod insn;
 
 mod version;
 pub use version::Version;
-mod image;
-pub use image::*;
-mod asid;
-pub use asid::Asid;
-mod status;
-pub use status::Status;
+
+pub mod image;
+
+pub mod asid;
+
+pub mod status;

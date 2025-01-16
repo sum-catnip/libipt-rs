@@ -8,7 +8,7 @@ use libipt_sys::{
 use std::mem;
 
 use crate::error::ensure_ptok;
-use crate::PtError;
+use crate::error::PtError;
 use bitflags::bitflags;
 
 bitflags! {

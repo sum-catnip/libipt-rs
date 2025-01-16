@@ -5,7 +5,7 @@ mod iscache;
 pub use image::*;
 pub use iscache::*;
 
-use crate::{PtError, PtErrorCode};
+use crate::error::{PtError, PtErrorCode};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 

@@ -1,5 +1,5 @@
+use libipt::config::{Cpu, PtEncoderDecoder};
 use libipt::packet::*;
-use libipt::{Cpu, PtEncoderDecoder};
 
 #[test]
 fn test_encoder_all_packets() {

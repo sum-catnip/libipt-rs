@@ -286,7 +286,8 @@ impl Image {
         vaddr: u64,
     ) -> Result<(), PtError> {
         let cfilename = str_to_cstring_pterror(filename)?;
-
+        // todo: BUG!! the asid must outlive the image... create an owned hashmap to avoid annoying
+        // lifetime constraint?
         ensure_ptok(unsafe {
             pt_image_add_file(
                 self.inner.as_ptr(),
@@ -383,7 +384,7 @@ mod test {
         assert!(i.name().is_none());
     }
 
-    fn img_with_file<'a>() -> Image {
+    fn img_with_file() -> Image {
         let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
             .iter()
             .collect();
@@ -439,8 +440,9 @@ mod test {
         let mut c = SectionCache::new(None).unwrap();
         let isid = c.add_file(file.to_str().unwrap(), 5, 15, 0x1337).unwrap();
         let mut i = img_with_file();
-        i.add_cached(Rc::new(c), isid, Some(&Asid::new(Some(3), Some(4))))
+        let asid = Asid::new(Some(3), Some(4));
+        i.add_cached(Rc::new(c), isid, Some(&asid))
             .unwrap();
-        assert_eq!(i.remove_by_asid(&Asid::new(Some(3), Some(4))).unwrap(), 1);
+        assert_eq!(i.remove_by_asid(&asid).unwrap(), 1);
     }
 }
