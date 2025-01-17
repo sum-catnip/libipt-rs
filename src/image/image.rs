@@ -6,6 +6,7 @@ use libipt_sys::{
     pt_image_free, pt_image_name, pt_image_remove_by_asid, pt_image_remove_by_filename,
     pt_image_set_callback,
 };
+use std::collections::HashSet;
 use std::ffi::c_void;
 use std::ptr;
 use std::ptr::NonNull;
@@ -103,6 +104,7 @@ pub struct Image {
     // Any read data callback set by this `Image` instance.
     callback: Option<BoxedCallback>,
     caches: Vec<Rc<SectionCache>>,
+    asids: HashSet<Asid>,
 }
 
 impl Image {
@@ -129,6 +131,7 @@ impl Image {
             inner_is_owned: true,
             callback: None,
             caches: Vec::new(),
+            asids: HashSet::new(),
         })
     }
 
@@ -150,6 +153,7 @@ impl Image {
             inner_is_owned: false,
             callback: None,
             caches: Vec::new(),
+            asids: HashSet::new(),
         })
     }
 
@@ -166,7 +170,11 @@ impl Image {
     /// Specify the same @asid that was used for adding sections.
     /// Returns the number of removed sections on success.
     pub fn remove_by_asid(&mut self, asid: &Asid) -> Result<u32, PtError> {
-        extract_pterr(unsafe { pt_image_remove_by_asid(self.inner.as_ptr(), &raw const asid.0) })
+        let res = extract_pterr(unsafe {
+            pt_image_remove_by_asid(self.inner.as_ptr(), &raw const asid.0)
+        })?;
+        self.asids.remove(asid);
+        Ok(res)
     }
 
     /// Remove all sections loaded from a file.
@@ -221,6 +229,7 @@ impl Image {
             })?;
 
         self.caches.extend_from_slice(&src.caches);
+        self.asids.extend(&src.asids);
         Ok(res)
     }
 
@@ -237,9 +246,12 @@ impl Image {
         isid: u32,
         asid: Option<&Asid>,
     ) -> Result<(), PtError> {
-        let asid_ptr = match asid {
-            None => ptr::null(),
-            Some(a) => &raw const a.0,
+        let asid_ptr = if let Some(a) = asid {
+            // fixme: use get_or_insert once stable (if ever)
+            self.asids.insert(*a);
+            &raw const self.asids.get(a).unwrap().0
+        } else {
+            ptr::null()
         };
         let res = ensure_ptok(unsafe {
             pt_image_add_cached(
@@ -255,15 +267,14 @@ impl Image {
             debug_assert_ne!(
                 e.code(),
                 PtErrorCode::Invalid,
-                "pt_image_copy returned -pte_invalid"
+                "pt_image_add_cached returned -pte_invalid"
             );
-        });
-
-        if res.is_ok() {
-            self.caches.push(iscache);
+        })?;
+        self.caches.push(iscache);
+        if let Some(a) = asid {
+            self.asids.insert(*a);
         }
-
-        res
+        Ok(res)
     }
 
     /// Add a new file section to the traced memory image.
@@ -282,25 +293,31 @@ impl Image {
         filename: &str,
         offset: u64,
         size: u64,
-        asid: Option<Asid>,
+        asid: Option<&Asid>,
         vaddr: u64,
     ) -> Result<(), PtError> {
         let cfilename = str_to_cstring_pterror(filename)?;
-        // todo: BUG!! the asid must outlive the image... create an owned hashmap to avoid annoying
-        // lifetime constraint?
+        let asid_ptr = if let Some(a) = asid {
+            // fixme: use get_or_insert once stable (if ever)
+            self.asids.insert(*a);
+            &raw const self.asids.get(a).unwrap().0
+        } else {
+            ptr::null()
+        };
         ensure_ptok(unsafe {
             pt_image_add_file(
                 self.inner.as_ptr(),
                 cfilename.as_ptr(),
                 offset,
                 size,
-                match asid {
-                    Some(a) => &a.0,
-                    None => ptr::null(),
-                },
+                asid_ptr,
                 vaddr,
             )
-        })
+        })?;
+        if let Some(a) = asid {
+            self.asids.insert(*a);
+        }
+        Ok(())
     }
 }
 
@@ -391,7 +408,7 @@ mod test {
 
         let mut i = Image::new(None).unwrap();
         let asid = Asid::new(Some(1), Some(2));
-        i.add_file(file.to_str().unwrap(), 3, 10, Some(asid), 0x123)
+        i.add_file(file.to_str().unwrap(), 3, 10, Some(&asid), 0x123)
             .unwrap();
         i
     }
@@ -441,8 +458,7 @@ mod test {
         let isid = c.add_file(file.to_str().unwrap(), 5, 15, 0x1337).unwrap();
         let mut i = img_with_file();
         let asid = Asid::new(Some(3), Some(4));
-        i.add_cached(Rc::new(c), isid, Some(&asid))
-            .unwrap();
+        i.add_cached(Rc::new(c), isid, Some(&asid)).unwrap();
         assert_eq!(i.remove_by_asid(&asid).unwrap(), 1);
     }
 }

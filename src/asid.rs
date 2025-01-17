@@ -4,7 +4,7 @@ use libipt_sys::{pt_asid, pt_asid_no_cr3 as NO_CR3, pt_asid_no_vmcs as NO_VMCS};
 ///
 /// This identifies a particular address space when adding file sections or
 /// when reading memory.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct Asid(pub(crate) pt_asid);
 impl Asid {
     #[inline]
@@ -53,18 +53,6 @@ impl Asid {
 impl Default for Asid {
     fn default() -> Self {
         Asid::new(None, None)
-    }
-}
-
-impl From<pt_asid> for Asid {
-    fn from(asid: pt_asid) -> Self {
-        Asid(asid)
-    }
-}
-
-impl PartialEq for Asid {
-    fn eq(&self, other: &Self) -> bool {
-        self.cr3() == other.cr3() && self.vmcs() == other.vmcs()
     }
 }
 
@@ -126,7 +114,7 @@ mod test {
         assert_eq!(raw.cr3, NO_CR3);
         assert_eq!(raw.vmcs, NO_VMCS);
 
-        let mut asid2 = Asid::from(raw);
+        let mut asid2 = Asid(raw);
         asid2.set_cr3(666);
 
         assert_eq!(asid.cr3(), None);
