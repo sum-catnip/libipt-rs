@@ -12,7 +12,7 @@ use libipt_sys::{
     pt_blk_get_sync_offset, pt_blk_next, pt_blk_set_image, pt_blk_sync_backward,
     pt_blk_sync_forward, pt_blk_sync_set, pt_blk_time, pt_block, pt_block_decoder, pt_event,
 };
-use std::mem;
+use std::mem::MaybeUninit;
 use std::ptr;
 use std::ptr::NonNull;
 
@@ -54,15 +54,11 @@ impl BlockDecoder<'_> {
     /// On success, provides the current address space identifier in @asid.
     /// Returns Asid on success, a `PtError` otherwise.
     pub fn asid(&self) -> Result<Asid, PtError> {
-        let mut a: Asid = Default::default();
-        unsafe {
-            ensure_ptok(pt_blk_asid(
-                self.inner.as_ptr(),
-                &mut a.0,
-                size_of::<pt_asid>(),
-            ))?;
-        }
-        Ok(a)
+        let mut asid = MaybeUninit::<pt_asid>::uninit();
+        ensure_ptok(unsafe {
+            pt_blk_asid(self.inner.as_ptr(), asid.as_mut_ptr(), size_of::<pt_asid>())
+        })?;
+        Ok(Asid(unsafe { asid.assume_init() }))
     }
 
     /// Return the current core bus ratio.
@@ -71,8 +67,11 @@ impl BlockDecoder<'_> {
     /// The ratio is defined as core cycles per bus clock cycle.
     /// Returns `NoCbr` if there has not been a CBR packet.
     pub fn core_bus_ratio(&self) -> Result<u32, PtError> {
-        let mut cbr: u32 = 0;
-        ensure_ptok(unsafe { pt_blk_core_bus_ratio(self.inner.as_ptr(), &mut cbr) }).map(|_| cbr)
+        let mut cbr = MaybeUninit::<u32>::uninit();
+        unsafe {
+            ensure_ptok(pt_blk_core_bus_ratio(self.inner.as_ptr(), cbr.as_mut_ptr()))
+                .map(|_| cbr.assume_init())
+        }
     }
 
     /// Get the next pending event.
@@ -80,11 +79,11 @@ impl BlockDecoder<'_> {
     /// On success, provides the next event, a `StatusFlag` instance and updates the decoder.
     /// Returns `BadQuery` if there is no event.
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
-        let mut evt: pt_event = unsafe { mem::zeroed() };
+        let mut evt = MaybeUninit::<pt_event>::uninit();
         let status = extract_status_or_pterr(unsafe {
-            pt_blk_event(self.inner.as_ptr(), &mut evt, mem::size_of::<pt_event>())
+            pt_blk_event(self.inner.as_ptr(), evt.as_mut_ptr(), size_of::<pt_event>())
         })?;
-        Ok((Event(evt), status))
+        Ok((Event(unsafe { evt.assume_init() }), status))
     }
 
     #[must_use]
@@ -112,16 +111,25 @@ impl BlockDecoder<'_> {
     /// Returns the current decoder position.
     /// Returns Nosync if decoder is out of sync.
     pub fn offset(&self) -> Result<u64, PtError> {
-        let mut off: u64 = 0;
-        ensure_ptok(unsafe { pt_blk_get_offset(self.inner.as_ptr(), &mut off) }).map(|_| off)
+        let mut off = MaybeUninit::<u64>::uninit();
+        unsafe {
+            ensure_ptok(pt_blk_get_offset(self.inner.as_ptr(), off.as_mut_ptr()))
+                .map(|_| off.assume_init())
+        }
     }
 
     /// Get the position of the last synchronization point.
     ///
     /// Returns Nosync if the decoder is out of sync.
     pub fn sync_offset(&self) -> Result<u64, PtError> {
-        let mut off: u64 = 0;
-        ensure_ptok(unsafe { pt_blk_get_sync_offset(self.inner.as_ptr(), &mut off) }).map(|_| off)
+        let mut off = MaybeUninit::<u64>::uninit();
+        unsafe {
+            ensure_ptok(pt_blk_get_sync_offset(
+                self.inner.as_ptr(),
+                off.as_mut_ptr(),
+            ))
+            .map(|_| off.assume_init())
+        }
     }
 
     /// Determine the next block of instructions.
@@ -138,16 +146,16 @@ impl BlockDecoder<'_> {
     /// Returns Nomap if the memory at the instruction address can't be read.
     /// Returns Nosync if the decoder is out of sync.
     pub fn decode_next(&mut self) -> Result<(Block, Status), PtError> {
-        let mut blk: pt_block = unsafe { mem::zeroed() };
+        let mut blk = MaybeUninit::<pt_block>::uninit();
         let status = extract_status_or_pterr(unsafe {
-            pt_blk_next(self.inner.as_ptr(), &mut blk, mem::size_of::<pt_block>())
+            pt_blk_next(self.inner.as_ptr(), blk.as_mut_ptr(), size_of::<pt_block>())
         })?;
-        Ok((Block(blk), status))
+        Ok((Block(unsafe { blk.assume_init() }), status))
     }
 
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
         extract_pterr(unsafe { pt_blk_sync_backward(self.inner.as_ptr()) })
-            .map(|s| Status::from_bits(s).unwrap())
+            .map(Status::from_bits_or_pterror)?
     }
 
     /// Synchronize an Intel PT block decoder.
@@ -189,13 +197,24 @@ impl BlockDecoder<'_> {
     /// To get an idea about the quality of the estimated time, we record the number of dropped MTC and CYC packets.
     /// Returns `NoTime` if there has not been a TSC packet.
     pub fn time(&mut self) -> Result<(u64, u32, u32), PtError> {
-        let mut time: u64 = 0;
-        let mut lost_mtc: u32 = 0;
-        let mut lost_cyc: u32 = 0;
-        ensure_ptok(unsafe {
-            pt_blk_time(self.inner.as_ptr(), &mut time, &mut lost_mtc, &mut lost_cyc)
-        })
-        .map(|_| (time, lost_mtc, lost_cyc))
+        let mut time = MaybeUninit::<u64>::uninit();
+        let mut lost_mtc = MaybeUninit::<u32>::uninit();
+        let mut lost_cyc = MaybeUninit::<u32>::uninit();
+        unsafe {
+            ensure_ptok(pt_blk_time(
+                self.inner.as_ptr(),
+                time.as_mut_ptr(),
+                lost_mtc.as_mut_ptr(),
+                lost_cyc.as_mut_ptr(),
+            ))
+            .map(|_| {
+                (
+                    time.assume_init(),
+                    lost_mtc.assume_init(),
+                    lost_cyc.assume_init(),
+                )
+            })
+        }
     }
 }
 
@@ -283,7 +302,7 @@ mod test {
             )
         }
 
-        // assert!(b.image().name().is_none());
+        assert!(b.image().name().is_none());
         assert!(b.offset().is_err());
         assert!(b.sync_offset().is_err());
         assert!(b.decode_next().is_err());
