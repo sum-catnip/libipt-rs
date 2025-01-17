@@ -1,15 +1,20 @@
-use super::cpu::Cpu;
-use super::filter::AddrFilter;
-use super::freqency::Frequency;
-use crate::error::{PtError, PtErrorCode};
-
 use crate::block::BlockDecoder;
+use crate::error::{PtError, PtErrorCode};
 use crate::event::QueryDecoder;
 use crate::insn::InsnDecoder;
+
 use libipt_sys::pt_config;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::mem;
+
+mod cpu;
+mod filter;
+mod freqency;
+pub use cpu::*;
+pub use filter::*;
+pub use freqency::*;
+
 // unsafe extern "C" fn decode_callback<'a, F, C>(
 //     ukn: *mut pt_packet_unknown,
 //     cfg: *const pt_config,
@@ -267,7 +272,6 @@ impl<T> EncoderDecoderBuilder<QueryDecoder<T>> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::config::*;
 
     struct FooDecoder {}
 

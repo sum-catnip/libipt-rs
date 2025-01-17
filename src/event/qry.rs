@@ -1,4 +1,4 @@
-use crate::config::{EncoderDecoderBuilder, PtEncoderDecoder};
+use crate::enc_dec_builder::{EncoderDecoderBuilder, PtEncoderDecoder};
 use crate::error::{ensure_ptok, extract_status_or_pterr, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::status::Status;

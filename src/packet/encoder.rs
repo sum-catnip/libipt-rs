@@ -1,6 +1,6 @@
 use crate::error::{ensure_ptok, extract_pterr, PtError};
 
-use crate::config::{EncoderDecoderBuilder, PtEncoderDecoder};
+use crate::enc_dec_builder::{EncoderDecoderBuilder, PtEncoderDecoder};
 use crate::error::PtErrorCode;
 use libipt_sys::{
     pt_alloc_encoder, pt_enc_get_offset, pt_enc_next, pt_enc_sync_set, pt_encoder, pt_free_encoder,

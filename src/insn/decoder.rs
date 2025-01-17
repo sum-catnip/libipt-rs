@@ -1,7 +1,7 @@
 use super::Insn;
 use crate::asid::Asid;
-use crate::config::EncoderDecoderBuilder;
-use crate::config::PtEncoderDecoder;
+use crate::enc_dec_builder::EncoderDecoderBuilder;
+use crate::enc_dec_builder::PtEncoderDecoder;
 use crate::error::{ensure_ptok, extract_pterr, extract_status_or_pterr, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::image::Image;

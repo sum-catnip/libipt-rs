@@ -5,7 +5,7 @@ use crate::event::Event;
 use crate::image::Image;
 use crate::status::Status;
 
-use crate::config::{EncoderDecoderBuilder, PtEncoderDecoder};
+use crate::enc_dec_builder::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
     pt_asid, pt_blk_alloc_decoder, pt_blk_asid, pt_blk_core_bus_ratio, pt_blk_event,
     pt_blk_free_decoder, pt_blk_get_config, pt_blk_get_image, pt_blk_get_offset,

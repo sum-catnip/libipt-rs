@@ -6,7 +6,7 @@
 /// a trace packet decoder (see pt_pkt_alloc_decoder(3)),
 /// a query decoder (see pt_qry_alloc_decoder(3)),
 /// or an instruction flow decoder (see pt_insn_alloc_decoder(3)).
-pub mod config;
+pub mod enc_dec_builder;
 
 /// The library uses a single error enum for all layers.
 ///

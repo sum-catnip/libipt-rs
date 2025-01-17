@@ -1,7 +1,7 @@
 use super::Packet;
 use crate::error::{ensure_ptok, PtError, PtErrorCode};
 
-use crate::config::{EncoderDecoderBuilder, PtEncoderDecoder};
+use crate::enc_dec_builder::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
     pt_packet, pt_packet_decoder, pt_pkt_alloc_decoder, pt_pkt_free_decoder, pt_pkt_get_config,
     pt_pkt_get_offset, pt_pkt_get_sync_offset, pt_pkt_next, pt_pkt_sync_backward,

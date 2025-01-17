@@ -1,4 +1,4 @@
-use libipt::config::{Cpu, PtEncoderDecoder};
+use libipt::enc_dec_builder::{Cpu, PtEncoderDecoder};
 use libipt::packet::*;
 
 #[test]
