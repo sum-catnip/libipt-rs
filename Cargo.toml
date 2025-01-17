@@ -1,7 +1,10 @@
 [package]
 name = "libipt"
-version = "0.3.0-beta.1"
-authors = ["sum_catnip <catnip@catnip.fyi>", "Marcondiro <cavenatimarco+libiptrs@gmail.com>"]
+version = "0.3.0-beta.2"
+authors = [
+  "sum_catnip <catnip@catnip.fyi>",
+  "Marcondiro <cavenatimarco+libiptrs@gmail.com>",
+]
 edition = "2021"
 license = "MIT"
 description = "The Intel Processor Trace (Intel PT) Decoder Library is Intel's reference implementation for decoding Intel PT."
@@ -14,6 +17,6 @@ rust-version = "1.82.0"
 libipt_master = ["libipt-sys/libipt_master"]
 
 [dependencies]
-libipt-sys = "0.2.1-beta.2"
+libipt-sys = { version = "0.2.1-beta.3", git = "https://github.com/sum-catnip/libipt-sys.git" }
 bitflags = "2.4.1"
 num_enum = "0.7.1"

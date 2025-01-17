@@ -253,7 +253,7 @@ impl Image {
         } else {
             ptr::null()
         };
-        let res = ensure_ptok(unsafe {
+        ensure_ptok(unsafe {
             pt_image_add_cached(
                 self.inner.as_ptr(),
                 iscache.inner.as_ptr(),
@@ -274,7 +274,7 @@ impl Image {
         if let Some(a) = asid {
             self.asids.insert(*a);
         }
-        Ok(res)
+        Ok(())
     }
 
     /// Add a new file section to the traced memory image.

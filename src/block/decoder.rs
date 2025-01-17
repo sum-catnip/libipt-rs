@@ -8,9 +8,9 @@ use crate::status::Status;
 use crate::config::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
     pt_asid, pt_blk_alloc_decoder, pt_blk_asid, pt_blk_core_bus_ratio, pt_blk_event,
-    pt_blk_free_decoder, pt_blk_get_image, pt_blk_get_offset, pt_blk_get_sync_offset, pt_blk_next,
-    pt_blk_set_image, pt_blk_sync_backward, pt_blk_sync_forward, pt_blk_sync_set, pt_blk_time,
-    pt_block, pt_block_decoder, pt_event,
+    pt_blk_free_decoder, pt_blk_get_config, pt_blk_get_image, pt_blk_get_offset,
+    pt_blk_get_sync_offset, pt_blk_next, pt_blk_set_image, pt_blk_sync_backward,
+    pt_blk_sync_forward, pt_blk_sync_set, pt_blk_time, pt_block, pt_block_decoder, pt_event,
 };
 use std::mem;
 use std::ptr;
@@ -25,7 +25,6 @@ pub struct BlockDecoder<'a> {
     inner: NonNull<pt_block_decoder>,
     default_image: Image,
     custom_image: Option<&'a mut Image>,
-    builder: EncoderDecoderBuilder<Self>,
 }
 
 impl PtEncoderDecoder for BlockDecoder<'_> {
@@ -34,7 +33,7 @@ impl PtEncoderDecoder for BlockDecoder<'_> {
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+    fn new_from_builder(builder: &EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
         let inner =
             NonNull::new(unsafe { pt_blk_alloc_decoder(&raw const builder.config) }).ok_or(
                 PtError::new(PtErrorCode::Internal, "Failed to allocate pt_block_decoder"),
@@ -45,7 +44,6 @@ impl PtEncoderDecoder for BlockDecoder<'_> {
             inner,
             default_image,
             custom_image: None,
-            builder,
         })
     }
 }
@@ -91,7 +89,10 @@ impl BlockDecoder<'_> {
 
     #[must_use]
     pub fn used_builder(&self) -> &EncoderDecoderBuilder<Self> {
-        &self.builder
+        let ptr = unsafe { pt_blk_get_config(self.inner.as_ptr()) };
+        // The returned pointer is NULL if their argument is NULL. It should never happen.
+        unsafe { ptr.cast::<EncoderDecoderBuilder<Self>>().as_ref() }
+            .expect("pt_blk_get_config returned a NULL pointer")
     }
 
     /// Get the traced image.

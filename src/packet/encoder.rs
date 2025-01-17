@@ -20,7 +20,7 @@ impl<T> PtEncoderDecoder for Encoder<T> {
     ///
     /// The encoder will work on the buffer defined in @config, it shall contain raw trace data and remain valid for the lifetime of the encoder.
     /// The encoder starts at the beginning of the trace buffer.
-    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+    fn new_from_builder(builder: &EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
         let inner = NonNull::new(unsafe { pt_alloc_encoder(&raw const builder.config) }).ok_or(
             PtError::new(PtErrorCode::Internal, "Failed to allocate pt_encoder"),
         )?;

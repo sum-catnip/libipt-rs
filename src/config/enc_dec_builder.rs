@@ -9,7 +9,7 @@ use crate::insn::InsnDecoder;
 use libipt_sys::pt_config;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::{mem, ptr};
+use std::mem;
 // unsafe extern "C" fn decode_callback<'a, F, C>(
 //     ukn: *mut pt_packet_unknown,
 //     cfg: *const pt_config,
@@ -42,12 +42,13 @@ pub trait PtEncoderDecoder {
         EncoderDecoderBuilder::default()
     }
 
-    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError>
+    fn new_from_builder(builder: &EncoderDecoderBuilder<Self>) -> Result<Self, PtError>
     where
         Self: Sized;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[repr(transparent)]
 pub struct EncoderDecoderBuilder<T> {
     pub(crate) config: pt_config,
     target: PhantomData<T>,
@@ -81,6 +82,8 @@ where
     ///
     /// # Safety
     /// The buffer pointer `buf_ptr` must be valid for the entire encoder/decoder lifetime.
+    /// In case this builder is cloned or reused, the pointer must outlive all the generated
+    /// encoder/decoders.
     pub unsafe fn buffer_from_raw(mut self, buf_ptr: *mut u8, buf_len: usize) -> Self {
         self.config.begin = buf_ptr;
         self.config.end = unsafe { buf_ptr.add(buf_len) };
@@ -134,7 +137,7 @@ where
     /// Turn itself into a PT encoder/decoder
     ///
     /// Returns `Err` if the buffer is not set.
-    pub fn build(self) -> Result<T, PtError> {
+    pub fn build(&self) -> Result<T, PtError> {
         if self.config.begin.is_null() && self.config.end.is_null() {
             Err(PtError::new(
                 PtErrorCode::BadConfig,
@@ -142,17 +145,6 @@ where
             ))
         } else {
             T::new_from_builder(self)
-        }
-    }
-
-    /// Creates a clone of `self` excluding the buffer pointer.
-    pub const fn clone_without_buffer(&self) -> Self {
-        let mut config = self.config;
-        config.begin = ptr::null_mut();
-        config.end = ptr::null_mut();
-        Self {
-            config,
-            target: PhantomData,
         }
     }
 }
@@ -280,7 +272,7 @@ mod test {
     struct FooDecoder {}
 
     impl PtEncoderDecoder for FooDecoder {
-        fn new_from_builder(_: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+        fn new_from_builder(_: &EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
             Ok(Self {})
         }
     }

@@ -3,9 +3,9 @@ use crate::error::{ensure_ptok, PtError, PtErrorCode};
 
 use crate::config::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{
-    pt_packet, pt_packet_decoder, pt_pkt_alloc_decoder, pt_pkt_free_decoder, pt_pkt_get_offset,
-    pt_pkt_get_sync_offset, pt_pkt_next, pt_pkt_sync_backward, pt_pkt_sync_forward,
-    pt_pkt_sync_set,
+    pt_packet, pt_packet_decoder, pt_pkt_alloc_decoder, pt_pkt_free_decoder, pt_pkt_get_config,
+    pt_pkt_get_offset, pt_pkt_get_sync_offset, pt_pkt_next, pt_pkt_sync_backward,
+    pt_pkt_sync_forward, pt_pkt_sync_set,
 };
 use std::marker::PhantomData;
 use std::mem;
@@ -14,7 +14,6 @@ use std::ptr::NonNull;
 #[derive(Debug)]
 pub struct PacketDecoder<T> {
     inner: NonNull<pt_packet_decoder>,
-    builder: EncoderDecoderBuilder<Self>,
     phantom: PhantomData<T>,
 }
 
@@ -24,7 +23,7 @@ impl<T> PtEncoderDecoder for PacketDecoder<T> {
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+    fn new_from_builder(builder: &EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
         let inner =
             NonNull::new(unsafe { pt_pkt_alloc_decoder(&raw const builder.config) }).ok_or(
                 PtError::new(PtErrorCode::Internal, "Failed to allocate pt_insn_decoder"),
@@ -32,7 +31,6 @@ impl<T> PtEncoderDecoder for PacketDecoder<T> {
 
         Ok(Self {
             inner,
-            builder,
             phantom: PhantomData,
         })
     }
@@ -41,7 +39,10 @@ impl<T> PtEncoderDecoder for PacketDecoder<T> {
 impl<T> PacketDecoder<T> {
     #[must_use]
     pub fn used_builder(&self) -> &EncoderDecoderBuilder<Self> {
-        &self.builder
+        let ptr = unsafe { pt_pkt_get_config(self.inner.as_ptr()) };
+        // The returned pointer is NULL if their argument is NULL. It should never happen.
+        unsafe { ptr.cast::<EncoderDecoderBuilder<Self>>().as_ref() }
+            .expect("pt_pkt_get_config returned a NULL pointer")
     }
 
     /// Get the current decoder position.

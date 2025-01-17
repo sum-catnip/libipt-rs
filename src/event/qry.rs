@@ -36,7 +36,7 @@ impl<T> PtEncoderDecoder for QueryDecoder<T> {
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+    fn new_from_builder(builder: &EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
         let inner =
             NonNull::new(unsafe { pt_qry_alloc_decoder(&raw const builder.config) }).ok_or(
                 PtError::new(PtErrorCode::Internal, "Failed to allocate pt_query_decoder"),
