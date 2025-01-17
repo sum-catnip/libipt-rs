@@ -5,15 +5,25 @@ use libipt_sys::{pt_asid, pt_asid_no_cr3 as NO_CR3, pt_asid_no_vmcs as NO_VMCS};
 /// This identifies a particular address space when adding file sections or
 /// when reading memory.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[repr(transparent)]
 pub struct Asid(pub(crate) pt_asid);
 impl Asid {
     #[inline]
     #[must_use]
-    pub fn new(cr3: Option<u64>, vmcs: Option<u64>) -> Self {
+    pub const fn new(cr3: Option<u64>, vmcs: Option<u64>) -> Self {
+        let cr3_raw = match cr3 {
+            Some(v) => v,
+            None => NO_CR3,
+        };
+        let vmcs_raw = match vmcs {
+            Some(v) => v,
+            None => NO_VMCS,
+        };
+
         Asid(pt_asid {
             size: size_of::<pt_asid>(),
-            cr3: cr3.unwrap_or(NO_CR3),
-            vmcs: vmcs.unwrap_or(NO_VMCS),
+            cr3: cr3_raw,
+            vmcs: vmcs_raw,
         })
     }
 

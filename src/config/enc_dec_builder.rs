@@ -305,7 +305,7 @@ mod test {
                     .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
                     .addr2(AddrRange::new(5, 6, AddrConfig::DISABLED))
                     .addr3(AddrRange::new(7, 8, AddrConfig::STOP))
-                    .finish(),
+                    .build(),
             )
             .cpu(Cpu::intel(1, 2, 3))
             .freq(Frequency::new(1, 2, 3, 4))

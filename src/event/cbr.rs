@@ -15,6 +15,7 @@ impl Cbr {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_cbr};
     use std::mem;
 
@@ -24,7 +25,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_cbr;
         evt.variant.cbr = pt_event__bindgen_ty_1__bindgen_ty_18 { ratio: 18 };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::Cbr(e) => {
                 assert_eq!(e.ratio(), 18);

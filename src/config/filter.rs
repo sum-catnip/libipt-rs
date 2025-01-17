@@ -3,12 +3,13 @@ use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 use std::mem;
 
+/// This corresponds to the IA32_RTIT_ADDRn_CFG MSRs
 #[derive(Clone, Copy, TryFromPrimitive, PartialEq, Debug)]
 #[repr(u32)]
 pub enum AddrConfig {
-    DISABLED,
-    FILTER,
-    STOP,
+    DISABLED = 0,
+    FILTER = 1,
+    STOP = 2,
 }
 
 /// an address range inside the address filter
@@ -63,6 +64,7 @@ impl AddrRange {
 
 /// the address filter configuration
 #[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
 pub struct AddrFilter(pub(super) pt_conf_addr_filter);
 impl AddrFilter {
     pub const fn builder() -> AddrFilterBuilder {
@@ -71,46 +73,38 @@ impl AddrFilter {
 
     #[inline]
     pub fn addr0(&self) -> AddrRange {
-        unsafe {
-            AddrRange::new(
-                self.0.addr0_a,
-                self.0.addr0_b,
-                AddrConfig::try_from(self.0.config.ctl.addr0_cfg()).unwrap(),
-            )
-        }
+        AddrRange::new(
+            self.0.addr0_a,
+            self.0.addr0_b,
+            AddrConfig::try_from(unsafe { self.0.config.ctl.addr0_cfg() }).unwrap(),
+        )
     }
 
     #[inline]
     pub fn addr1(&self) -> AddrRange {
-        unsafe {
-            AddrRange::new(
-                self.0.addr1_a,
-                self.0.addr1_b,
-                AddrConfig::try_from(self.0.config.ctl.addr1_cfg()).unwrap(),
-            )
-        }
+        AddrRange::new(
+            self.0.addr1_a,
+            self.0.addr1_b,
+            AddrConfig::try_from(unsafe { self.0.config.ctl.addr1_cfg() }).unwrap(),
+        )
     }
 
     #[inline]
     pub fn addr2(&self) -> AddrRange {
-        unsafe {
-            AddrRange::new(
-                self.0.addr2_a,
-                self.0.addr2_b,
-                AddrConfig::try_from(self.0.config.ctl.addr2_cfg()).unwrap(),
-            )
-        }
+        AddrRange::new(
+            self.0.addr2_a,
+            self.0.addr2_b,
+            AddrConfig::try_from(unsafe { self.0.config.ctl.addr2_cfg() }).unwrap(),
+        )
     }
 
     #[inline]
     pub fn addr3(&self) -> AddrRange {
-        unsafe {
-            AddrRange::new(
-                self.0.addr3_a,
-                self.0.addr3_b,
-                AddrConfig::try_from(self.0.config.ctl.addr3_cfg()).unwrap(),
-            )
-        }
+        AddrRange::new(
+            self.0.addr3_a,
+            self.0.addr3_b,
+            AddrConfig::try_from(unsafe { self.0.config.ctl.addr3_cfg() }).unwrap(),
+        )
     }
 }
 
@@ -163,7 +157,7 @@ impl AddrFilterBuilder {
         self
     }
 
-    pub fn finish(&self) -> AddrFilter {
+    pub fn build(&self) -> AddrFilter {
         AddrFilter(self.0)
     }
 }
@@ -174,12 +168,12 @@ mod test {
 
     #[test]
     fn test_addrfilter() {
-        let filter = AddrFilterBuilder::new()
+        let filter = AddrFilter::builder()
             .addr0(AddrRange::new(1, 2, AddrConfig::DISABLED))
             .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
             .addr2(AddrRange::new(5, 6, AddrConfig::STOP))
             .addr3(AddrRange::new(7, 8, AddrConfig::DISABLED))
-            .finish();
+            .build();
 
         assert_eq!(filter.addr0().a(), 1);
         assert_eq!(filter.addr0().b(), 2);

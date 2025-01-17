@@ -52,6 +52,7 @@ impl AsyncPaging {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_async_paging, pt_event_type_ptev_paging};
     use std::mem;
 
@@ -66,7 +67,7 @@ mod test {
             __bindgen_padding_0: Default::default(),
         };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::Paging(e) => {
                 assert_eq!(e.cr3(), 11);
@@ -87,7 +88,7 @@ mod test {
             _bitfield_align_1: [],
         };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::AsyncPaging(e) => {
                 assert_eq!(e.cr3(), 11);

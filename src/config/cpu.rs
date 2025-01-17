@@ -22,9 +22,10 @@ bitflags! {
 
 /// A Cpu identifier
 #[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
 pub struct Cpu(pub(super) pt_cpu);
 impl Cpu {
-    pub fn new(vendor: CpuVendor, family: u16, model: u8, stepping: u8) -> Self {
+    pub const fn new(vendor: CpuVendor, family: u16, model: u8, stepping: u8) -> Self {
         Cpu(pt_cpu {
             vendor: vendor.bits() as pt_cpu_vendor,
             family,
@@ -34,7 +35,7 @@ impl Cpu {
     }
 
     /// A shortcut for creating an intel Cpu instance
-    pub fn intel(family: u16, model: u8, stepping: u8) -> Self {
+    pub const fn intel(family: u16, model: u8, stepping: u8) -> Self {
         Cpu::new(CpuVendor::INTEL, family, model, stepping)
     }
 

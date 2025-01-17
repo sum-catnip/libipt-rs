@@ -5,13 +5,14 @@ use crate::status::Status;
 
 use libipt_sys::{
     pt_event, pt_qry_alloc_decoder, pt_qry_cond_branch, pt_qry_core_bus_ratio, pt_qry_event,
-    pt_qry_free_decoder, pt_qry_get_offset, pt_qry_get_sync_offset, pt_qry_indirect_branch,
-    pt_qry_sync_backward, pt_qry_sync_forward, pt_qry_sync_set, pt_qry_time, pt_query_decoder,
+    pt_qry_free_decoder, pt_qry_get_config, pt_qry_get_offset, pt_qry_get_sync_offset,
+    pt_qry_indirect_branch, pt_qry_sync_backward, pt_qry_sync_forward, pt_qry_sync_set,
+    pt_qry_time, pt_query_decoder,
 };
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
-use std::mem;
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 
 #[derive(Debug, Clone, Copy, TryFromPrimitive)]
@@ -25,6 +26,7 @@ pub enum CondBranch {
 /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
 /// The decoder needs to be synchronized before it can be used.
 #[derive(Debug)]
+#[repr(transparent)]
 pub struct QueryDecoder<T> {
     inner: NonNull<pt_query_decoder>,
     phantom: PhantomData<T>,
@@ -86,16 +88,20 @@ impl<T> QueryDecoder<T> {
     /// Returns Eos if decoding reached the end of the Intel PT buffer.
     /// Returns Nosync if decoder is out of sync.
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
-        let mut evt: pt_event = unsafe { mem::zeroed() };
+        let mut evt = MaybeUninit::<pt_event>::uninit();
         let status = extract_status_or_pterr(unsafe {
-            pt_qry_event(self.inner.as_ptr(), &mut evt, mem::size_of::<pt_event>())
+            pt_qry_event(self.inner.as_ptr(), evt.as_mut_ptr(), size_of::<pt_event>())
         })?;
-        Ok((Event(evt), status))
+        Ok((Event(unsafe { evt.assume_init() }), status))
     }
 
-    // pub fn config(&self) -> Result<Config<T>, PtError> {
-    //     deref_ptresult(unsafe { pt_qry_get_config(self.inner.as_ptr()) }).map(Config::from)
-    // }
+    #[must_use]
+    pub fn used_builder(&self) -> &EncoderDecoderBuilder<Self> {
+        let ptr = unsafe { pt_qry_get_config(self.inner.as_ptr()) };
+        // The returned pointer is NULL if their argument is NULL. It should never happen.
+        unsafe { ptr.cast::<EncoderDecoderBuilder<Self>>().as_ref() }
+            .expect("pt_qry_get_config returned a NULL pointer")
+    }
 
     /// Get the current decoder position.
     ///
@@ -226,6 +232,7 @@ impl<T> Drop for QueryDecoder<T> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use libipt_sys::pt_config;
 
     #[test]
     fn test_qrydec_alloc() {
@@ -249,7 +256,17 @@ mod test {
         assert!(b.event().is_err());
         assert!(b.core_bus_ratio().is_err());
         assert!(b.event().is_err());
-        // assert!(b.config().is_ok());
+        let used_builder = b.used_builder();
+        unsafe {
+            let inner_config = pt_qry_get_config(b.inner.as_ptr());
+            let saved_config = &raw const used_builder.config;
+            let size = size_of::<pt_config>();
+            debug_assert_eq!(
+                std::slice::from_raw_parts(inner_config.cast::<u8>(), size),
+                std::slice::from_raw_parts(saved_config.cast::<u8>(), size),
+                "Rust builder not coherent with libipt C config!"
+            )
+        }
         assert!(b.offset().is_err());
         assert!(b.sync_offset().is_err());
         assert!(b.sync_backward().is_err());

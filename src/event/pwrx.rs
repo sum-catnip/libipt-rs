@@ -45,6 +45,7 @@ impl Pwrx {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_pwrx};
     use std::mem;
 
@@ -60,7 +61,7 @@ mod test {
             __bindgen_padding_0: Default::default(),
         };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::Pwrx(e) => {
                 assert_eq!(e.last(), 11);

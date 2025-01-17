@@ -36,6 +36,7 @@ impl AsyncDisabled {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_async_disabled, pt_event_type_ptev_disabled};
     use std::mem;
 
@@ -45,7 +46,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_disabled;
         evt.variant.disabled = pt_event__bindgen_ty_1__bindgen_ty_2 { ip: 11 };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::Disabled(e) => {
                 assert_eq!(e.ip(), 11);
@@ -60,7 +61,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_async_disabled;
         evt.variant.async_disabled = pt_event__bindgen_ty_1__bindgen_ty_3 { at: 1, ip: 11 };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::AsnycDisabled(e) => {
                 assert_eq!(e.ip(), 11);
