@@ -1,15 +1,14 @@
 // Certain casts are required only on Windows. Inform Clippy to ignore them.
 #![allow(clippy::unnecessary_cast)]
 
+use crate::error::ensure_ptok;
+use crate::error::PtError;
+use bitflags::bitflags;
 use libipt_sys::{
     pt_cpu, pt_cpu_errata, pt_cpu_vendor, pt_cpu_vendor_pcv_intel, pt_cpu_vendor_pcv_unknown,
     pt_errata,
 };
-use std::mem;
-
-use crate::error::ensure_ptok;
-use crate::error::PtError;
-use bitflags::bitflags;
+use std::mem::MaybeUninit;
 
 bitflags! {
     /// i suppose this is relevant when/if amd finally gets intelpt support?
@@ -41,9 +40,9 @@ impl Cpu {
 
     /// determines processor specific workarounds
     pub(super) fn errata(self) -> Result<pt_errata, PtError> {
-        let mut errata = unsafe { mem::zeroed::<pt_errata>() };
-        ensure_ptok(unsafe { pt_cpu_errata(&mut errata, &self.0) })?;
-        Ok(errata)
+        let mut errata = MaybeUninit::<pt_errata>::uninit();
+        ensure_ptok(unsafe { pt_cpu_errata(errata.as_mut_ptr(), &self.0) })?;
+        Ok(unsafe { errata.assume_init() })
     }
 }
 

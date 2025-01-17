@@ -134,7 +134,7 @@ where
     }
 
     /// Address filter configuration
-    pub const fn filter(mut self, filter: AddrFilter) -> Self {
+    pub const fn filter(mut self, filter: AddrFilters) -> Self {
         self.config.addr_filter = filter.0;
         self
     }
@@ -304,11 +304,11 @@ mod test {
         let mut data = [18u8; 3];
         let mut c = EncoderDecoderBuilder::<BlockDecoder>::new()
             .filter(
-                AddrFilterBuilder::new()
-                    .addr0(AddrRange::new(1, 2, AddrConfig::STOP))
-                    .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
-                    .addr2(AddrRange::new(5, 6, AddrConfig::DISABLED))
-                    .addr3(AddrRange::new(7, 8, AddrConfig::STOP))
+                AddrFiltersBuilder::new()
+                    .addr0(AddrFilterRange::new(1, 2, AddrFilterType::STOP))
+                    .addr1(AddrFilterRange::new(3, 4, AddrFilterType::FILTER))
+                    .addr2(AddrFilterRange::new(5, 6, AddrFilterType::DISABLED))
+                    .addr3(AddrFilterRange::new(7, 8, AddrFilterType::STOP))
                     .build(),
             )
             .cpu(Cpu::intel(1, 2, 3))
@@ -337,28 +337,28 @@ mod test {
         assert_eq!(c.config.addr_filter.addr0_b, 2);
         assert_eq!(
             unsafe { c.config.addr_filter.config.ctl.addr0_cfg() },
-            AddrConfig::STOP as u32
+            AddrFilterType::STOP as u32
         );
 
         assert_eq!(c.config.addr_filter.addr1_a, 3);
         assert_eq!(c.config.addr_filter.addr1_b, 4);
         assert_eq!(
             unsafe { c.config.addr_filter.config.ctl.addr1_cfg() },
-            AddrConfig::FILTER as u32
+            AddrFilterType::FILTER as u32
         );
 
         assert_eq!(c.config.addr_filter.addr2_a, 5);
         assert_eq!(c.config.addr_filter.addr2_b, 6);
         assert_eq!(
             unsafe { c.config.addr_filter.config.ctl.addr2_cfg() },
-            AddrConfig::DISABLED as u32
+            AddrFilterType::DISABLED as u32
         );
 
         assert_eq!(c.config.addr_filter.addr3_a, 7);
         assert_eq!(c.config.addr_filter.addr3_b, 8);
         assert_eq!(
             unsafe { c.config.addr_filter.config.ctl.addr3_cfg() },
-            AddrConfig::STOP as u32
+            AddrFilterType::STOP as u32
         );
 
         // unsafe {
