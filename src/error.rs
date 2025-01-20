@@ -1,7 +1,7 @@
 // Certain casts are required only on Linux. Inform Clippy to ignore them.
 #![allow(clippy::unnecessary_cast)]
 
-use crate::Status;
+use crate::status::Status;
 use libipt_sys::{pt_error_code, pt_errstr};
 use libipt_sys::{
     pt_error_code_pte_bad_config, pt_error_code_pte_bad_context, pt_error_code_pte_bad_cpu,

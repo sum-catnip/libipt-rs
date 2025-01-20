@@ -4,16 +4,26 @@ use libipt_sys::{pt_asid, pt_asid_no_cr3 as NO_CR3, pt_asid_no_vmcs as NO_VMCS};
 ///
 /// This identifies a particular address space when adding file sections or
 /// when reading memory.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[repr(transparent)]
 pub struct Asid(pub(crate) pt_asid);
 impl Asid {
     #[inline]
     #[must_use]
-    pub fn new(cr3: Option<u64>, vmcs: Option<u64>) -> Self {
+    pub const fn new(cr3: Option<u64>, vmcs: Option<u64>) -> Self {
+        let cr3_raw = match cr3 {
+            Some(v) => v,
+            None => NO_CR3,
+        };
+        let vmcs_raw = match vmcs {
+            Some(v) => v,
+            None => NO_VMCS,
+        };
+
         Asid(pt_asid {
             size: size_of::<pt_asid>(),
-            cr3: cr3.unwrap_or(NO_CR3),
-            vmcs: vmcs.unwrap_or(NO_VMCS),
+            cr3: cr3_raw,
+            vmcs: vmcs_raw,
         })
     }
 
@@ -53,18 +63,6 @@ impl Asid {
 impl Default for Asid {
     fn default() -> Self {
         Asid::new(None, None)
-    }
-}
-
-impl From<pt_asid> for Asid {
-    fn from(asid: pt_asid) -> Self {
-        Asid(asid)
-    }
-}
-
-impl PartialEq for Asid {
-    fn eq(&self, other: &Self) -> bool {
-        self.cr3() == other.cr3() && self.vmcs() == other.vmcs()
     }
 }
 
@@ -126,7 +124,7 @@ mod test {
         assert_eq!(raw.cr3, NO_CR3);
         assert_eq!(raw.vmcs, NO_VMCS);
 
-        let mut asid2 = Asid::from(raw);
+        let mut asid2 = Asid(raw);
         asid2.set_cr3(666);
 
         assert_eq!(asid.cr3(), None);

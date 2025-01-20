@@ -33,6 +33,7 @@ impl Mwait {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_mwait};
     use std::mem;
 
@@ -46,7 +47,7 @@ mod test {
             ext: 33,
         };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::Mwait(e) => {
                 assert_eq!(e.ip(), 11);

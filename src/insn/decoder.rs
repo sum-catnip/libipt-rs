@@ -1,15 +1,17 @@
 use super::Insn;
-use crate::error::{ensure_ptok, extract_pterr, extract_status_or_pterr, PtError, PtErrorCode};
+use crate::asid::Asid;
+use crate::enc_dec_builder::EncoderDecoderBuilder;
+use crate::enc_dec_builder::PtEncoderDecoder;
+use crate::error::{ensure_ptok, extract_status_or_pterr, PtError, PtErrorCode};
 use crate::event::Event;
-use crate::Image;
-use crate::Status;
-use crate::{Asid, EncoderDecoderBuilder, PtEncoderDecoder};
+use crate::image::Image;
+use crate::status::Status;
 
 use libipt_sys::{
     pt_asid, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio,
-    pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_image, pt_insn_get_offset,
-    pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image, pt_insn_sync_backward,
-    pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time,
+    pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_config, pt_insn_get_image,
+    pt_insn_get_offset, pt_insn_get_sync_offset, pt_insn_next, pt_insn_set_image,
+    pt_insn_sync_backward, pt_insn_sync_forward, pt_insn_sync_set, pt_insn_time,
 };
 use std::mem;
 use std::ptr;
@@ -23,7 +25,7 @@ pub struct InsnDecoder<'a> {
     inner: NonNull<pt_insn_decoder>,
     default_image: Image,
     custom_image: Option<&'a mut Image>,
-    builder: EncoderDecoderBuilder<Self>,
+    //builder: EncoderDecoderBuilder<Self>,
 }
 
 impl PtEncoderDecoder for InsnDecoder<'_> {
@@ -32,7 +34,7 @@ impl PtEncoderDecoder for InsnDecoder<'_> {
     /// The decoder will work on the buffer defined in @config,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
-    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+    fn new_from_builder(builder: &EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
         let inner =
             NonNull::new(unsafe { pt_insn_alloc_decoder(&raw const builder.config) }).ok_or(
                 PtError::new(PtErrorCode::Internal, "Failed to allocate pt_block_decoder"),
@@ -43,7 +45,7 @@ impl PtEncoderDecoder for InsnDecoder<'_> {
             inner,
             default_image,
             custom_image: None,
-            builder,
+            //builder,
         })
     }
 }
@@ -86,7 +88,10 @@ impl<'a> InsnDecoder<'a> {
 
     #[must_use]
     pub fn used_builder(&self) -> &EncoderDecoderBuilder<Self> {
-        &self.builder
+        let ptr = unsafe { pt_insn_get_config(self.inner.as_ptr()) };
+        // The returned pointer is NULL if their argument is NULL. It should never happen.
+        unsafe { ptr.cast::<EncoderDecoderBuilder<Self>>().as_ref() }
+            .expect("pt_insn_get_config returned a NULL pointer")
     }
 
     /// Get the traced image.
@@ -164,8 +169,7 @@ impl<'a> InsnDecoder<'a> {
     }
 
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
-        extract_pterr(unsafe { pt_insn_sync_backward(self.inner.as_ptr()) })
-            .map(Status::from_bits_or_pterror)?
+        extract_status_or_pterr(unsafe { pt_insn_sync_backward(self.inner.as_ptr()) })
     }
 
     /// Synchronize an Intel PT instruction flow decoder.
@@ -179,8 +183,7 @@ impl<'a> InsnDecoder<'a> {
     /// Returns `BadPacket` if an unknown packet payload is encountered.
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_forward(&mut self) -> Result<Status, PtError> {
-        extract_pterr(unsafe { pt_insn_sync_forward(self.inner.as_ptr()) })
-            .map(Status::from_bits_or_pterror)?
+        extract_status_or_pterr(unsafe { pt_insn_sync_forward(self.inner.as_ptr()) })
     }
 
     /// Manually synchronize an Intel PT instruction flow decoder.

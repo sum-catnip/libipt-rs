@@ -18,6 +18,7 @@ _This changelog documents only changes relevant to users, internal changes might
 - `Image.copy()` has been replaced by `Image.extend()`
 - `Image.add_cached()` now takes a `Rc<SectionCache>` instead of `&mut SectionCache` to ensure that the cache outlives the `Image`. 
 - Many packet/event types methods now take a `&self` instead of consuming `self`
+- Some simple methods are now `const`
 
 ### Removed
 

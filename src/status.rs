@@ -1,7 +1,7 @@
 // Certain casts are required only on Windows. Inform Clippy to ignore them.
 #![allow(clippy::unnecessary_cast)]
 
-use crate::{PtError, PtErrorCode};
+use crate::error::{PtError, PtErrorCode};
 use bitflags::bitflags;
 use libipt_sys::{
     pt_status_flag_pts_eos, pt_status_flag_pts_event_pending, pt_status_flag_pts_ip_suppressed,

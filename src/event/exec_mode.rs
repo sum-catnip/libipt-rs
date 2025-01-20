@@ -40,6 +40,7 @@ impl ExecMode {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_exec_mode};
     use std::mem;
 
@@ -52,7 +53,7 @@ mod test {
             mode: pt_exec_mode_ptem_32bit,
         };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::ExecMode(e) => {
                 assert_eq!(e.ip(), 11);

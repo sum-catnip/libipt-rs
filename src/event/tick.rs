@@ -21,6 +21,7 @@ impl Tick {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_tick};
     use std::mem;
 
@@ -30,7 +31,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_tick;
         evt.variant.tick = pt_event__bindgen_ty_1__bindgen_ty_17 { ip: 11 };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::Tick(e) => {
                 assert_eq!(e.ip(), 11);

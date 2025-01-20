@@ -29,6 +29,7 @@ impl Tsx {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_tsx};
     use std::mem;
 
@@ -43,7 +44,7 @@ mod test {
             __bindgen_padding_0: Default::default(),
         };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::Tsx(e) => {
                 assert_eq!(e.ip(), 11);

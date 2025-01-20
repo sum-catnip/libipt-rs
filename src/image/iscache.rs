@@ -23,8 +23,8 @@ impl SectionCache {
             match name {
                 None => pt_iscache_alloc(ptr::null()),
                 Some(n) => {
-                    let name_ptr = str_to_cstring_pterror(n)?;
-                    pt_iscache_alloc(name_ptr.as_ptr())
+                    let cname = str_to_cstring_pterror(n)?;
+                    pt_iscache_alloc(cname.as_ptr())
                 }
             }
         };

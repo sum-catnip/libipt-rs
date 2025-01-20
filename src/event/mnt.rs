@@ -15,6 +15,7 @@ impl Mnt {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_mnt};
     use std::mem;
 
@@ -24,7 +25,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_mnt;
         evt.variant.mnt = pt_event__bindgen_ty_1__bindgen_ty_19 { payload: 17 };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::Mnt(e) => {
                 assert_eq!(e.payload(), 17);

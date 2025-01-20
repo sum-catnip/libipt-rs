@@ -17,6 +17,7 @@ impl Exstop {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_exstop};
     use std::mem;
 
@@ -26,7 +27,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_exstop;
         evt.variant.exstop = pt_event__bindgen_ty_1__bindgen_ty_12 { ip: 11 };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::Exstop(e) => {
                 assert_eq!(e.ip(), 11);

@@ -3,6 +3,7 @@ use std::ffi::CStr;
 
 /// The library version.
 #[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
 pub struct Version(pt_version);
 impl Version {
     /// Return the libipt library version.

@@ -36,6 +36,7 @@ impl AsyncVmcs {
 mod test {
     use super::super::Payload;
     use super::*;
+    use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_async_vmcs, pt_event_type_ptev_vmcs};
     use std::mem;
 
@@ -45,7 +46,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_vmcs;
         evt.variant.vmcs = pt_event__bindgen_ty_1__bindgen_ty_10 { base: 11 };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::Vmcs(e) => {
                 assert_eq!(e.base(), 11);
@@ -60,7 +61,7 @@ mod test {
         evt.type_ = pt_event_type_ptev_async_vmcs;
         evt.variant.async_vmcs = pt_event__bindgen_ty_1__bindgen_ty_11 { base: 11, ip: 12 };
 
-        let payload: Payload = evt.into();
+        let payload: Payload = Event(evt).into();
         match payload {
             Payload::AsyncVmcs(e) => {
                 assert_eq!(e.base(), 11);

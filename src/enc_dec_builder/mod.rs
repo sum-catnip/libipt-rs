@@ -1,15 +1,20 @@
-use super::cpu::Cpu;
-use super::filter::AddrFilter;
-use super::freqency::Frequency;
-use crate::error::{PtError, PtErrorCode};
-
 use crate::block::BlockDecoder;
+use crate::error::{PtError, PtErrorCode};
 use crate::event::QueryDecoder;
 use crate::insn::InsnDecoder;
+
 use libipt_sys::pt_config;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::{mem, ptr};
+use std::mem;
+
+mod cpu;
+mod filter;
+mod freqency;
+pub use cpu::*;
+pub use filter::*;
+pub use freqency::*;
+
 // unsafe extern "C" fn decode_callback<'a, F, C>(
 //     ukn: *mut pt_packet_unknown,
 //     cfg: *const pt_config,
@@ -42,12 +47,13 @@ pub trait PtEncoderDecoder {
         EncoderDecoderBuilder::default()
     }
 
-    fn new_from_builder(builder: EncoderDecoderBuilder<Self>) -> Result<Self, PtError>
+    fn new_from_builder(builder: &EncoderDecoderBuilder<Self>) -> Result<Self, PtError>
     where
         Self: Sized;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[repr(transparent)]
 pub struct EncoderDecoderBuilder<T> {
     pub(crate) config: pt_config,
     target: PhantomData<T>,
@@ -81,6 +87,8 @@ where
     ///
     /// # Safety
     /// The buffer pointer `buf_ptr` must be valid for the entire encoder/decoder lifetime.
+    /// In case this builder is cloned or reused, the pointer must outlive all the generated
+    /// encoder/decoders.
     pub unsafe fn buffer_from_raw(mut self, buf_ptr: *mut u8, buf_len: usize) -> Self {
         self.config.begin = buf_ptr;
         self.config.end = unsafe { buf_ptr.add(buf_len) };
@@ -126,7 +134,7 @@ where
     }
 
     /// Address filter configuration
-    pub const fn filter(mut self, filter: AddrFilter) -> Self {
+    pub const fn filter(mut self, filter: AddrFilters) -> Self {
         self.config.addr_filter = filter.0;
         self
     }
@@ -134,7 +142,7 @@ where
     /// Turn itself into a PT encoder/decoder
     ///
     /// Returns `Err` if the buffer is not set.
-    pub fn build(self) -> Result<T, PtError> {
+    pub fn build(&self) -> Result<T, PtError> {
         if self.config.begin.is_null() && self.config.end.is_null() {
             Err(PtError::new(
                 PtErrorCode::BadConfig,
@@ -142,17 +150,6 @@ where
             ))
         } else {
             T::new_from_builder(self)
-        }
-    }
-
-    /// Creates a clone of `self` excluding the buffer pointer.
-    pub const fn clone_without_buffer(&self) -> Self {
-        let mut config = self.config;
-        config.begin = ptr::null_mut();
-        config.end = ptr::null_mut();
-        Self {
-            config,
-            target: PhantomData,
         }
     }
 }
@@ -275,12 +272,11 @@ impl<T> EncoderDecoderBuilder<QueryDecoder<T>> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::config::*;
 
     struct FooDecoder {}
 
     impl PtEncoderDecoder for FooDecoder {
-        fn new_from_builder(_: EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
+        fn new_from_builder(_: &EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
             Ok(Self {})
         }
     }
@@ -308,12 +304,12 @@ mod test {
         let mut data = [18u8; 3];
         let mut c = EncoderDecoderBuilder::<BlockDecoder>::new()
             .filter(
-                AddrFilterBuilder::new()
-                    .addr0(AddrRange::new(1, 2, AddrConfig::STOP))
-                    .addr1(AddrRange::new(3, 4, AddrConfig::FILTER))
-                    .addr2(AddrRange::new(5, 6, AddrConfig::DISABLED))
-                    .addr3(AddrRange::new(7, 8, AddrConfig::STOP))
-                    .finish(),
+                AddrFiltersBuilder::new()
+                    .addr0(AddrFilterRange::new(1, 2, AddrFilterType::STOP))
+                    .addr1(AddrFilterRange::new(3, 4, AddrFilterType::FILTER))
+                    .addr2(AddrFilterRange::new(5, 6, AddrFilterType::DISABLED))
+                    .addr3(AddrFilterRange::new(7, 8, AddrFilterType::STOP))
+                    .build(),
             )
             .cpu(Cpu::intel(1, 2, 3))
             .freq(Frequency::new(1, 2, 3, 4))
@@ -341,28 +337,28 @@ mod test {
         assert_eq!(c.config.addr_filter.addr0_b, 2);
         assert_eq!(
             unsafe { c.config.addr_filter.config.ctl.addr0_cfg() },
-            AddrConfig::STOP as u32
+            AddrFilterType::STOP as u32
         );
 
         assert_eq!(c.config.addr_filter.addr1_a, 3);
         assert_eq!(c.config.addr_filter.addr1_b, 4);
         assert_eq!(
             unsafe { c.config.addr_filter.config.ctl.addr1_cfg() },
-            AddrConfig::FILTER as u32
+            AddrFilterType::FILTER as u32
         );
 
         assert_eq!(c.config.addr_filter.addr2_a, 5);
         assert_eq!(c.config.addr_filter.addr2_b, 6);
         assert_eq!(
             unsafe { c.config.addr_filter.config.ctl.addr2_cfg() },
-            AddrConfig::DISABLED as u32
+            AddrFilterType::DISABLED as u32
         );
 
         assert_eq!(c.config.addr_filter.addr3_a, 7);
         assert_eq!(c.config.addr_filter.addr3_b, 8);
         assert_eq!(
             unsafe { c.config.addr_filter.config.ctl.addr3_cfg() },
-            AddrConfig::STOP as u32
+            AddrFilterType::STOP as u32
         );
 
         // unsafe {
