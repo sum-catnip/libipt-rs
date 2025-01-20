@@ -1,6 +1,6 @@
 use super::Block;
 use crate::asid::Asid;
-use crate::error::{ensure_ptok, extract_pterr, extract_status_or_pterr, PtError, PtErrorCode};
+use crate::error::{ensure_ptok, extract_status_or_pterr, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::image::Image;
 use crate::status::Status;
@@ -154,8 +154,7 @@ impl BlockDecoder<'_> {
     }
 
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
-        extract_pterr(unsafe { pt_blk_sync_backward(self.inner.as_ptr()) })
-            .map(Status::from_bits_or_pterror)?
+        extract_status_or_pterr(unsafe { pt_blk_sync_backward(self.inner.as_ptr()) })
     }
 
     /// Synchronize an Intel PT block decoder.
@@ -167,8 +166,7 @@ impl BlockDecoder<'_> {
     /// Returns `BadPacket` if an unknown packet payload is encountered.
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_forward(&mut self) -> Result<Status, PtError> {
-        extract_pterr(unsafe { pt_blk_sync_forward(self.inner.as_ptr()) })
-            .map(Status::from_bits_or_pterror)?
+        extract_status_or_pterr(unsafe { pt_blk_sync_forward(self.inner.as_ptr()) })
     }
 
     /// Manually synchronize an Intel PT block decoder.

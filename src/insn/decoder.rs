@@ -2,7 +2,7 @@ use super::Insn;
 use crate::asid::Asid;
 use crate::enc_dec_builder::EncoderDecoderBuilder;
 use crate::enc_dec_builder::PtEncoderDecoder;
-use crate::error::{ensure_ptok, extract_pterr, extract_status_or_pterr, PtError, PtErrorCode};
+use crate::error::{ensure_ptok, extract_status_or_pterr, PtError, PtErrorCode};
 use crate::event::Event;
 use crate::image::Image;
 use crate::status::Status;
@@ -169,8 +169,7 @@ impl<'a> InsnDecoder<'a> {
     }
 
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
-        extract_pterr(unsafe { pt_insn_sync_backward(self.inner.as_ptr()) })
-            .map(Status::from_bits_or_pterror)?
+        extract_status_or_pterr(unsafe { pt_insn_sync_backward(self.inner.as_ptr()) })
     }
 
     /// Synchronize an Intel PT instruction flow decoder.
@@ -184,8 +183,7 @@ impl<'a> InsnDecoder<'a> {
     /// Returns `BadPacket` if an unknown packet payload is encountered.
     /// Returns Eos if no further synchronization point is found.
     pub fn sync_forward(&mut self) -> Result<Status, PtError> {
-        extract_pterr(unsafe { pt_insn_sync_forward(self.inner.as_ptr()) })
-            .map(Status::from_bits_or_pterror)?
+        extract_status_or_pterr(unsafe { pt_insn_sync_forward(self.inner.as_ptr()) })
     }
 
     /// Manually synchronize an Intel PT instruction flow decoder.

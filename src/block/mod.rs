@@ -14,6 +14,7 @@ pub use decoder::*;
 /// Instructions in this block are executed sequentially but are not necessarily
 /// contiguous in memory.  Users are expected to follow direct branches.
 #[derive(Debug, Clone, Copy)]
+#[repr(transparent)]
 pub struct Block(pub(super) pt_block);
 impl Block {
     /// The IP of the first instruction in this block.
