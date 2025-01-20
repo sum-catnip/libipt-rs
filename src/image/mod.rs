@@ -108,7 +108,9 @@ pub struct Image {
     // Any read data callback set by this `Image` instance.
     callback: Option<BoxedCallback>,
     caches: Vec<Rc<SectionCache>>,
-    asids: HashSet<Asid>,
+    // `HashSet` might grow and move the content around, we cannot use `Asid` directly since we
+    // share a pointer with libipt and it must be valid for the entire Image (section) filetime.
+    asids: HashSet<Rc<Asid>>,
 }
 
 impl Image {
@@ -233,7 +235,9 @@ impl Image {
             })?;
 
         self.caches.extend_from_slice(&src.caches);
-        self.asids.extend(&src.asids);
+        for asid in &src.asids {
+            self.asids.insert(asid.clone());
+        }
         Ok(res)
     }
 
@@ -252,7 +256,7 @@ impl Image {
     ) -> Result<(), PtError> {
         let asid_ptr = if let Some(a) = asid {
             // fixme: use get_or_insert once stable (if ever)
-            self.asids.insert(*a);
+            self.asids.insert(Rc::new(*a));
             &raw const self.asids.get(a).unwrap().0
         } else {
             ptr::null()
@@ -275,9 +279,6 @@ impl Image {
             );
         })?;
         self.caches.push(iscache);
-        if let Some(a) = asid {
-            self.asids.insert(*a);
-        }
         Ok(())
     }
 
@@ -303,7 +304,7 @@ impl Image {
         let cfilename = str_to_cstring_pterror(filename)?;
         let asid_ptr = if let Some(a) = asid {
             // fixme: use get_or_insert once stable (if ever)
-            self.asids.insert(*a);
+            self.asids.insert(Rc::new(*a));
             &raw const self.asids.get(a).unwrap().0
         } else {
             ptr::null()
@@ -318,9 +319,6 @@ impl Image {
                 vaddr,
             )
         })?;
-        if let Some(a) = asid {
-            self.asids.insert(*a);
-        }
         Ok(())
     }
 }
@@ -487,5 +485,30 @@ mod test {
         let asid = Asid::new(Some(3), Some(4));
         i.add_cached(Rc::new(c), isid, Some(&asid)).unwrap();
         assert_eq!(i.remove_by_asid(&asid).unwrap(), 1);
+    }
+
+    #[test]
+    fn img_extend() {
+        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
+            .iter()
+            .collect();
+
+        let mut img = Image::new(None).unwrap();
+        {
+            let mut img2 = Image::new(None).unwrap();
+            for i in 0..100 {
+                let mut cache = SectionCache::new(None).unwrap();
+                let asid = Asid::new(Some(i), Some(i));
+                let isid = cache.add_file(file.to_str().unwrap(), i, 1, i).unwrap();
+                let rc = Rc::new(cache);
+                img2.add_cached(rc.clone(), isid, Some(&asid)).unwrap()
+            }
+
+            img.extend(&img2).unwrap();
+        }
+
+        for i in 0..100 {
+            assert_eq!(img.remove_by_asid(&Asid::new(Some(i), Some(i))).unwrap(), 1);
+        }
     }
 }
