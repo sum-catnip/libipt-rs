@@ -8,6 +8,7 @@ _This changelog documents only changes relevant to users, internal changes might
 
 - This [CHANGELOG](./CHANGELOG.md) 🎉
 - Explicit [MSRV](Cargo.toml)
+- New `Image::add_files_cached()` API to simplify the creation of a cached image for simple use cases.
 
 ### Changed
 

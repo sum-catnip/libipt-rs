@@ -1,6 +1,6 @@
 [package]
 name = "libipt"
-version = "0.3.0-beta.2"
+version = "0.3.0-beta.3"
 authors = [
   "sum_catnip <catnip@catnip.fyi>",
   "Marcondiro <cavenatimarco+libiptrs@gmail.com>",
@@ -17,6 +17,6 @@ rust-version = "1.82.0"
 libipt_master = ["libipt-sys/libipt_master"]
 
 [dependencies]
-libipt-sys = { version = "0.2.1-beta.3", git = "https://github.com/sum-catnip/libipt-sys.git" }
+libipt-sys = { version = "0.2.1", git = "https://github.com/sum-catnip/libipt-sys.git" }
 bitflags = "2.4.1"
 num_enum = "0.7.1"
