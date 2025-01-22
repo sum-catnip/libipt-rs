@@ -1,7 +1,7 @@
 use libipt_sys::{pt_library_version, pt_version};
 use std::ffi::CStr;
 
-/// The library version.
+/// The underlying C library (libipt) version.
 #[derive(Clone, Copy, Debug)]
 #[repr(transparent)]
 pub struct Version(pt_version);

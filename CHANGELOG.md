@@ -16,10 +16,12 @@ _This changelog documents only changes relevant to users, internal changes might
 - Decoders/Encoder `::new()` have been replaced by `EncoderDecoderBuilder.build()`
 - Decoders/Encoder `.get_config()` have been replaced by `.used_builder()`
 - Block/Insn decoders `.image()` now returns `&mut Image` instead of `Result<Image,...>`
+- Block `raw()` now returns an `Option::<&[u8]>`
 - `Image.copy()` has been replaced by `Image.extend()`
 - `Image.add_cached()` now takes a `Rc<SectionCache>` instead of `&mut SectionCache` to ensure that the cache outlives the `Image`. 
 - Many packet/event types methods now take a `&self` instead of consuming `self`
 - Some simple methods are now `const`
+- ~~`Class:Error`~~ -> `Class::Unknown`
 
 ### Removed
 

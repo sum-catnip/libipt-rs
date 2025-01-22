@@ -2,10 +2,10 @@
 #![allow(clippy::unnecessary_cast)]
 
 use libipt_sys::{
-    pt_insn_class_ptic_call, pt_insn_class_ptic_cond_jump, pt_insn_class_ptic_error,
-    pt_insn_class_ptic_far_call, pt_insn_class_ptic_far_jump, pt_insn_class_ptic_far_return,
-    pt_insn_class_ptic_jump, pt_insn_class_ptic_other, pt_insn_class_ptic_ptwrite,
-    pt_insn_class_ptic_return,
+    pt_insn_class_ptic_call, pt_insn_class_ptic_cond_jump, pt_insn_class_ptic_far_call,
+    pt_insn_class_ptic_far_jump, pt_insn_class_ptic_far_return, pt_insn_class_ptic_jump,
+    pt_insn_class_ptic_other, pt_insn_class_ptic_ptwrite, pt_insn_class_ptic_return,
+    pt_insn_class_ptic_unknown,
 };
 use num_enum::TryFromPrimitive;
 
@@ -21,7 +21,7 @@ pub enum Class {
     /// The instruction is a near conditional jump.
     CondJump = pt_insn_class_ptic_cond_jump as u32,
     /// The instruction could not be classified.
-    Error = pt_insn_class_ptic_error as u32,
+    Unknown = pt_insn_class_ptic_unknown as u32,
     /// The instruction is a call-like far transfer.
     /// E.g. SYSCALL, SYSENTER, or FAR CALL.
     FarCall = pt_insn_class_ptic_far_call as u32,
