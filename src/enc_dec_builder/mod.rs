@@ -52,7 +52,7 @@ pub trait PtEncoderDecoder {
         Self: Sized;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct EncoderDecoderBuilder<T> {
     pub(crate) config: pt_config,
@@ -65,6 +65,15 @@ where
 {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<T> Clone for EncoderDecoderBuilder<T> {
+    fn clone(&self) -> Self {
+        Self {
+            config: self.config,
+            target: PhantomData,
+        }
     }
 }
 
