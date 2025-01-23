@@ -81,7 +81,7 @@ impl<T> EncoderDecoderBuilder<T>
 where
     T: PtEncoderDecoder,
 {
-    /// Initializes an EncoderDecoderBuilder instance
+    /// Create an EncoderDecoderBuilder
     pub const fn new() -> Self {
         let mut config: pt_config = unsafe { mem::zeroed() };
         config.size = size_of::<pt_config>();
