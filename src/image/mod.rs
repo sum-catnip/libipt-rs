@@ -97,6 +97,19 @@ impl Drop for BoxedCallback {
     }
 }
 
+/// Info of a binary's section that can be used to populate an `Image`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SectionInfo {
+    /// Path of the binary
+    pub filename: String,
+    /// Offset of the section in the file
+    pub offset: u64,
+    /// Size of the section
+    pub size: u64,
+    /// Start virtual address of the section once loaded in memory
+    pub virtual_address: u64,
+}
+
 /// An Image defines the memory image that was traced as a collection
 /// of file sections and the virtual addresses at which those sections were loaded.
 #[derive(Debug)]
@@ -108,7 +121,9 @@ pub struct Image {
     // Any read data callback set by this `Image` instance.
     callback: Option<BoxedCallback>,
     caches: Vec<Rc<SectionCache>>,
-    asids: HashSet<Asid>,
+    // `HashSet` might grow and move the content around, we cannot use `Asid` directly since we
+    // share a pointer with libipt, and it must be valid for the entire Image (section) lifetime.
+    asids: HashSet<Rc<Asid>>,
 }
 
 impl Image {
@@ -233,7 +248,9 @@ impl Image {
             })?;
 
         self.caches.extend_from_slice(&src.caches);
-        self.asids.extend(&src.asids);
+        for asid in &src.asids {
+            self.asids.insert(asid.clone());
+        }
         Ok(res)
     }
 
@@ -252,7 +269,7 @@ impl Image {
     ) -> Result<(), PtError> {
         let asid_ptr = if let Some(a) = asid {
             // fixme: use get_or_insert once stable (if ever)
-            self.asids.insert(*a);
+            self.asids.insert(Rc::new(*a));
             &raw const self.asids.get(a).unwrap().0
         } else {
             ptr::null()
@@ -275,9 +292,6 @@ impl Image {
             );
         })?;
         self.caches.push(iscache);
-        if let Some(a) = asid {
-            self.asids.insert(*a);
-        }
         Ok(())
     }
 
@@ -303,7 +317,7 @@ impl Image {
         let cfilename = str_to_cstring_pterror(filename)?;
         let asid_ptr = if let Some(a) = asid {
             // fixme: use get_or_insert once stable (if ever)
-            self.asids.insert(*a);
+            self.asids.insert(Rc::new(*a));
             &raw const self.asids.get(a).unwrap().0
         } else {
             ptr::null()
@@ -318,9 +332,31 @@ impl Image {
                 vaddr,
             )
         })?;
-        if let Some(a) = asid {
-            self.asids.insert(*a);
+        Ok(())
+    }
+
+    /// Add multiple file sections to the traced memory image, backed by a cache.
+    ///
+    /// This is the same as creating a `SectionCache` and subsequently calling `add_cached()` for
+    /// each section.
+    pub fn add_files_cached(
+        &mut self,
+        sections_info: &[SectionInfo],
+        asid: Option<&Asid>,
+    ) -> Result<(), PtError> {
+        let mut image_cache = SectionCache::new(None)?;
+
+        let mut isids = Vec::with_capacity(sections_info.len());
+        for s in sections_info {
+            let isid = image_cache.add_file(&s.filename, s.offset, s.size, s.virtual_address)?;
+            isids.push(isid);
         }
+
+        let rc_cache = Rc::new(image_cache);
+        for isid in isids {
+            self.add_cached(rc_cache.clone(), isid, asid)?;
+        }
+
         Ok(())
     }
 }
@@ -486,6 +522,49 @@ mod test {
         let mut i = img_with_file();
         let asid = Asid::new(Some(3), Some(4));
         i.add_cached(Rc::new(c), isid, Some(&asid)).unwrap();
+        assert_eq!(i.remove_by_asid(&asid).unwrap(), 1);
+    }
+
+    #[test]
+    fn img_extend() {
+        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
+            .iter()
+            .collect();
+
+        let mut img = Image::new(None).unwrap();
+        {
+            let mut img2 = Image::new(None).unwrap();
+            for i in 0..100 {
+                let mut cache = SectionCache::new(None).unwrap();
+                let asid = Asid::new(Some(i), Some(i));
+                let isid = cache.add_file(file.to_str().unwrap(), i, 1, i).unwrap();
+                let rc = Rc::new(cache);
+                img2.add_cached(rc.clone(), isid, Some(&asid)).unwrap()
+            }
+
+            img.extend(&img2).unwrap();
+        }
+
+        for i in 0..100 {
+            assert_eq!(img.remove_by_asid(&Asid::new(Some(i), Some(i))).unwrap(), 1);
+        }
+    }
+
+    #[test]
+    fn img_add_files_cached() {
+        let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
+            .iter()
+            .collect();
+
+        let section = SectionInfo {
+            filename: file.to_string_lossy().to_string(),
+            offset: 5,
+            size: 15,
+            virtual_address: 0x1337,
+        };
+        let mut i = img_with_file();
+        let asid = Asid::new(Some(3), Some(4));
+        i.add_files_cached(&[section], Some(&asid)).unwrap();
         assert_eq!(i.remove_by_asid(&asid).unwrap(), 1);
     }
 }

@@ -16,7 +16,7 @@ use std::mem::MaybeUninit;
 use std::ptr;
 use std::ptr::NonNull;
 
-/// The decoder will work on the buffer defined in a Config, it shall contain
+/// The decoder will work on the buffer defined in the builder, it shall contain
 /// raw trace data and remain valid for the lifetime of the decoder.
 ///
 /// The decoder needs to be synchronized before it can be used.
@@ -28,9 +28,9 @@ pub struct BlockDecoder<'a> {
 }
 
 impl PtEncoderDecoder for BlockDecoder<'_> {
-    /// Allocate an Intel PT block decoder.
+    /// Create an Intel PT block decoder.
     ///
-    /// The decoder will work on the buffer defined in @config,
+    /// The decoder will work on the buffer defined in @builder,
     /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
     /// The decoder needs to be synchronized before it can be used.
     fn new_from_builder(builder: &EncoderDecoderBuilder<Self>) -> Result<Self, PtError> {
@@ -51,8 +51,7 @@ impl PtEncoderDecoder for BlockDecoder<'_> {
 impl BlockDecoder<'_> {
     /// Return the current address space identifier.
     ///
-    /// On success, provides the current address space identifier in @asid.
-    /// Returns Asid on success, a `PtError` otherwise.
+    /// On success, provides the current address space identifier a `PtError` otherwise.
     pub fn asid(&self) -> Result<Asid, PtError> {
         let mut asid = MaybeUninit::<pt_asid>::uninit();
         ensure_ptok(unsafe {
@@ -76,7 +75,7 @@ impl BlockDecoder<'_> {
 
     /// Get the next pending event.
     ///
-    /// On success, provides the next event, a `StatusFlag` instance and updates the decoder.
+    /// On success, provides the next event, a `Status` instance and updates the decoder.
     /// Returns `BadQuery` if there is no event.
     pub fn event(&mut self) -> Result<(Event, Status), PtError> {
         let mut evt = MaybeUninit::<pt_event>::uninit();
@@ -135,16 +134,16 @@ impl BlockDecoder<'_> {
     /// Determine the next block of instructions.
     ///
     /// On success, provides the next block of instructions in execution order.
-    /// Also Returns a `StatusFlag` instance on success.
+    /// Also Returns a `Status` instance on success.
     /// Returns Eos to indicate the end of the trace stream.
-    /// Subsequent calls to next will continue to return Eos until trace is required to determine the next instruction.
+    /// Subsequent calls will continue to return Eos until trace is required to determine the next instruction.
     /// Returns `BadContext` if the decoder encountered an unexpected packet.
     /// Returns `BadOpc` if the decoder encountered unknown packets.
     /// Returns `BadPacket` if the decoder encountered unknown packet payloads.
     /// Returns `BadQuery` if the decoder got out of sync.
-    /// Returns Eos if decoding reached the end of the Intel PT buffer.
-    /// Returns Nomap if the memory at the instruction address can't be read.
-    /// Returns Nosync if the decoder is out of sync.
+    /// Returns `Eos` if decoding reached the end of the Intel PT buffer.
+    /// Returns `Nomap` if the memory at the instruction address can't be read.
+    /// Returns `Nosync` if the decoder is out of sync.
     pub fn decode_next(&mut self) -> Result<(Block, Status), PtError> {
         let mut blk = MaybeUninit::<pt_block>::uninit();
         let status = extract_status_or_pterr(unsafe {

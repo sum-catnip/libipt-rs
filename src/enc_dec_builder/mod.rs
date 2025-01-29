@@ -52,7 +52,7 @@ pub trait PtEncoderDecoder {
         Self: Sized;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[repr(transparent)]
 pub struct EncoderDecoderBuilder<T> {
     pub(crate) config: pt_config,
@@ -68,11 +68,20 @@ where
     }
 }
 
+impl<T> Clone for EncoderDecoderBuilder<T> {
+    fn clone(&self) -> Self {
+        Self {
+            config: self.config,
+            target: PhantomData,
+        }
+    }
+}
+
 impl<T> EncoderDecoderBuilder<T>
 where
     T: PtEncoderDecoder,
 {
-    /// Initializes an EncoderDecoderBuilder instance
+    /// Create an EncoderDecoderBuilder
     pub const fn new() -> Self {
         let mut config: pt_config = unsafe { mem::zeroed() };
         config.size = size_of::<pt_config>();

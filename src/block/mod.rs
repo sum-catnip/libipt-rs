@@ -12,7 +12,7 @@ pub use decoder::*;
 /// A block of instructions.
 ///
 /// Instructions in this block are executed sequentially but are not necessarily
-/// contiguous in memory.  Users are expected to follow direct branches.
+/// contiguous in memory. Users are expected to follow direct branches.
 #[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
 pub struct Block(pub(super) pt_block);
@@ -31,6 +31,7 @@ impl Block {
         self.0.end_ip
     }
 
+    // TODO: make this more rusty? at least with an Option? &Image?
     /// The image section that contains the instructions in this block.
     ///
     /// A value of zero means that the section did not have an identifier.
@@ -50,7 +51,7 @@ impl Block {
 
     /// The instruction class for the last instruction in this block.
     ///
-    /// This field may be set to `Class::Error` to indicate that the instruction
+    /// This field may be set to `Class::Unknown` to indicate that the instruction
     /// class is not available. The block decoder may choose to not provide
     /// the instruction class in some cases for performance reasons.
     #[must_use]
@@ -68,31 +69,29 @@ impl Block {
     /// The raw bytes of the last instruction in this block in case the
     /// instruction does not fit entirely into this block's section.
     ///
-    /// This field is only valid if truncated is set.
+    /// This field is `Some`only if `truncated()` is true.
     #[must_use]
-    pub fn raw(&self) -> &[u8] {
-        &self.0.raw[..self.0.size as usize]
+    pub fn raw(&self) -> Option<&[u8]> {
+        if self.truncated() {
+            Some(&self.0.raw[..self.0.size as usize])
+        } else {
+            None
+        }
     }
 
-    /// A collection of flags giving additional information about the
-    /// instructions in this block.
-    ///
-    /// - all instructions in this block were executed speculatively.
+    /// All instructions in this block were executed speculatively.
     #[must_use]
     pub fn speculative(&self) -> bool {
         self.0.speculative() > 0
     }
 
-    /// A collection of flags giving additional information about the
-    /// instructions in this block.
-    ///
-    /// - the last instruction in this block is truncated.
+    /// The last instruction in this block is truncated.
     ///
     /// It starts in this block's section but continues in one or more
     /// other sections depending on how fragmented the memory image is.
     ///
-    /// The raw bytes for the last instruction are provided in \@raw and
-    /// its size in \@size in this case.
+    /// The raw bytes for the last instruction are provided in @raw and
+    /// its size in @size in this case.
     #[must_use]
     pub fn truncated(&self) -> bool {
         self.0.truncated() > 0
@@ -125,9 +124,9 @@ mod test {
         assert_eq!(blk.end_ip(), 2);
         assert_eq!(blk.isid(), 3);
         assert_eq!(blk.mode(), ExecModeType::Bit32);
-        assert_eq!(blk.class(), Class::Error);
+        assert_eq!(blk.class(), Class::Unknown);
         assert_eq!(blk.ninsn(), 4);
-        assert_eq!(blk.raw(), &data[..8]);
+        assert_eq!(blk.raw(), Some(&data[..8]));
         assert!(blk.truncated());
         assert!(!blk.speculative());
     }
@@ -153,9 +152,9 @@ mod test {
         assert_eq!(blk.end_ip(), 2);
         assert_eq!(blk.isid(), 3);
         assert_eq!(blk.mode(), ExecModeType::Bit32);
-        assert_eq!(blk.class(), Class::Error);
+        assert_eq!(blk.class(), Class::Unknown);
         assert_eq!(blk.ninsn(), 4);
-        assert!(blk.raw().len() > 0);
+        assert!(blk.raw().is_none());
         assert!(!blk.truncated());
         assert!(!blk.speculative());
     }
