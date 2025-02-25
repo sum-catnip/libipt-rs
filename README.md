@@ -1,4 +1,4 @@
-# Libipt
+# Libipt [![](https://img.shields.io/crates/v/libipt.svg)](https://crates.io/crates/libipt)
 
 > The Intel Processor Trace (Intel PT) Decoder Library is Intel's reference
 implementation for decoding Intel PT.  It can be used as a standalone library or
