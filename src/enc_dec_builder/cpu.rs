@@ -3,20 +3,17 @@
 
 use crate::error::ensure_ptok;
 use crate::error::PtError;
-use bitflags::bitflags;
 use libipt_sys::{
     pt_cpu, pt_cpu_errata, pt_cpu_vendor, pt_cpu_vendor_pcv_intel, pt_cpu_vendor_pcv_unknown,
     pt_errata,
 };
 use std::mem::MaybeUninit;
 
-bitflags! {
-    /// i suppose this is relevant when/if amd finally gets intelpt support?
-    #[derive(Debug)]
-    pub struct CpuVendor: u32 {
-        const INTEL = pt_cpu_vendor_pcv_intel as u32;
-        const UNKNOWN = pt_cpu_vendor_pcv_unknown as u32;
-    }
+#[derive(Debug, Clone, Copy)]
+#[repr(u32)]
+pub enum CpuVendor {
+    INTEL = pt_cpu_vendor_pcv_intel as u32,
+    UNKNOWN = pt_cpu_vendor_pcv_unknown as u32,
 }
 
 /// A Cpu identifier
@@ -26,7 +23,7 @@ pub struct Cpu(pub(super) pt_cpu);
 impl Cpu {
     pub const fn new(vendor: CpuVendor, family: u16, model: u8, stepping: u8) -> Self {
         Cpu(pt_cpu {
-            vendor: vendor.bits() as pt_cpu_vendor,
+            vendor: vendor as pt_cpu_vendor,
             family,
             model,
             stepping,
