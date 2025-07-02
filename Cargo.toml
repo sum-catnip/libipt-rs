@@ -1,6 +1,6 @@
 [package]
 name = "libipt"
-version = "0.3.0"
+version = "0.3.1"
 authors = [
   "sum_catnip <catnip@catnip.fyi>",
   "Marcondiro <cavenatimarco+libiptrs@gmail.com>",
