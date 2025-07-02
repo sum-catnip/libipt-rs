@@ -80,9 +80,6 @@ pub enum PtErrorCode {
     BadFile = pt_error_code_pte_bad_file as i32,
     /// Unknown cpu
     BadCpu = pt_error_code_pte_bad_cpu as i32,
-
-    /// No Error Information available
-    NoInfo = -1,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -162,14 +159,23 @@ pub(crate) fn ensure_ptok(code: i32) -> Result<(), PtError> {
 /// Returns the code as an unsigned int
 #[inline]
 pub(crate) fn extract_pterr(code: i32) -> Result<u32, PtError> {
-    match code {
-        x if x >= 0 => Ok(code as u32),
-        _ => Err(PtError::from_code(code)),
+    if code >= 0 {
+        Ok(code as u32)
+    } else {
+        Err(PtError::from_code(code))
     }
 }
 
 /// Turns a negative code into a PtErr and a positive code into a Status
 #[inline]
 pub(crate) fn extract_status_or_pterr(code: i32) -> Result<Status, PtError> {
-    extract_pterr(code).map(Status::from_bits_or_pterror)?
+    let raw_status = extract_pterr(code)?;
+    if cfg!(debug_assertions) {
+        Status::from_bits(raw_status).ok_or(PtError::new(
+            PtErrorCode::Internal,
+            "Unknown state returned by libipt, failed to convert to Status",
+        ))
+    } else {
+        Ok(Status::from_bits_retain(raw_status))
+    }
 }
