@@ -285,7 +285,8 @@ mod test {
         let a = b.asid().unwrap();
         assert!(a.cr3().is_none());
         assert!(a.vmcs().is_none());
-        assert!(b.core_bus_ratio().is_ok());
+        // TODO: enable this once libipt 2.1.3 will be released
+        // assert!(b.core_bus_ratio().is_err());
         assert!(b.event().is_err());
         let used_builder = b.used_builder();
         unsafe {
@@ -305,6 +306,7 @@ mod test {
         assert!(b.decode_next().is_err());
         assert!(b.sync_backward().is_err());
         assert!(b.sync_forward().is_err());
-        assert!(b.time().is_ok());
+        // TODO: enable this once libipt 2.1.3 will be released
+        // assert!(b.time().is_err());
     }
 }
