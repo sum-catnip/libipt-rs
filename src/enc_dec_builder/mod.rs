@@ -313,12 +313,13 @@ mod test {
         let mut data = [18u8; 3];
         let mut c = EncoderDecoderBuilder::<BlockDecoder>::new()
             .filter(
-                AddrFiltersBuilder::new()
-                    .addr0(AddrFilterRange::new(1, 2, AddrFilterType::STOP))
-                    .addr1(AddrFilterRange::new(3, 4, AddrFilterType::FILTER))
-                    .addr2(AddrFilterRange::new(5, 6, AddrFilterType::DISABLED))
-                    .addr3(AddrFilterRange::new(7, 8, AddrFilterType::STOP))
-                    .build(),
+                AddrFilters::new(&[
+                    AddrFilter::new(1, 2, AddrFilterType::STOP),
+                    AddrFilter::new(3, 4, AddrFilterType::FILTER),
+                    AddrFilter::new(5, 6, AddrFilterType::DISABLED),
+                    AddrFilter::new(7, 8, AddrFilterType::STOP),
+                ])
+                .unwrap(),
             )
             .cpu(Cpu::intel(1, 2, 3))
             .freq(Frequency::new(1, 2, 3, 4))
