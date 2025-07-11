@@ -1,20 +1,37 @@
-use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_19;
+use crate::error::{PtError, PtErrorCode};
+use crate::event::Event;
+use derive_more::Deref;
+use libipt_sys::pt_event_type_ptev_mnt;
 
 /// A maintenance event.
-#[derive(Clone, Copy, Debug)]
-pub struct Mnt(pub(super) pt_event__bindgen_ty_1__bindgen_ty_19);
+#[derive(Clone, Copy, Debug, Deref)]
+#[repr(transparent)]
+pub struct Mnt {
+    pub(super) event: Event,
+}
 impl Mnt {
     /// The raw payload.
     #[must_use]
-    pub fn payload(self) -> u64 {
-        self.0.payload
+    pub const fn payload(&self) -> u64 {
+        unsafe { self.event.0.variant.mnt.payload }
+    }
+}
+
+impl TryFrom<Event> for Mnt {
+    type Error = PtError;
+
+    fn try_from(event: Event) -> Result<Self, Self::Error> {
+        if event.0.type_ == pt_event_type_ptev_mnt {
+            Ok(Self { event })
+        } else {
+            Err(PtErrorCode::Invalid.into())
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::super::Payload;
-    use super::*;
+    use super::super::EventType;
     use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_mnt};
     use std::mem;
@@ -23,11 +40,11 @@ mod test {
     fn test_mnt_payload() {
         let mut evt: pt_event = unsafe { mem::zeroed() };
         evt.type_ = pt_event_type_ptev_mnt;
-        evt.variant.mnt = pt_event__bindgen_ty_1__bindgen_ty_19 { payload: 17 };
+        evt.variant.mnt.payload = 17;
 
-        let payload: Payload = Event(evt).into();
+        let payload: EventType = Event(evt).into();
         match payload {
-            Payload::Mnt(e) => {
+            EventType::Mnt(e) => {
                 assert_eq!(e.payload(), 17);
             }
             _ => unreachable!("oof"),

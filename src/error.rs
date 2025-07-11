@@ -82,6 +82,12 @@ pub enum PtErrorCode {
     BadCpu = pt_error_code_pte_bad_cpu as i32,
 }
 
+impl From<PtErrorCode> for PtError {
+    fn from(value: PtErrorCode) -> Self {
+        PtError::from_code(-(value as i32))
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct PtError {
     code: PtErrorCode,

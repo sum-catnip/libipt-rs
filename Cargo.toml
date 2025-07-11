@@ -19,4 +19,5 @@ libipt_master = ["libipt-sys/libipt_master"]
 [dependencies]
 libipt-sys = { version = "0.2.1", git = "https://github.com/sum-catnip/libipt-sys.git" }
 bitflags = "2.4.1"
+derive_more = { version = "2.0.1", features = ["deref"]}
 num_enum = "0.7.1"

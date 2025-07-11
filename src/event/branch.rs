@@ -1,27 +1,45 @@
-use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_4;
+use crate::error::{PtError, PtErrorCode};
+use crate::event::Event;
+use derive_more::Deref;
+use libipt_sys::pt_event_type_ptev_async_branch;
 
 /// An asynchronous branch, e.g. interrupt
-#[derive(Clone, Copy, Debug)]
-pub struct AsyncBranch(pub(super) pt_event__bindgen_ty_1__bindgen_ty_4);
+#[derive(Clone, Copy, Debug, Deref)]
+#[repr(transparent)]
+pub struct AsyncBranch {
+    pub(super) event: Event,
+}
+
 impl AsyncBranch {
     /// The branch source address
     #[must_use]
-    pub fn from(&self) -> u64 {
-        self.0.from
+    pub const fn from(&self) -> u64 {
+        unsafe { self.event.0.variant.async_branch.from }
     }
 
     /// The branch destination address.
     /// This field is not valid if @ip_suppressed is set.
     #[must_use]
-    pub fn to(&self) -> u64 {
-        self.0.to
+    pub const fn to(&self) -> u64 {
+        unsafe { self.event.0.variant.async_branch.to }
+    }
+}
+
+impl TryFrom<Event> for AsyncBranch {
+    type Error = PtError;
+
+    fn try_from(event: Event) -> Result<Self, Self::Error> {
+        if event.0.type_ == pt_event_type_ptev_async_branch {
+            Ok(Self { event })
+        } else {
+            Err(PtErrorCode::Invalid.into())
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::super::Payload;
-    use super::*;
+    use super::super::EventType;
     use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_async_branch};
     use std::mem;
@@ -30,11 +48,12 @@ mod test {
     fn test_branch_async_payload() {
         let mut evt: pt_event = unsafe { mem::zeroed() };
         evt.type_ = pt_event_type_ptev_async_branch;
-        evt.variant.async_branch = pt_event__bindgen_ty_1__bindgen_ty_4 { from: 1, to: 2 };
+        evt.variant.async_branch.from = 1;
+        evt.variant.async_branch.to = 2;
 
-        let payload: Payload = Event(evt).into();
+        let payload: EventType = Event(evt).into();
         match payload {
-            Payload::AsyncBranch(e) => {
+            EventType::AsyncBranch(e) => {
                 assert_eq!(e.from(), 1);
                 assert_eq!(e.to(), 2);
             }

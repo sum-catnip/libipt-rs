@@ -1,27 +1,44 @@
-use libipt_sys::pt_event__bindgen_ty_1__bindgen_ty_1;
+use crate::error::{PtError, PtErrorCode};
+use crate::event::Event;
+use derive_more::Deref;
+use libipt_sys::pt_event_type_ptev_enabled;
 
 /// Tracing has been enabled
-#[derive(Clone, Copy, Debug)]
-pub struct Enabled(pub(super) pt_event__bindgen_ty_1__bindgen_ty_1);
+#[derive(Clone, Copy, Debug, Deref)]
+#[repr(transparent)]
+pub struct Enabled {
+    pub(super) event: Event,
+}
 impl Enabled {
     /// The address at which tracing resumes
     #[must_use]
-    pub fn ip(&self) -> u64 {
-        self.0.ip
+    pub const fn ip(&self) -> u64 {
+        unsafe { self.event.0.variant.enabled.ip }
     }
 
     /// A flag indicating that tracing resumes from the IP
     /// at which tracing had been disabled before.
     #[must_use]
     pub fn resumed(&self) -> bool {
-        self.0.resumed() > 0
+        (unsafe { self.event.0.variant.enabled.resumed() }) > 0
+    }
+}
+
+impl TryFrom<Event> for Enabled {
+    type Error = PtError;
+
+    fn try_from(event: Event) -> Result<Self, Self::Error> {
+        if event.0.type_ == pt_event_type_ptev_enabled {
+            Ok(Self { event })
+        } else {
+            Err(PtErrorCode::Invalid.into())
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::super::Payload;
-    use super::*;
+    use super::super::EventType;
     use crate::event::Event;
     use libipt_sys::{pt_event, pt_event_type_ptev_enabled};
     use std::mem;
@@ -30,16 +47,14 @@ mod test {
     fn test_enabled_payload() {
         let mut evt: pt_event = unsafe { mem::zeroed() };
         evt.type_ = pt_event_type_ptev_enabled;
-        evt.variant.enabled = pt_event__bindgen_ty_1__bindgen_ty_1 {
-            ip: 11,
-            _bitfield_align_1: [],
-            _bitfield_1: pt_event__bindgen_ty_1__bindgen_ty_1::new_bitfield_1(1),
-            __bindgen_padding_0: Default::default(),
-        };
+        evt.variant.enabled.ip = 11;
+        unsafe {
+            evt.variant.enabled.set_resumed(1);
+        }
 
-        let payload: Payload = Event(evt).into();
+        let payload: EventType = Event(evt).into();
         match payload {
-            Payload::Enabled(e) => {
+            EventType::Enabled(e) => {
                 assert_eq!(e.ip(), 11);
                 assert!(e.resumed())
             }
