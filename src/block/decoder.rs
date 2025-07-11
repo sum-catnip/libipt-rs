@@ -6,6 +6,8 @@ use crate::image::Image;
 use crate::status::Status;
 
 use crate::enc_dec_builder::{EncoderDecoderBuilder, PtEncoderDecoder};
+#[cfg(feature = "libipt_master")]
+use libipt_sys::pt_blk_resync;
 use libipt_sys::{
     pt_asid, pt_blk_alloc_decoder, pt_blk_asid, pt_blk_core_bus_ratio, pt_blk_event,
     pt_blk_free_decoder, pt_blk_get_config, pt_blk_get_image, pt_blk_get_offset,
@@ -150,6 +152,11 @@ impl BlockDecoder<'_> {
             pt_blk_next(self.inner.as_ptr(), blk.as_mut_ptr(), size_of::<pt_block>())
         })?;
         Ok((Block(unsafe { blk.assume_init() }), status))
+    }
+
+    #[cfg(feature = "libipt_master")]
+    pub fn resync(&mut self) -> Result<Status, PtError> {
+        extract_status_or_pterr(unsafe { pt_blk_resync(self.inner.as_ptr()) })
     }
 
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {

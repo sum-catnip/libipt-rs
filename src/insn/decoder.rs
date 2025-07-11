@@ -7,6 +7,8 @@ use crate::event::Event;
 use crate::image::Image;
 use crate::status::Status;
 
+#[cfg(feature = "libipt_master")]
+use libipt_sys::pt_insn_resync;
 use libipt_sys::{
     pt_asid, pt_event, pt_insn, pt_insn_alloc_decoder, pt_insn_asid, pt_insn_core_bus_ratio,
     pt_insn_decoder, pt_insn_event, pt_insn_free_decoder, pt_insn_get_config, pt_insn_get_image,
@@ -166,6 +168,11 @@ impl<'a> InsnDecoder<'a> {
         };
 
         Ok(())
+    }
+
+    #[cfg(feature = "libipt_master")]
+    pub fn resync(&mut self) -> Result<Status, PtError> {
+        extract_status_or_pterr(unsafe { pt_insn_resync(self.inner.as_ptr()) })
     }
 
     pub fn sync_backward(&mut self) -> Result<Status, PtError> {
