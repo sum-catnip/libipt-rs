@@ -1,10 +1,8 @@
-name: ci
+name: Cargo Build & Test
 
 on:
   push:
-    branches: [ "master" ]
   pull_request:
-    branches: [ "master" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -15,10 +13,13 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest ]
+        toolchain: [1.83, stable, beta]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Setup toolchain
+        run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
       - name: Build
         run: cargo build --verbose
       - name: Run tests
@@ -26,4 +27,4 @@ jobs:
       - name: Run tests in release mode
         run: cargo test --verbose --release
       - name: Clippy
-        run: cargo clippy
+        run: rustup component add clippy && cargo clippy
