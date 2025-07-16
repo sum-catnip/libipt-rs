@@ -2,9 +2,10 @@ use crate::error::{PtError, PtErrorCode};
 use crate::event::Event;
 use derive_more::Deref;
 use libipt_sys::pt_event_type_ptev_mnt;
+use std::fmt::{Debug, Formatter};
 
 /// A maintenance event.
-#[derive(Clone, Copy, Debug, Deref)]
+#[derive(Clone, Copy, Deref)]
 #[repr(transparent)]
 pub struct Mnt {
     pub(super) event: Event,
@@ -14,6 +15,14 @@ impl Mnt {
     #[must_use]
     pub const fn payload(&self) -> u64 {
         unsafe { self.event.0.variant.mnt.payload }
+    }
+}
+
+impl Debug for Mnt {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Mnt {{")?;
+        self.fmt_common_fields(f)?;
+        write!(f, "payload: 0x{:x?}, }}", self.payload())
     }
 }
 

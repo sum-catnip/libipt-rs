@@ -23,18 +23,18 @@ impl Status {
     /// There is an event pending.
     #[must_use]
     pub const fn event_pending(&self) -> bool {
-        self.contains(Status::EVENT_PENDING)
+        self.contains(Self::EVENT_PENDING)
     }
 
     /// The address has been suppressed.
     #[must_use]
     pub const fn ip_supressed(&self) -> bool {
-        self.contains(Status::IP_SUPRESSED)
+        self.contains(Self::IP_SUPRESSED)
     }
 
     /// There is no more trace data available.
     #[must_use]
     pub const fn eos(&self) -> bool {
-        self.contains(Status::EOS)
+        self.contains(Self::EOS)
     }
 }

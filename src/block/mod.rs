@@ -19,7 +19,7 @@ pub struct Block(pub(super) pt_block);
 impl Block {
     /// The IP of the first instruction in this block.
     #[must_use]
-    pub fn ip(&self) -> u64 {
+    pub const fn ip(&self) -> u64 {
         self.0.ip
     }
 
@@ -27,7 +27,7 @@ impl Block {
     ///
     /// This can be used for error-detection.
     #[must_use]
-    pub fn end_ip(&self) -> u64 {
+    pub const fn end_ip(&self) -> u64 {
         self.0.end_ip
     }
 
@@ -38,7 +38,7 @@ impl Block {
     /// The section was not added via an image section cache or the memory
     /// was read via the read memory callback.
     #[must_use]
-    pub fn isid(&self) -> i32 {
+    pub const fn isid(&self) -> i32 {
         self.0.isid
     }
 
@@ -62,7 +62,7 @@ impl Block {
 
     /// The number of instructions in this block.
     #[must_use]
-    pub fn ninsn(&self) -> u16 {
+    pub const fn ninsn(&self) -> u16 {
         self.0.ninsn
     }
 

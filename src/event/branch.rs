@@ -2,9 +2,10 @@ use crate::error::{PtError, PtErrorCode};
 use crate::event::Event;
 use derive_more::Deref;
 use libipt_sys::pt_event_type_ptev_async_branch;
+use std::fmt::{Debug, Formatter};
 
 /// An asynchronous branch, e.g. interrupt
-#[derive(Clone, Copy, Debug, Deref)]
+#[derive(Clone, Copy, Deref)]
 #[repr(transparent)]
 pub struct AsyncBranch {
     pub(super) event: Event,
@@ -22,6 +23,14 @@ impl AsyncBranch {
     #[must_use]
     pub const fn to(&self) -> u64 {
         unsafe { self.event.0.variant.async_branch.to }
+    }
+}
+
+impl Debug for AsyncBranch {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "AsyncBranch {{")?;
+        self.fmt_common_fields(f)?;
+        write!(f, "from: 0x{:x?}, to: 0x{:x?}, }}", self.from(), self.to())
     }
 }
 

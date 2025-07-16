@@ -2,9 +2,10 @@ use crate::error::{PtError, PtErrorCode};
 use crate::event::Event;
 use derive_more::Deref;
 use libipt_sys::pt_event_type_ptev_tick;
+use std::fmt::{Debug, Formatter};
 
 /// A timing event
-#[derive(Clone, Copy, Debug, Deref)]
+#[derive(Clone, Copy, Deref)]
 #[repr(transparent)]
 pub struct Tick {
     pub(super) event: Event,
@@ -20,6 +21,14 @@ impl Tick {
     #[must_use]
     pub const fn ip(&self) -> u64 {
         unsafe { self.event.0.variant.tick.ip }
+    }
+}
+
+impl Debug for Tick {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Tick {{")?;
+        self.fmt_common_fields(f)?;
+        write!(f, "ip: 0x{:x?}, }}", self.ip())
     }
 }
 

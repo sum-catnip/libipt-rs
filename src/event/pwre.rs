@@ -2,9 +2,10 @@ use crate::error::{PtError, PtErrorCode};
 use crate::event::Event;
 use derive_more::Deref;
 use libipt_sys::pt_event_type_ptev_pwre;
+use std::fmt::{Debug, Formatter};
 
 /// A power state was entered
-#[derive(Clone, Copy, Debug, Deref)]
+#[derive(Clone, Copy, Deref)]
 #[repr(transparent)]
 pub struct Pwre {
     pub(super) event: Event,
@@ -27,6 +28,20 @@ impl Pwre {
     #[must_use]
     pub fn hw(&self) -> bool {
         (unsafe { self.event.0.variant.pwre.hw() }) > 0
+    }
+}
+
+impl Debug for Pwre {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Pwre {{")?;
+        self.fmt_common_fields(f)?;
+        write!(
+            f,
+            "hw: {:?}, state: {:?}, sub_state: {:?} }}",
+            self.hw(),
+            self.state(),
+            self.sub_state()
+        )
     }
 }
 

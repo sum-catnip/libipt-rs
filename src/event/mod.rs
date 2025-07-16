@@ -7,6 +7,7 @@ use libipt_sys::{
     pt_event_type_ptev_pwre, pt_event_type_ptev_pwrx, pt_event_type_ptev_stop,
     pt_event_type_ptev_tick, pt_event_type_ptev_tsx, pt_event_type_ptev_vmcs,
 };
+use std::fmt::{Debug, Formatter};
 
 mod enabled;
 pub use enabled::*;
@@ -76,9 +77,10 @@ impl From<Event> for EventType {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct Event(pub(crate) pt_event);
+
 impl Event {
     /// A flag indicating that the event IP has been suppressed.
     #[must_use]
@@ -92,17 +94,16 @@ impl Event {
         self.0.status_update() > 0
     }
 
-    /// A flag indicating that the event has timing information.
-    #[must_use]
-    pub fn has_tsc(&self) -> bool {
-        self.0.has_tsc() > 0
-    }
-
     /// The time stamp count of the event.
-    /// This field is only valid if @has_tsc is set.
+    ///
+    /// Returns `None` if tsc information is not available
     #[must_use]
-    pub const fn tsc(&self) -> u64 {
-        self.0.tsc
+    pub fn tsc(&self) -> Option<u64> {
+        if self.0.has_tsc() > 0 {
+            Some(self.0.tsc)
+        } else {
+            None
+        }
     }
 
     /// The number of lost mtc packets.
@@ -153,6 +154,24 @@ impl Event {
             _ => unreachable!(),
         }
     }
+
+    pub(crate) fn fmt_common_fields(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ip_suppressed : {:?}, status_update: {:?}, tsc: {:?}, lost_mtc: {:?}, lost_cyc: {:?},",
+            self.ip_suppressed(),
+            self.status_update(),
+            self.tsc(),
+            self.lost_mtc(),
+            self.lost_cyc(),
+        )
+    }
+}
+
+impl Debug for Event {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.event_type().fmt(f)
+    }
 }
 
 #[cfg(test)]
@@ -177,9 +196,8 @@ mod test {
         let evt = Event(evt);
         assert!(evt.ip_suppressed());
         assert!(!evt.status_update());
-        assert!(evt.has_tsc());
 
-        assert_eq!(evt.tsc(), 1);
+        assert_eq!(evt.tsc(), Some(1));
         assert_eq!(evt.lost_mtc(), 2);
         assert_eq!(evt.lost_cyc(), 3);
 

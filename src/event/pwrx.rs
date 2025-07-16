@@ -2,9 +2,10 @@ use crate::error::{PtError, PtErrorCode};
 use crate::event::Event;
 use derive_more::Deref;
 use libipt_sys::pt_event_type_ptev_pwrx;
+use std::fmt::{Debug, Formatter};
 
 /// A power state was exited
-#[derive(Clone, Copy, Debug, Deref)]
+#[derive(Clone, Copy, Deref)]
 #[repr(transparent)]
 pub struct Pwrx {
     pub(super) event: Event,
@@ -44,6 +45,22 @@ impl Pwrx {
     #[must_use]
     pub fn autonomous(&self) -> bool {
         (unsafe { self.event.0.variant.pwrx.autonomous() }) > 0
+    }
+}
+
+impl Debug for Pwrx {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Pwrx {{")?;
+        self.fmt_common_fields(f)?;
+        write!(
+            f,
+            "autonomous: {:?}, deepest: {:?}, interrupt: {:?}, last: {:?}, store: {:?} }}",
+            self.autonomous(),
+            self.deepest(),
+            self.interrupt(),
+            self.last(),
+            self.store()
+        )
     }
 }
 

@@ -2,9 +2,10 @@ use crate::error::{PtError, PtErrorCode};
 use crate::event::Event;
 use derive_more::Deref;
 use libipt_sys::pt_event_type_ptev_enabled;
+use std::fmt::{Debug, Formatter};
 
 /// Tracing has been enabled
-#[derive(Clone, Copy, Debug, Deref)]
+#[derive(Clone, Copy, Deref)]
 #[repr(transparent)]
 pub struct Enabled {
     pub(super) event: Event,
@@ -21,6 +22,19 @@ impl Enabled {
     #[must_use]
     pub fn resumed(&self) -> bool {
         (unsafe { self.event.0.variant.enabled.resumed() }) > 0
+    }
+}
+
+impl Debug for Enabled {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Enabled {{")?;
+        self.fmt_common_fields(f)?;
+        write!(
+            f,
+            "ip: 0x{:x?}, resumed: {:?} }}",
+            self.ip(),
+            self.resumed()
+        )
     }
 }
 

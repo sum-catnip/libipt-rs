@@ -10,6 +10,7 @@ use libipt_sys::{
 };
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
+use std::fmt::{Debug, Formatter};
 
 #[derive(Clone, Copy, TryFromPrimitive, Debug, PartialEq)]
 #[repr(u32)]
@@ -21,7 +22,7 @@ pub enum ExecModeType {
 }
 
 /// An execution mode change
-#[derive(Clone, Copy, Debug, Deref)]
+#[derive(Clone, Copy, Deref)]
 #[repr(transparent)]
 pub struct ExecMode {
     pub(super) event: Event,
@@ -35,9 +36,16 @@ impl ExecMode {
 
     /// The execution mode
     #[must_use]
-    #[expect(clippy::missing_panics_doc)]
     pub fn mode(&self) -> ExecModeType {
         ExecModeType::try_from(unsafe { self.event.0.variant.exec_mode.mode } as u32).unwrap()
+    }
+}
+
+impl Debug for ExecMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ExecMode {{")?;
+        self.fmt_common_fields(f)?;
+        write!(f, "ip: 0x{:x?}, mode: {:?} }}", self.ip(), self.mode())
     }
 }
 

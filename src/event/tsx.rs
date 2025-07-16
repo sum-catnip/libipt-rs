@@ -2,9 +2,10 @@ use crate::error::{PtError, PtErrorCode};
 use crate::event::Event;
 use derive_more::Deref;
 use libipt_sys::pt_event_type_ptev_tsx;
+use std::fmt::{Debug, Formatter};
 
 /// A transactional execution state change
-#[derive(Clone, Copy, Debug, Deref)]
+#[derive(Clone, Copy, Deref)]
 #[repr(transparent)]
 pub struct Tsx {
     pub(super) event: Event,
@@ -28,6 +29,20 @@ impl Tsx {
     #[must_use]
     pub fn aborted(&self) -> bool {
         (unsafe { self.event.0.variant.tsx.aborted() }) > 0
+    }
+}
+
+impl Debug for Tsx {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Tsx {{")?;
+        self.fmt_common_fields(f)?;
+        write!(
+            f,
+            "aborted: {:?}, ip: 0x{:x?}, speculative: {:?}, }}",
+            self.aborted(),
+            self.ip(),
+            self.speculative()
+        )
     }
 }
 
