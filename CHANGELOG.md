@@ -2,6 +2,13 @@
 
 _This changelog documents only changes relevant to users, internal changes might be omitted._
 
+## [0.4.0] 2025/07
+
+- new API for `events`, improved Debug print
+- add `resync` to insn/block decoders (gated behind `libipt_master` for now)
+- new more const API for `AddrFilters`
+- derive `Clone` and `Copy` for `Status`
+
 ## [0.3.0] 2025/01
 
 ### Added
