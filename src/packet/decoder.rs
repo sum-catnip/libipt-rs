@@ -1,5 +1,5 @@
 use super::Packet;
-use crate::error::{ensure_ptok, PtError, PtErrorCode};
+use crate::error::{PtError, PtErrorCode, ensure_ptok};
 
 use crate::enc_dec_builder::{EncoderDecoderBuilder, PtEncoderDecoder};
 use libipt_sys::{

@@ -1,4 +1,4 @@
-use crate::error::{ensure_ptok, extract_pterr, PtError};
+use crate::error::{PtError, ensure_ptok, extract_pterr};
 
 use crate::enc_dec_builder::{EncoderDecoderBuilder, PtEncoderDecoder};
 use crate::error::PtErrorCode;

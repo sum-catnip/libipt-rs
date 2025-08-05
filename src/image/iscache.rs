@@ -1,4 +1,4 @@
-use crate::error::{ensure_ptok, extract_pterr, PtError, PtErrorCode};
+use crate::error::{PtError, PtErrorCode, ensure_ptok, extract_pterr};
 use crate::image::{name_ptr_to_option_string, str_to_cstring_pterror};
 use libipt_sys::{
     pt_image_section_cache, pt_iscache_add_file, pt_iscache_alloc, pt_iscache_free,

@@ -1,5 +1,5 @@
 macro_rules! wrap2raw {
-    ($target:ty, $type:expr, $payload:ident) => {
+    ($target:ty, $type:expr_2021, $payload:ident) => {
         impl From<$target> for libipt_sys::pt_packet {
             #[inline]
             fn from(origin: $target) -> Self {
@@ -14,7 +14,7 @@ macro_rules! wrap2raw {
 }
 
 macro_rules! raw2wrap {
-    ($target:ty, $target_fac:expr, $origin:ty) => {
+    ($target:ty, $target_fac:expr_2021, $origin:ty) => {
         impl From<$origin> for $target {
             #[inline]
             fn from(origin: $origin) -> Self {

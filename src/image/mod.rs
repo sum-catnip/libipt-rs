@@ -1,5 +1,5 @@
 use crate::asid::Asid;
-use crate::error::{ensure_ptok, extract_pterr, PtError, PtErrorCode};
+use crate::error::{PtError, PtErrorCode, ensure_ptok, extract_pterr};
 use libipt_sys::{
     pt_asid, pt_image, pt_image_add_cached, pt_image_add_file, pt_image_alloc, pt_image_copy,
     pt_image_free, pt_image_name, pt_image_remove_by_asid, pt_image_remove_by_filename,
@@ -23,9 +23,11 @@ unsafe extern "C" fn read_callback(
     ip: u64,
     context: *mut c_void,
 ) -> i32 {
-    let buffer = std::slice::from_raw_parts_mut(buffer, size);
-    let asid = Asid(*asid);
-    BoxedCallback::call(context, buffer, ip, asid)
+    unsafe {
+        let buffer = std::slice::from_raw_parts_mut(buffer, size);
+        let asid = Asid(*asid);
+        BoxedCallback::call(context, buffer, ip, asid)
+    }
 }
 
 /// Represent a boxed Rust function that can be passed to and from C code.
@@ -79,9 +81,11 @@ impl BoxedCallback {
 
     /// Invoke the callback behind the given opaque boxed callback pointer.
     unsafe fn call(opaque_cb: *mut c_void, buf: &mut [u8], size: u64, asid: Asid) -> i32 {
-        let raw_boxed_ptr = opaque_cb.cast::<*mut dyn FnMut(&mut [u8], u64, Asid) -> i32>();
-        let func = (*raw_boxed_ptr).as_mut().unwrap();
-        func(buf, size, asid)
+        unsafe {
+            let raw_boxed_ptr = opaque_cb.cast::<*mut dyn FnMut(&mut [u8], u64, Asid) -> i32>();
+            let func = (*raw_boxed_ptr).as_mut().unwrap();
+            func(buf, size, asid)
+        }
     }
 }
 

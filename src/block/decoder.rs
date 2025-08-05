@@ -1,6 +1,6 @@
 use super::Block;
 use crate::asid::Asid;
-use crate::error::{ensure_ptok, extract_status_or_pterr, PtError, PtErrorCode};
+use crate::error::{PtError, PtErrorCode, ensure_ptok, extract_status_or_pterr};
 use crate::event::Event;
 use crate::image::Image;
 use crate::status::Status;

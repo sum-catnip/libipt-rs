@@ -1,4 +1,4 @@
-use libipt_sys::{pt_packet_tnt, pt_packet_type_ppt_tnt_64, pt_packet_type_ppt_tnt_8};
+use libipt_sys::{pt_packet_tnt, pt_packet_type_ppt_tnt_8, pt_packet_type_ppt_tnt_64};
 
 /// A TNT-8 packet.
 /// Packet: tnt-8

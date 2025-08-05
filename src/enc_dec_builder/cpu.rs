@@ -1,8 +1,8 @@
 // Certain casts are required only on Windows. Inform Clippy to ignore them.
 #![allow(clippy::unnecessary_cast)]
 
-use crate::error::ensure_ptok;
 use crate::error::PtError;
+use crate::error::ensure_ptok;
 use libipt_sys::{
     pt_cpu, pt_cpu_errata, pt_cpu_vendor, pt_cpu_vendor_pcv_intel, pt_cpu_vendor_pcv_unknown,
     pt_errata,

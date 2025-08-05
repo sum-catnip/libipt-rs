@@ -5,13 +5,13 @@ authors = [
   "sum_catnip <catnip@catnip.fyi>",
   "Marcondiro <cavenatimarco+libiptrs@gmail.com>",
 ]
-edition = "2021"
+edition = "2024"
 license = "MIT"
 description = "The Intel Processor Trace (Intel PT) Decoder Library is Intel's reference implementation for decoding Intel PT."
 categories = ["development-tools::debugging", "development-tools::profiling"]
 repository = "https://github.com/sum-catnip/libipt-rs"
 keywords = ["IntelPT", "ProcessorTrace", "libipt"]
-rust-version = "1.83.0"
+rust-version = "1.85.0"
 
 [features]
 libipt_master = ["libipt-sys/libipt_master"]
