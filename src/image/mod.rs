@@ -8,6 +8,7 @@ use libipt_sys::{
 use std::collections::HashSet;
 use std::ffi::c_void;
 use std::ffi::{CStr, CString};
+use std::marker::PhantomData;
 use std::os::raw::c_char;
 use std::ptr;
 use std::ptr::NonNull;
@@ -55,13 +56,13 @@ unsafe extern "C" fn read_callback(
 /// ```
 #[derive(Debug, Eq, PartialEq)]
 #[repr(transparent)]
-struct BoxedCallback(*mut c_void);
+struct BoxedCallback<'a>(*mut c_void, PhantomData<&'a mut ()>);
 
-impl BoxedCallback {
+impl<'a> BoxedCallback<'a> {
     /// Box the given Rust closure into a `BoxedCallback`.
     fn box_callback<F>(callback: F) -> Self
     where
-        F: FnMut(&mut [u8], u64, Asid) -> i32,
+        F: 'a + FnMut(&mut [u8], u64, Asid) -> i32,
     {
         // The callback can be an arbitrary Rust closure. So move it onto the heap
         // (the allocation only takes place when the closure captures).
@@ -76,7 +77,7 @@ impl BoxedCallback {
         // because `Box<T: ?Sized>` is not guaranteed to be ABI-compliant with `*T`.
         let boxed_ptr = Box::new(Box::into_raw(boxed_dyn_callback));
         let raw_ptr = Box::into_raw(boxed_ptr).cast();
-        Self(raw_ptr)
+        Self(raw_ptr, PhantomData)
     }
 
     /// Invoke the callback behind the given opaque boxed callback pointer.
@@ -89,7 +90,7 @@ impl BoxedCallback {
     }
 }
 
-impl Drop for BoxedCallback {
+impl Drop for BoxedCallback<'_> {
     fn drop(&mut self) {
         let raw_boxed_ptr = self.0.cast::<*mut dyn FnMut(&mut [u8], u64, Asid) -> i32>();
 
@@ -117,20 +118,20 @@ pub struct SectionInfo {
 /// An Image defines the memory image that was traced as a collection
 /// of file sections and the virtual addresses at which those sections were loaded.
 #[derive(Debug)]
-pub struct Image {
+pub struct Image<'a> {
     // the wrapped inst
     pub(crate) inner: NonNull<pt_image>,
     // do we need to free this instance on drop? in other words, is inner owned?
     inner_is_owned: bool,
     // Any read data callback set by this `Image` instance.
-    callback: Option<BoxedCallback>,
+    callback: Option<BoxedCallback<'a>>,
     caches: Vec<Rc<SectionCache>>,
     // `HashSet` might grow and move the content around, we cannot use `Asid` directly since we
     // share a pointer with libipt, and it must be valid for the entire Image (section) lifetime.
     asids: HashSet<Rc<Asid>>,
 }
 
-impl Image {
+impl<'a> Image<'a> {
     /// Creates a traced memory image.
     /// An optional @name may be given to the image.
     pub fn new(name: Option<&str>) -> Result<Self, PtError> {
@@ -221,7 +222,7 @@ impl Image {
     /// If @callback is None, the callback is removed.
     pub fn set_callback<F>(&mut self, callback: Option<F>)
     where
-        F: FnMut(&mut [u8], u64, Asid) -> i32,
+        F: 'a + FnMut(&mut [u8], u64, Asid) -> i32,
     {
         self.callback = callback.map(BoxedCallback::box_callback);
         let ret = unsafe {
@@ -365,7 +366,7 @@ impl Image {
     }
 }
 
-impl Drop for Image {
+impl Drop for Image<'_> {
     fn drop(&mut self) {
         if self.inner_is_owned {
             unsafe { pt_image_free(self.inner.as_ptr()) }
@@ -468,7 +469,7 @@ mod test {
         assert!(i.name().is_none());
     }
 
-    fn img_with_file() -> Image {
+    fn img_with_file<'a>() -> Image<'a> {
         let file: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testfiles", "garbage.txt"]
             .iter()
             .collect();

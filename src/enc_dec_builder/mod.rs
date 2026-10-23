@@ -163,7 +163,7 @@ where
     }
 }
 
-impl EncoderDecoderBuilder<BlockDecoder<'_>> {
+impl EncoderDecoderBuilder<BlockDecoder<'_, '_>> {
     pub fn set_end_on_call(mut self, value: bool) -> Self {
         unsafe {
             self.config
@@ -220,7 +220,7 @@ impl EncoderDecoderBuilder<BlockDecoder<'_>> {
     }
 }
 
-impl EncoderDecoderBuilder<InsnDecoder<'_>> {
+impl EncoderDecoderBuilder<InsnDecoder<'_, '_>> {
     pub fn set_enable_tick_events(mut self, value: bool) -> Self {
         unsafe {
             self.config
