@@ -23,13 +23,13 @@ use std::ptr::NonNull;
 ///
 /// The decoder needs to be synchronized before it can be used.
 #[derive(Debug)]
-pub struct BlockDecoder<'a> {
+pub struct BlockDecoder<'a, 'b> {
     inner: NonNull<pt_block_decoder>,
-    default_image: Image,
-    custom_image: Option<&'a mut Image>,
+    default_image: Image<'b>,
+    custom_image: Option<&'a mut Image<'b>>,
 }
 
-impl PtEncoderDecoder for BlockDecoder<'_> {
+impl PtEncoderDecoder for BlockDecoder<'_, '_> {
     /// Create an Intel PT block decoder.
     ///
     /// The decoder will work on the buffer defined in @builder,
@@ -50,7 +50,7 @@ impl PtEncoderDecoder for BlockDecoder<'_> {
     }
 }
 
-impl BlockDecoder<'_> {
+impl<'a, 'b> BlockDecoder<'a, 'b> {
     /// Return the current address space identifier.
     ///
     /// On success, provides the current address space identifier a `PtError` otherwise.
@@ -99,7 +99,7 @@ impl BlockDecoder<'_> {
     ///
     /// The returned image may be modified as long as @decoder is not running.
     /// Returns the traced image the decoder uses for reading memory.
-    pub fn image(&mut self) -> &mut Image {
+    pub fn image(&mut self) -> &mut Image<'b> {
         if let Some(i) = self.custom_image.as_deref_mut() {
             i
         } else {
@@ -222,13 +222,13 @@ impl BlockDecoder<'_> {
     }
 }
 
-impl<'a> BlockDecoder<'a> {
+impl<'a, 'b> BlockDecoder<'a, 'b> {
     /// Set the traced image.
     ///
     /// Sets the image that the decoder uses for reading memory to image.
     /// If image is None, sets the image to the decoder's default image.
     /// Only one image can be active at any time.
-    pub fn set_image(&mut self, img: Option<&'a mut Image>) -> Result<(), PtError> {
+    pub fn set_image(&mut self, img: Option<&'a mut Image<'b>>) -> Result<(), PtError> {
         match img {
             None => {
                 ensure_ptok(unsafe { pt_blk_set_image(self.inner.as_ptr(), ptr::null_mut()) })?;
@@ -250,7 +250,7 @@ impl<'a> BlockDecoder<'a> {
     }
 }
 
-impl Iterator for BlockDecoder<'_> {
+impl Iterator for BlockDecoder<'_, '_> {
     type Item = Result<(Block, Status), PtError>;
 
     fn next(&mut self) -> Option<Result<(Block, Status), PtError>> {
@@ -262,7 +262,7 @@ impl Iterator for BlockDecoder<'_> {
     }
 }
 
-impl Drop for BlockDecoder<'_> {
+impl Drop for BlockDecoder<'_, '_> {
     fn drop(&mut self) {
         unsafe { pt_blk_free_decoder(self.inner.as_ptr()) }
     }

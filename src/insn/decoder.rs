@@ -23,14 +23,14 @@ use std::ptr::NonNull;
 /// it shall contain raw trace data and remain valid for the lifetime of the decoder.
 /// The decoder needs to be synchronized before it can be used.
 #[derive(Debug)]
-pub struct InsnDecoder<'a> {
+pub struct InsnDecoder<'a, 'b> {
     inner: NonNull<pt_insn_decoder>,
-    default_image: Image,
-    custom_image: Option<&'a mut Image>,
+    default_image: Image<'b>,
+    custom_image: Option<&'a mut Image<'b>>,
     //builder: EncoderDecoderBuilder<Self>,
 }
 
-impl PtEncoderDecoder for InsnDecoder<'_> {
+impl PtEncoderDecoder for InsnDecoder<'_, '_> {
     /// Allocate an Intel PT instruction flow decoder.
     ///
     /// The decoder will work on the buffer defined in @config,
@@ -52,7 +52,7 @@ impl PtEncoderDecoder for InsnDecoder<'_> {
     }
 }
 
-impl<'a> InsnDecoder<'a> {
+impl<'a, 'b> InsnDecoder<'a, 'b> {
     /// Return the current address space identifier.
     pub fn asid(&self) -> Result<Asid, PtError> {
         let mut a: Asid = Asid::default();
@@ -100,7 +100,7 @@ impl<'a> InsnDecoder<'a> {
     ///
     /// The returned image may be modified as long as no decoder that uses this image is running.
     /// Returns the traced image the decoder uses for reading memory.
-    pub fn image(&mut self) -> &mut Image {
+    pub fn image(&mut self) -> &mut Image<'b> {
         if let Some(i) = self.custom_image.as_deref_mut() {
             i
         } else {
@@ -149,7 +149,7 @@ impl<'a> InsnDecoder<'a> {
     /// Sets the image that the decoder uses for reading memory to @image.
     /// If @image is None, sets the image to decoder's default image.
     /// Only one image can be active at any time.
-    pub fn set_image(&mut self, img: Option<&'a mut Image>) -> Result<(), PtError> {
+    pub fn set_image(&mut self, img: Option<&'a mut Image<'b>>) -> Result<(), PtError> {
         match img {
             None => {
                 ensure_ptok(unsafe { pt_insn_set_image(self.inner.as_ptr(), ptr::null_mut()) })?;
@@ -230,7 +230,7 @@ impl<'a> InsnDecoder<'a> {
     }
 }
 
-impl Iterator for InsnDecoder<'_> {
+impl Iterator for InsnDecoder<'_, '_> {
     type Item = Result<(Insn, Status), PtError>;
 
     fn next(&mut self) -> Option<Result<(Insn, Status), PtError>> {
@@ -242,7 +242,7 @@ impl Iterator for InsnDecoder<'_> {
     }
 }
 
-impl Drop for InsnDecoder<'_> {
+impl Drop for InsnDecoder<'_, '_> {
     fn drop(&mut self) {
         unsafe { pt_insn_free_decoder(self.inner.as_ptr()) }
     }
